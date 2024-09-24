@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.53 - 2024-09-17
+
+### Fixes
+
+- Space before and after the Subscribe to Calendar link when added to a Doc/Notepad
+- Changing team member settings in Appointment type, bumps the Capacity to 100,000 🐞
+
 ## SSA-VERSION-PREFIX.6.7.50 - 2024-09-10
 
 ### Fixes

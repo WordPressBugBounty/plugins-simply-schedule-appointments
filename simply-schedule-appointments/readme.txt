@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.51
+Stable tag:        1.6.7.53
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,13 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.7.53 - 2024-09-17 ==
+
+= Fixes =
+
+- Space before and after the Subscribe to Calendar link when added to a Doc/Notepad
+- Changing team member settings in Appointment type, bumps the Capacity to 100,000 🐞
+
 == 1.6.7.50 - 2024-09-10 ==
 
 = Fixes =
@@ -298,13 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 - Prevent Stripe race condition inserting duplicate payment records
 - Fix Customer Information Summary Twig Not Displaying Correctly
-- Formidable Forms fields and form not editable
-- Update twig - remove deprecated function twig_date_converter
-- Setup Wizard Gets 'Stuck' If Abandoned Before Appt Type is Saved
-
-== 1.6.7.30 - 2024-06-25 ==
-
-= Fixes =
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
