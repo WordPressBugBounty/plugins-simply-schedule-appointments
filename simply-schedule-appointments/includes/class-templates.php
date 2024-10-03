@@ -354,18 +354,6 @@ class SSA_Templates {
 	
 	public function render_template_string( $template_string, $vars ) {
 		
-		// escape any HTML in the variables
-		array_walk_recursive($vars, function (&$value, $key){
-			if (is_string($value)) {
-				$value = esc_html($value);
-			}
-		});
-				
-		// if string includes any js or event handlers, return an error
-		if (  preg_match( '/ on\w+=.*\(/', $template_string ) || preg_match( '/<script\b[^>]*>(.*?)<\/script>/is', $template_string ) ) {
-			return new Exception( 'JavaScript is not allowed in Twig templates.' );
-		}
-		
 		$loader = new Twig\Loader\ArrayLoader(
 			array(
 				'template'   => $template_string,
@@ -385,8 +373,12 @@ class SSA_Templates {
 		} catch ( Exception $e ) {
 			return $e;
 		}
-
-		return $rendered_template;
+		
+		// need to unescape the html so PHP can process it in wp_kses_post
+		// was escaped in the frontend
+		$rendered_template = html_entity_decode($rendered_template);
+		
+		return wp_kses_post($rendered_template);
 	}
 	
 	

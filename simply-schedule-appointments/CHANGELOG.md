@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.55 - 2024-09-24
+
+### Fixes
+
+- WPscan follow-up security fix
+- Fix Basic Edition new customer Information fields being undefined
+- Fix appointment schedule for blocked business hours
+
 ## SSA-VERSION-PREFIX.6.7.53 - 2024-09-17
 
 ### Fixes
