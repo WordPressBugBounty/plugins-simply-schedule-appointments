@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.57 - 2024-10-03
+
+### Fixes
+
+- Add Euro Support for Alipay
+- Cascade delete queued notifications following an appointment getting deleted.
+
 ## SSA-VERSION-PREFIX.6.7.55 - 2024-09-24
 
 ### Fixes

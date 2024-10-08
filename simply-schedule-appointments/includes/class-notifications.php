@@ -39,6 +39,7 @@ class SSA_Notifications {
 	 * @since  0.0.3
 	 */
 	public function hooks() {
+		add_action( 'ssa/appointment/after_delete', array( $this, 'cleanup_notifications_corresponding_to_appointment' ), 1000, 1 );
 		add_action( 'ssa/appointment/booked', array( $this, 'queue_booked_notifications' ), 1000, 4 );
 		add_action( 'ssa/appointment/rescheduled', array( $this, 'queue_rescheduled_notifications' ), 1000, 4 );
 		add_action( 'ssa/appointment/rescheduled', array( $this, 'cleanup_outdated_notifications'), 10, 4 );
@@ -192,6 +193,27 @@ class SSA_Notifications {
 		ssa_complete_action( $async_action['id'], $response );
 	}
 
+	/**
+	 * Remove notifications corresponding to an appointment that is being deleted
+	 * 
+	 */
+	public function cleanup_notifications_corresponding_to_appointment( $appointment_id ) {
+		$corresponding_scheduled_actions = $this->plugin->async_action_model->query(
+			array(
+				'object_id' => $appointment_id,
+				'object_type' => 'appointment',
+			)
+		);
+
+		$to_remove_action_ids = array_column( $corresponding_scheduled_actions, 'id' );
+		
+		if ( ! empty( $to_remove_action_ids ) ) {
+			$this->plugin->async_action_model->bulk_delete( array( 
+				'id' => $to_remove_action_ids
+			) );
+		}
+	}
+	
 	/**
 	 * Remove outdated actions for rescheduled appointments
 	 *

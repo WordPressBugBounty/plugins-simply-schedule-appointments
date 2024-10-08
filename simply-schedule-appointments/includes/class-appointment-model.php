@@ -1623,14 +1623,20 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$item = parent::prepare_item_for_response( $item, $recursive );
 
 		if ( $recursive >= 0 ) {
-			$item['public_edit_url'] 	= $this->get_public_edit_url( $item['id'], $item );
-			$item['public_token']    	= $this->get_id_token( $item['id'] );
-			$item['staff_ids']       	= $this->get_staff_ids( $item['id'] );
+			$item['public_edit_url'] 	  = $this->get_public_edit_url( $item['id'], $item );
+			$item['public_token']    	  = $this->get_id_token( $item['id'] );
+			$item['staff_ids']       	  = $this->get_staff_ids( $item['id'] );
 			$item['selected_resources'] = $this->get_selected_resources( $item['id'] );
-			$item['label_id']		 = $this->get_label_id( $item['id'] );
+			$item['label_id']		        = $this->get_label_id( $item['id'] );
+			$item['rescheduling_note']  = $this->get_rescheduling_note( $item['id'] );
 		}
 
 		return $item;
+	}
+
+	public function get_rescheduling_note( $id ) {
+		$meta = $this->get_metas( $id, array( 'rescheduling_note' ) );
+		return isset( $meta['rescheduling_note'] ) ? $meta['rescheduling_note'] : "";
 	}
 
 	/**
@@ -1676,9 +1682,15 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$params         = $request->get_params();
 		$appointment_id = esc_attr( $params['id'] );
 
+		if(isset($params['meta'])){
+			$metas = $params['meta'];
+		} else {
+			$metas = $params;
+		}
+
 		$meta_keys_and_values = array();
 		$excluded_keys        = array( 'id', 'context' );
-		foreach ( $params as $key => $value ) {
+		foreach ( $metas as $key => $value ) {
 			if ( in_array( $key, $excluded_keys ) ) {
 				continue;
 			}

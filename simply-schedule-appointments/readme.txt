@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.55
+Stable tag:        1.6.7.57
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,13 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.7.57 - 2024-10-03 ==
+
+= Fixes =
+
+- Add Euro Support for Alipay
+- Cascade delete queued notifications following an appointment getting deleted.
+
 == 1.6.7.55 - 2024-09-24 ==
 
 = Fixes =
@@ -296,12 +303,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Fix textarea caret not visible on Safari
 
 == 1.6.7.38 - 2024-07-23 ==
-
-= Fixes =
-
-- Admin App - Fix Edit As Customer Link
-
-== 1.6.7.36 - 2024-07-16 ==
 
 = Fixes =
 

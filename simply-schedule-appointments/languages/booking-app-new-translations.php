@@ -102,7 +102,8 @@
     'textfieldHelpText' => __( 'This note will be visible to your customer and will be sent with any notifications you have set up.', 'simply-schedule-appointments' ),
     'actions' => 
     array (
-      'cancel' => __( 'Cancel', 'simply-schedule-appointments' ),
+      'close' => __( 'Close', 'simply-schedule-appointments' ),
+      'clearAndClose' => __( 'Clear & Close', 'simply-schedule-appointments' ),
       'addNote' => __( 'Add Note', 'simply-schedule-appointments' ),
     ),
     'review' => 
