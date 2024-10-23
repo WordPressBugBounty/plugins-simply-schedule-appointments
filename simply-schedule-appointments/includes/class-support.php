@@ -71,13 +71,6 @@ class SSA_Support {
 			'param_default_value' => '1'
 		),
 		array(
-			'callback' => 'reset_settings',
-			'title' => 'Reset SSA settings',
-			'details' => 'Pass 1 as a parameter to delete all SSA setings from the database.',
-			'param' => 'ssa-reset-settings',
-			'param_default_value' => '1'
-		),
-		array(
 			'callback' => 'ssa_factory_reset',
 			'title' => 'Factory reset SSA',
 			'details' => 'Pass 1 as a parameter to delete all SSA settings from the database and truncate all SSA database tables.',
@@ -855,54 +848,6 @@ class SSA_Support {
 		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
-
-	public function reset_settings() {
-		if ( empty( $_GET['ssa-reset-settings'] ) ) {
-			return;
-		}
-
-		if ( ! current_user_can( 'ssa_manage_site_settings' ) ) {
-			return;
-		}
-		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-reset-settings' ) === false ) {
-			return;
-		}
-		
-		global $wpdb;
-		$table_prefix = $wpdb->prefix;
-
-		$options_to_delete = array(
-			"{$table_prefix}ssa_appointments_db_version",
-			"{$table_prefix}ssa_appointment_meta_db_version",
-			"{$table_prefix}ssa_appointment_types_db_version",
-			"{$table_prefix}ssa_availability_db_version",
-			"{$table_prefix}ssa_async_actions_db_version",
-			"{$table_prefix}ssa_payments_db_version",
-			"ssa_settings_json",
-			"ssa_versions",
-			"{$table_prefix}ssa_resource_appointments_db_version",
-			"{$table_prefix}ssa_resource_group_appointment_types_db_version",
-			"{$table_prefix}ssa_resources_db_version",
-			"{$table_prefix}ssa_resource_groups_db_version",
-			"{$table_prefix}ssa_resource_group_resources_db_version",
-			"{$table_prefix}ssa_appointment_type_labels_db_version",
-			"{$table_prefix}ssa_revisions_db_version",
-			"{$table_prefix}ssa_revision_meta_db_version",
-			"{$table_prefix}ssa_availability_external_db_version",
-			"{$table_prefix}ssa_staff_db_version",
-			"{$table_prefix}ssa_staff_appointments_db_version",
-			"{$table_prefix}ssa_staff_appointment_types_db_version",
-		);
-
-		foreach ($options_to_delete as $option_name) {
-			delete_option( $option_name );
-		}
-
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
-		exit;
-	}
-
 
 	/**
 	 * Deletes all ssa related options from wp_options table and truncate all ssa database tables.

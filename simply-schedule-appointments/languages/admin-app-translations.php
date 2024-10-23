@@ -880,6 +880,7 @@
         'email' => __( 'Email', 'simply-schedule-appointments' ),
         'sms' => __( 'SMS', 'simply-schedule-appointments' ),
         'sentTo' => __( 'Send to', 'simply-schedule-appointments' ),
+        'anchorText' => __( 'Select predefined email option', 'simply-schedule-appointments' ),
         'smsTo' => __( 'Send to', 'simply-schedule-appointments' ),
         'cc' => __( 'Cc', 'simply-schedule-appointments' ),
         'bcc' => __( 'Bcc', 'simply-schedule-appointments' ),
@@ -1419,6 +1420,7 @@
     'identifiable' => __( 'Unique: ', 'simply-schedule-appointments' ),
     'identifiableDesc' => __( 'Each resource is distinctive and it matters which specific resource from this group is assigned to the booking.', 'simply-schedule-appointments' ),
     'quantity' => __( 'Quantity', 'simply-schedule-appointments' ),
+    'items' => __( 'Items', 'simply-schedule-appointments' ),
     'quantityError' => __( 'Identical resources must have quantity', 'simply-schedule-appointments' ),
     'oneItem' => __( 'One item', 'simply-schedule-appointments' ),
   ),
@@ -1426,6 +1428,7 @@
   array (
     'title' => __( 'Name', 'simply-schedule-appointments' ),
     'titleError' => __( 'Appointment types must have names', 'simply-schedule-appointments' ),
+    'titleRegexValidatorError' => __( 'Appointment types title is not valid', 'simply-schedule-appointments' ),
     'empty' => __( 'There are no appointment types.', 'simply-schedule-appointments' ),
     'shortcodeCopied' => __( 'Shortcode copied to clipboard', 'simply-schedule-appointments' ),
     'bulkEditExplanation' => __( 'Changes will be applied to the following appointment types: ', 'simply-schedule-appointments' ),
@@ -1730,6 +1733,10 @@
             'private' => __( 'Private Meeting: Host required to admit each meeting attendee', 'simply-schedule-appointments' ),
             'open' => __( 'Open Meeting: anyone with the link can immediately join', 'simply-schedule-appointments' ),
           ),
+          'notice' => 
+          array (
+            'openMeeting' => __( 'Ensure "Authentication" is enabled in your Zoom settings and disable "Waiting Room" and "Passcode" for this option to work correctly.', 'simply-schedule-appointments' ),
+          ),
         ),
         'custom' => 
         array (
@@ -1965,7 +1972,7 @@
       'export' => __( 'Export', 'simply-schedule-appointments' ),
       'exportTip' => __( 'Export visible appointments', 'simply-schedule-appointments' ),
       'subscribe' => __( 'Subscribe to calendar', 'simply-schedule-appointments' ),
-      'timeLabel' => __( 'Display upcoming or past appointments', 'simply-schedule-appointments' ),
+      'timeLabel' => __( 'Appointment Range', 'simply-schedule-appointments' ),
       'typesAndLabels' => __( 'Appointment Types & Labels', 'simply-schedule-appointments' ),
       'selectAllTypes' => __( 'Select all appointment types with label', 'simply-schedule-appointments' ),
       'parentsLabel' => __( 'All types', 'simply-schedule-appointments' ),
@@ -2241,6 +2248,9 @@
       'staff_capacity_changed' => __( 'Staff Capacity Changed', 'simply-schedule-appointments' ),
       'has_max_capacity_changed' => __( 'Maximum Capacity Changed', 'simply-schedule-appointments' ),
       'reminder_sent' => __( 'Notification Sent', 'simply-schedule-appointments' ),
+      'booking_end_date_changed' => __( 'Booking End Date', 'simply-schedule-appointments' ),
+      'booking_start_date_changed' => __( 'Booking start Date', 'simply-schedule-appointments' ),
+      'mailchimp_changed' => __( 'Mailchimp', 'simply-schedule-appointments' ),
       'reminder_not_sent' => __( 'Notification Not Sent', 'simply-schedule-appointments' ),
     ),
   ),

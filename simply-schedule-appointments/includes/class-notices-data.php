@@ -335,30 +335,7 @@ class SSA_Notices_Data {
                 'not_activated_feature_any' => array(),
                 'current_user_can' => array(),
             )
-        ),
-        array(
-            'id' => 'promo-new-booking-app',
-            'name' => 'promo-new-booking-app',
-            'description' => 'Promo for releasing the new booking app to the public.',
-            'type' => array( 'announcement' ),
-            'active' => true,
-            'priority' => '20',
-            'requires' => array(
-                'current_edition_any' => array(),
-                'min_appt_count' => '',
-                'min_activated_days' => '',
-                'activation_date_after' => '',
-                'active_plugin_any' => array(),
-                'installed_feature_any' => array(),
-                'enabled_feature_any' => array(),
-                'activated_feature_any' => array(),
-                'not_installed_feature_any' => array(),
-                'not_enabled_feature_any' => array(),
-                'not_activated_feature_any' => array(),
-                'current_user_can' => array(),
-            )
-        ),
-        
+        ),   
     );
 
 

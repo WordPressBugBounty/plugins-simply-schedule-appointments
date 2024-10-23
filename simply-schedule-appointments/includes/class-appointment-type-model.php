@@ -223,6 +223,10 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 		
 		if( ! empty( $item[ 'label_id' ] ) ) {
 			$label = $this->plugin->appointment_type_label_model->get( $item[ 'label_id' ] );
+			if ( empty( $label ) ) {
+				// should never happen
+				$label = $this->plugin->appointment_type_label_model->query()[0];
+			}
 			$item[ 'label_name' ] = $label[ 'name' ];
 			$item[ 'label_color' ] = $label[ 'color' ];
 		}
