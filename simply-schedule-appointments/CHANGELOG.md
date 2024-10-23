@@ -1,5 +1,14 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.61 - 2024-10-23
+
+### Fixes
+
+- Avoid error when inserting the Google Calendar event in a revision
+- Fix select component disabled state reactivity
+- Fix team member capability affecting blackout dates
+- Fix deleting webhooks results in switching to edit mode.
+
 ## SSA-VERSION-PREFIX.6.7.57 - 2024-10-03
 
 ### Fixes

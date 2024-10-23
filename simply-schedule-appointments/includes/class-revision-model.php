@@ -467,7 +467,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			);
 
 		if ( ! empty( $event ) ) {
-			$revision_meta['event'] = $event;
+			$revision_meta['event'] = (array) $event;
 		}
 
 		// below: hints for WP.org to pick up phrases for translation
