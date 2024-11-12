@@ -1511,7 +1511,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			return $data;
 		}
 		
-		if( ! empty( $data['staff_ids'] ) || ! empty( $data['resource_group_ids'] ) ){
+		if( ( ! empty( $data['staff']['required'] ) && ! empty( $data['staff_ids'] ) ) || ! empty( $data['resource_group_ids'] ) ){
 			// teams or resources enabled on type & has_max_capacity is 0 → set capacity to CAPACITY_MAX
 			$data['capacity'] = SSA_Constants::CAPACITY_MAX;
 		}

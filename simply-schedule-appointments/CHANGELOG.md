@@ -1,5 +1,16 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.65 - 2024-11-05
+
+### Fixes
+
+- Ticket: Timeslots allowing for multiple bookings (without Capacity/Resources or other settings enabled)
+- Ticket: Resources double booked
+
+### Features and Improvements
+
+- Support booking with Gravity Wiz - GS Product Config
+
 ## SSA-VERSION-PREFIX.6.7.61 - 2024-10-23
 
 ### Fixes
