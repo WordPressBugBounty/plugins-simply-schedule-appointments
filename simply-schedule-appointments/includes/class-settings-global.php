@@ -84,6 +84,7 @@ class SSA_Settings_Global extends SSA_Settings_Schema {
 					'name' => 'timezone_string',
 					'default_value' => ( get_option( 'timezone_string', 'UTC' ) ) ? get_option( 'timezone_string', 'UTC' ) : 'UTC',
 					'validate_callback' => array( 'SSA_Validation', 'validate_string' ),
+					'before_save_function' => array( $this, 'maybe_map_timezone' ),
 				),
 
 				'country_code' => array(
@@ -246,4 +247,20 @@ class SSA_Settings_Global extends SSA_Settings_Schema {
 
 		SSA_Utils::moment_to_php_format( $args['time_format'] );
 	}
+	
+	public function maybe_map_timezone( $timezone_string ) {
+		try {
+			// check if this will throw an exception
+			new DateTimeZone( $timezone_string );
+		} catch (\Throwable $th) {
+			if(!empty(self::$timezones_map[$timezone_string])){
+				return self::$timezones_map[$timezone_string];
+			}
+		}
+		return $timezone_string;
+	}
+	
+	public static $timezones_map = array(
+		'Europe/Kyiv' => 'Europe/Kiev',
+	);
 }

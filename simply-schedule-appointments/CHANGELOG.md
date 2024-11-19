@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.67 - 2024-11-12
+
+### Fixes
+
+- "Manage License" Button goes missing after we remove the license
+- Europe/Kyiv causes a fatal error on specific PHP versions with outdated timezonedb
+
 ## SSA-VERSION-PREFIX.6.7.65 - 2024-11-05
 
 ### Fixes
