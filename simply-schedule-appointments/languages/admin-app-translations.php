@@ -544,7 +544,7 @@
       'old_booking_app' => 
       array (
         'label' => __( 'Use the old booking app', 'simply-schedule-appointments' ),
-        'help' => __( 'The old booking app will be deprecated soon, offers slower performance, and lacks new features like Booking Flows, Resources, and the ability to select Team Members. Kindly make sure you report any issues you encounter with the new booking app.', 'simply-schedule-appointments' ),
+        'help' => __( 'The old booking app has been deprecated since early 2024. It will be fully removed from the plugin on November 1st 2024, but is available until then if needed.', 'simply-schedule-appointments' ),
       ),
       'display_appointment_revisions' => 
       array (

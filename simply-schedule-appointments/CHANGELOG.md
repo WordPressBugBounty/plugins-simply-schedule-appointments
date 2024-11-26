@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.68 - 2024-11-19
+
+### Features and Improvements
+
+- Prepare for deprecating the old booking app
+
 ## SSA-VERSION-PREFIX.6.7.67 - 2024-11-12
 
 ### Fixes

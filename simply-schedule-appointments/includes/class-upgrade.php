@@ -37,6 +37,7 @@ class SSA_Upgrade {
 		'6.6.19', // Handle displaying new booking app banners
 		'6.6.21', // Remove public_edit_url from event_type_group_admin type
 		'6.7.13', // Disable old booking app if enabled with resources enabled at the same time
+		'6.7.45', // Disable old booking app for all users
 	);
 
 	/**
@@ -1279,5 +1280,19 @@ class SSA_Upgrade {
 			}
 		}
 		$this->record_version( '6.7.13' );
+	}
+	
+	
+	/**
+	 * Disable old booking app for all users
+	 * 
+	 */
+	public function migrate_to_version_6_7_45() {
+		$developer_settings = $this->plugin->developer_settings->get();
+		if ( !empty( $developer_settings['old_booking_app'] ) ) {
+			$developer_settings['old_booking_app'] = false;
+			$this->plugin->developer_settings->update( $developer_settings );
+		}
+		$this->record_version( '6.7.45' );
 	}
 }
