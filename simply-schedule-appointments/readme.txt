@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.68
+Stable tag:        1.6.7.70
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.7.70 - 2024-11-26 ==
+
+= Fixes =
+
+- Bug fix: prevent BreakDance plugin from loading home page on the edit URL
+
 == 1.6.7.68 - 2024-11-19 ==
 
 = Features and Improvements =
@@ -298,13 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 - Fixes around cancellation and rescheduling notes
 - Prevent assigning Team Member outside of availability
-
-== 1.6.7.45 - 2024-08-27 ==
-
-= Fixes =
-
-- SMS reminder revisions marking successful SMS delivery as a failure
-- Prevent JavaScript in the Twig templates
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

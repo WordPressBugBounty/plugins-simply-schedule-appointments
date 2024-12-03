@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.70 - 2024-11-26
+
+### Fixes
+
+- Bug fix: prevent BreakDance plugin from loading home page on the edit URL
+
 ## SSA-VERSION-PREFIX.6.7.68 - 2024-11-19
 
 ### Features and Improvements

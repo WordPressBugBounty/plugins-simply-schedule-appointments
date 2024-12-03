@@ -66,6 +66,7 @@ class SSA_Shortcodes {
 		add_action( 'wp_enqueue_scripts', array( $this, 'disable_third_party_styles' ), 9999999 );
 
 		add_action( 'init', array( $this, 'custom_rewrite_basic' ) );
+				add_action('init', array( $this, 'prevent_breakdance_conflict_with_appointment_edit_url' ) );
 		add_action( 'query_vars', array( $this, 'register_query_var' ) );
 		add_filter( 'template_include', array( $this, 'hijack_booking_page_template' ) );
 		add_filter( 'template_include', array( $this, 'hijack_embedded_page' ), 9999999 );
@@ -78,6 +79,20 @@ class SSA_Shortcodes {
 
 	}
 
+	/**
+	 * Withou this, BreakDance would force the appointment edit URL to load the home page.
+	 * 
+	 */
+	public function prevent_breakdance_conflict_with_appointment_edit_url(){
+		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) {
+			return;
+		}
+
+		if (has_filter('template_include', 'Breakdance\ActionsFilters\template_include')) {
+			remove_filter('template_include', 'Breakdance\ActionsFilters\template_include', 1000000);
+		}
+	}
+	
 	public function prevent_thrive_themes_conflict_with_appointment_edit_url() {
 		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) {
 			return;
