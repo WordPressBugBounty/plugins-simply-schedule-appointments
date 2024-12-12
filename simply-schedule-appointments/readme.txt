@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.70
+Stable tag:        1.6.7.72
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,13 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.7.72 - 2024-12-03 ==
+
+= Fixes =
+
+- Make SSA aware of what payment methods are enabled in Stripe
+- Deleted appointment types not being fetched
+
 == 1.6.7.70 - 2024-11-26 ==
 
 = Fixes =
@@ -297,13 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 - Space before and after the Subscribe to Calendar link when added to a Doc/Notepad
 - Changing team member settings in Appointment type, bumps the Capacity to 100,000 🐞
-
-== 1.6.7.50 - 2024-09-10 ==
-
-= Fixes =
-
-- Fixes around cancellation and rescheduling notes
-- Prevent assigning Team Member outside of availability
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

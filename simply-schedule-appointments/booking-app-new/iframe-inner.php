@@ -4,7 +4,6 @@ $ssa = ssa();
 $ssa_settings = $ssa->settings->get();
 $ssa_settings = $ssa->settings->remove_unauthorized_settings_for_current_user( $ssa_settings, true, true );
 $ssa_appointment_types = $ssa->appointment_type_model->query( array (
-    'status' => 'publish', 
     'fetch' => array(
       'has_sms' => true,
     ),

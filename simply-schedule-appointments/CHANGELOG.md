@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.72 - 2024-12-03
+
+### Fixes
+
+- Make SSA aware of what payment methods are enabled in Stripe
+- Deleted appointment types not being fetched
+
 ## SSA-VERSION-PREFIX.6.7.70 - 2024-11-26
 
 ### Fixes

@@ -847,6 +847,7 @@
         'webhookSecret' => __( 'Webhook Signing Secret', 'simply-schedule-appointments' ),
         'webhookSecretHelpPrefix' => __( 'Get your signing secret from', 'simply-schedule-appointments' ),
         'paymentMethods' => __( 'Payment Methods', 'simply-schedule-appointments' ),
+        'paymentMethodsHelp' => __( 'Make sure to enable the selected payment methods in your Stripe default payment method configuration.', 'simply-schedule-appointments' ),
         'testMode' => __( 'Enable test mode', 'simply-schedule-appointments' ),
         'testModeHelp' => __( 'Place the payment gateway in test mode using test API keys.', 'simply-schedule-appointments' ),
         'testPublishableKey' => __( 'Test publishable key', 'simply-schedule-appointments' ),
