@@ -73,6 +73,8 @@ class SSA_Bootstrap {
 				$desired_protocol = 'https';
 			} elseif ( !empty( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) {
 				$desired_protocol = 'https';
+			} elseif ( !empty( $_SERVER['REQUEST_SCHEME'] ) ) {
+				$desired_protocol = strtolower( $_SERVER['REQUEST_SCHEME'] );
 			} elseif ( !empty( $_SERVER['protocol'] ) ) {
 				$desired_protocol = strtolower( substr( $_SERVER["SERVER_PROTOCOL"], 0, 5 ) ) == 'https' ? 'https' : 'http';
 			}

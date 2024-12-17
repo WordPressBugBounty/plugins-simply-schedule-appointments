@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.74 - 2024-12-10
+
+### Fixes
+
+- Fix refund policy input validation
+- Take REQUEST_SCHEME into consideration to detect SSL
+- Resource booking not working as expected
+
 ## SSA-VERSION-PREFIX.6.7.72 - 2024-12-03
 
 ### Fixes

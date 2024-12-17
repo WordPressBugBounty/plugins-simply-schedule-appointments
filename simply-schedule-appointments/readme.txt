@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.72
+Stable tag:        1.6.7.74
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,14 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.7.74 - 2024-12-10 ==
+
+= Fixes =
+
+- Fix refund policy input validation
+- Take REQUEST_SCHEME into consideration to detect SSL
+- Resource booking not working as expected
+
 == 1.6.7.72 - 2024-12-03 ==
 
 = Fixes =
@@ -297,13 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - WPscan follow-up security fix
 - Fix Basic Edition new customer Information fields being undefined
 - Fix appointment schedule for blocked business hours
-
-== 1.6.7.53 - 2024-09-17 ==
-
-= Fixes =
-
-- Space before and after the Subscribe to Calendar link when added to a Doc/Notepad
-- Changing team member settings in Appointment type, bumps the Capacity to 100,000 🐞
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
