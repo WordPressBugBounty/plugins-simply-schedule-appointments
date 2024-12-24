@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.74
+Stable tag:        1.6.7.76
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -13,7 +13,7 @@ Unlimited appointments, booking calendars, and notifications. Powerful appointme
 
 == Description ==
 
-**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 40,000+ businesses, with a 5-star review average.
+**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 50,000+ businesses, with a 5-star review average.
 
 The Simply Schedule Appointments booking calendars are easy and fast to set up. And enjoyable for your customers and clients to book and schedule appointments. **You can set up the appointment scheduling calendars to take your first booking in less than 5 minutes!**
 
