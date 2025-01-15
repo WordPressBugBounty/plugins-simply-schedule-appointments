@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.7.78 - 2024-12-24
+
+### Fixes
+
+- PHP notices around loading text domain with WordPress 6.7
+
 ## SSA-VERSION-PREFIX.6.7.74 - 2024-12-10
 
 ### Fixes

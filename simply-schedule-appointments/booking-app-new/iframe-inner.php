@@ -170,6 +170,8 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     <link rel="alternate" type="text/xml+oembed" href="<?php echo home_url( 'wp-json/oembed/1.0/embed?url=http%3A%2F%2Fssa.dev%2Fbooking-test%2F&#038;format=xml' ); ?>" />
 
     <?php $booking_css_url = $ssa->templates->locate_template_url( 'booking-app/custom.css' ); ?>
+    <?php $booking_css_path = $ssa->templates->locate_template('booking-app/custom.css'); ?>
+    <?php $booking_css_version = file_exists($booking_css_path) ? filemtime($booking_css_path) : '1.0'; ?>
     <?php /* Apply styles from settings to view */ ?>
     <?php
       $ssa_styles = $ssa->styles_settings->get();
@@ -390,7 +392,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       <?php echo strip_tags( $ssa_styles['css'] ); ?>
     </style>
 
-    <link rel='stylesheet' id='ssa-booking-custom-css'  href='<?php echo $booking_css_url; ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-booking-custom-css' href='<?php echo esc_url($booking_css_url . '?v=' . $booking_css_version); ?>' type='text/css' media='all' />
     <?php
 
     // BEGIN: Deprecated

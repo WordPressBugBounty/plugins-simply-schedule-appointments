@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.76
+Stable tag:        1.6.7.78
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.7.78 - 2024-12-24 ==
+
+= Fixes =
+
+- PHP notices around loading text domain with WordPress 6.7
+
 == 1.6.7.74 - 2024-12-10 ==
 
 = Fixes =
@@ -299,12 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Cascade delete queued notifications following an appointment getting deleted.
 
 == 1.6.7.55 - 2024-09-24 ==
-
-= Fixes =
-
-- WPscan follow-up security fix
-- Fix Basic Edition new customer Information fields being undefined
-- Fix appointment schedule for blocked business hours
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
