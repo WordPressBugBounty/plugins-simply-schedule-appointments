@@ -226,37 +226,34 @@ class SSA_Elementor_Booking_Widget extends \Elementor\Widget_Base {
 		$this->end_controls_section();
 
 		/* Appointment type view */
-		if ( ssa_is_new_booking_app()){
-			$this->start_controls_section(
-				'section_ssa_booking_type_view',
-				[
-					'label' => __( 'Appointment Types View', 'simply-schedule-appointments' ),
-				]
-			);
+		$this->start_controls_section(
+			'section_ssa_booking_type_view',
+			[
+				'label' => __( 'Appointment Types View', 'simply-schedule-appointments' ),
+			]
+		);
 
-			$filter_types_options = [
-				'cardList' => __('List', 'simply-schedule-appointments'),
-				'cardGrid' => __('Grid', 'simply-schedule-appointments'),
-				'cardColumns' => __('Two Columns', 'simply-schedule-appointments'),
-			];
-	
-			$default_filter_type = key($filter_types_options);
+		$filter_types_options = [
+			'cardList' => __('List', 'simply-schedule-appointments'),
+			'cardGrid' => __('Grid', 'simply-schedule-appointments'),
+			'cardColumns' => __('Two Columns', 'simply-schedule-appointments'),
+		];
 
-			$this->add_control(
-				'appointment_types_view',
-				[
-					'label' => __( 'Appointments types view', 'simply-schedule-appointments' ),
-					'type' => \Elementor\Controls_Manager::SELECT,
-					'default' => $default_filter_type,
-					'options' => $filter_types_options,
-					'label_block' => true,
-					'classes' => 'ssa-booking-block',
-				]
-			);
-			
-			$this->end_controls_section();
+		$default_filter_type = key($filter_types_options);
 
-		}
+		$this->add_control(
+			'appointment_types_view',
+			[
+				'label' => __( 'Appointments types view', 'simply-schedule-appointments' ),
+				'type' => \Elementor\Controls_Manager::SELECT,
+				'default' => $default_filter_type,
+				'options' => $filter_types_options,
+				'label_block' => true,
+				'classes' => 'ssa-booking-block',
+			]
+		);
+		
+		$this->end_controls_section();
 
 		/* Booking Flow UI*/	
 		if ( ssa_should_render_booking_flow()) {
@@ -630,12 +627,9 @@ class SSA_Elementor_Booking_Widget extends \Elementor\Widget_Base {
 			$attrs['label'] = $settings['label'];
 		}
 
-		if ( ssa_is_new_booking_app() ) {
+		if ( $settings['appointment_types_view'] && $settings['appointment_types_view'] !== '' ) {
 
-			if ( $settings['appointment_types_view'] && $settings['appointment_types_view'] !== '' ) {
-
-				$attrs['appointment_types_view'] = $settings['appointment_types_view'];
-			}
+			$attrs['appointment_types_view'] = $settings['appointment_types_view'];
 		}
 
 		if ( ssa_should_render_booking_flow() ) {

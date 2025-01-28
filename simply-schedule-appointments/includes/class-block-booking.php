@@ -41,10 +41,6 @@ class SSA_Block_Booking {
 	public function hooks() {
 		add_action( 'init', array( $this, 'register_booking_block' ) );
 	}
-	
-	public function should_render_appointment_type_views() {
-		return ssa_is_new_booking_app();
-	}
 
 	public function register_booking_block() {
 		if ( function_exists( 'register_block_type' ) ) {
@@ -158,23 +154,21 @@ class SSA_Block_Booking {
 			/* End booking flow */
 
 			/* Appointment types view */
-			if ( $this->should_render_appointment_type_views() ) {
-				$appointment_types_views_options = array(
-					array(
-						'value' => 'cardList',
-						'label' => __('List', 'simply-schedule-appointments'),
-					),
-					array(
-						'value' => 'cardGrid',
-						'label' => __('Grid', 'simply-schedule-appointments'),
-					),
-					array(
-						'value' => 'cardColumns',
-						'label' => __('Two Columns', 'simply-schedule-appointments'),
-					),
-				);
-				wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypesViewOptions', $appointment_types_views_options );
-			}
+			$appointment_types_views_options = array(
+				array(
+					'value' => 'cardList',
+					'label' => __('List', 'simply-schedule-appointments'),
+				),
+				array(
+					'value' => 'cardGrid',
+					'label' => __('Grid', 'simply-schedule-appointments'),
+				),
+				array(
+					'value' => 'cardColumns',
+					'label' => __('Two Columns', 'simply-schedule-appointments'),
+				),
+			);
+			wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypesViewOptions', $appointment_types_views_options );
 			/* End appointment types view */
 
 			register_block_type( 'ssa/booking', array(
@@ -338,12 +332,9 @@ class SSA_Block_Booking {
 		}
 
 		/* Appointment types view */
-		if ( $this->should_render_appointment_type_views() ) {
+		if ( $settings['appointment_types_view'] && $settings['appointment_types_view'] !== '' ) {
 
-			if ( $settings['appointment_types_view'] && $settings['appointment_types_view'] !== '' ) {
-
-				$attrs['appointment_types_view'] = $settings['appointment_types_view'];
-			}
+			$attrs['appointment_types_view'] = $settings['appointment_types_view'];
 		}
 
 		/* Booking Flow */

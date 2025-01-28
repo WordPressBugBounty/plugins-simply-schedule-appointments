@@ -211,9 +211,9 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			$item["booking_flow_settings"] = $default_booking_flow_settings;
 		}
 
-		// If Edition is Downgraded to Basic or Plus (or using old booking app)
+		// If Edition is Downgraded to Basic or Plus
 		$developer_settings = $this->plugin->developer_settings->get();
-		if ( !empty( $developer_settings['old_booking_app'] ) ||  !$this->plugin->settings_installed->is_installed( 'booking_flows' ) ) {
+		if ( !$this->plugin->settings_installed->is_installed( 'booking_flows' ) ) {
 			$item["booking_flow_settings"] = $default_booking_flow_settings;
 			// If Booking Layout is Not Week or Month
 			if ($item['booking_layout'] !== 'week' && $item['booking_layout'] !== 'month' ) {
@@ -1205,6 +1205,10 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 				'staff_ids_any_required' => array(),
 				'resources_required' => array(),
 			), $params['query_args'] );
+		}
+
+		if( isset( $params['excluded_appointment_ids'] ) ) {
+			$args['excluded_appointment_ids'] = is_array( $params['excluded_appointment_ids'] ) ? $params['excluded_appointment_ids'] : array( $params['excluded_appointment_ids'] );
 		}
 
 		if( isset( $args['staff_ids_all_required'] ) ) {

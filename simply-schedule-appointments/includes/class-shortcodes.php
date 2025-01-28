@@ -206,11 +206,7 @@ class SSA_Shortcodes {
 			return $template;
 		}
 
-		$developer_settings = ssa()->developer_settings->get();
-		if( empty( $developer_settings['old_booking_app'] ) ){
-			return $this->plugin->dir( 'booking-app-new/iframe-inner.php' );}
-		else {
-			return $this->plugin->dir( 'booking-app/iframe-inner.php' );}
+		return $this->plugin->dir( 'booking-app-new/iframe-inner.php' );
 	}
 
 	public function hijack_booking_page_template( $template ) {
@@ -245,17 +241,20 @@ class SSA_Shortcodes {
 		add_filter( 'show_admin_bar', '__return_false' );
 		global $ssa_current_appointment_id;
 		$ssa_current_appointment_id = $appointment_id;
-		$developer_settings = ssa()->developer_settings->get();
-        if( empty( $developer_settings['old_booking_app'] ) ){
-            return $this->plugin->dir( 'booking-app-new/page-appointment-edit.php' );
-        }else{
-            return $this->plugin->dir( 'booking-app/page-appointment-edit.php' );
-        }
+		return $this->plugin->dir( 'booking-app-new/page-appointment-edit.php' );
 	}
 
 	public function hijack_appointment_edit_url( $template ) {
 		// If Appointment Action is not edit
 		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) {
+			return $template;
+		}
+
+		/**
+		 * Prevent hijacking the PAGE if this is a Gravity Forms custom confirmation
+		 * The URL is already hijacked by now
+		 */
+		if( ! empty( $_GET['ssa_gf_custom_confirmation'] ) ) {
 			return $template;
 		}
 
@@ -296,12 +295,8 @@ class SSA_Shortcodes {
 		add_filter( 'show_admin_bar', '__return_false' );
 		global $ssa_current_appointment_id;
 		$ssa_current_appointment_id = $appointment_id;
-		$developer_settings = ssa()->developer_settings->get();
-        if( empty( $developer_settings['old_booking_app'] ) ){
-            return $this->plugin->dir( 'booking-app-new/page-appointment-edit.php' );
-        }else{
-            return $this->plugin->dir( 'booking-app/page-appointment-edit.php' );
-        }
+
+		return $this->plugin->dir( 'booking-app-new/page-appointment-edit.php' );
 	}
 
 	public function body_class( $classes ) {
@@ -312,13 +307,6 @@ class SSA_Shortcodes {
 
 
 	public function register_scripts() {
-		wp_register_script( 'ssa-booking-manifest', $this->plugin->url( 'booking-app/dist/static/js/manifest.js' ), array(), Simply_Schedule_Appointments::VERSION, true );
-		wp_register_script( 'ssa-booking-vendor', $this->plugin->url( 'booking-app/dist/static/js/vendor.js' ), array( 'ssa-booking-manifest' ), Simply_Schedule_Appointments::VERSION, true );
-		wp_register_script( 'ssa-booking-app', $this->plugin->url( 'booking-app/dist/static/js/app.js' ), array( 'ssa-booking-vendor' ), Simply_Schedule_Appointments::VERSION, true );
-		$this->custom_script_handle_whitelist[] = 'ssa-booking-manifest';
-		$this->custom_script_handle_whitelist[] = 'ssa-booking-vendor';
-		$this->custom_script_handle_whitelist[] = 'ssa-booking-app';
-
 		wp_register_script( 'ssa-iframe-inner', $this->plugin->url( 'assets/js/iframe-inner.js' ), array(), Simply_Schedule_Appointments::VERSION, true );
 		wp_register_script( 'ssa-iframe-outer', $this->plugin->url( 'assets/js/iframe-outer.js' ), array(), Simply_Schedule_Appointments::VERSION, true );
 		wp_register_script( 'ssa-tracking', $this->plugin->url( 'assets/js/ssa-tracking.js' ), array(), Simply_Schedule_Appointments::VERSION, true );
@@ -949,40 +937,9 @@ class SSA_Shortcodes {
 	 * @return WP_REST_Response
 	 */
 	public function get_embed_inner_output( WP_REST_Request $request ) {
-		$params = $request->get_params();
-
 		header( 'Content-Type: text/html' );
-
-		$developer_settings      = ssa()->developer_settings->get();
-		$include_new_booking_app = false;
-
-		// unless old_booking_app feature is enabled, we include the new booking app by default.
-		if ( empty( $developer_settings['old_booking_app'] ) ) {
-			$include_new_booking_app = true;
-		}
-
-		// If the setting is not enabled, BUT "SSA_BOOKING_APP_NEW" constant is set, we need to include the new booking app.
-		if ( defined( 'SSA_BOOKING_APP_NEW' ) && SSA_BOOKING_APP_NEW ) {
-			$include_new_booking_app = true;
-		}
-
-		// If 'version' parameter is set to 1, enforce the old booking app.
-		if ( isset( $params['version'] ) && '1' === $params['version'] ) {
-			$include_new_booking_app = false;
-		}
-
-		// If 'version' parameter is set to 2, enforce the new booking app.
-		if ( isset( $params['version'] ) && '2' === $params['version'] ) {
-			$include_new_booking_app = true;
-		}
-
-		// Include new booking app instead of the old one UNLESS the old_booking_app feature is enabled.
-		if ( $include_new_booking_app ) {
-			include $this->plugin->dir( 'booking-app-new/iframe-inner.php' );
-		} else {
-			include $this->plugin->dir( 'booking-app/iframe-inner.php' );
-		}
-
+		// Include new booking app always
+		include $this->plugin->dir( 'booking-app-new/iframe-inner.php' );
 		exit;
 	}
 

@@ -933,13 +933,8 @@ function ssa_get_stack_trace() {
 	return $trace;
 }
 
-function ssa_is_new_booking_app() {
-	$developer_settings = ssa()->developer_settings->get();
-	return ! empty( $developer_settings ) && empty( $developer_settings['old_booking_app'] );
-}
-
 function ssa_should_render_booking_flow() {
-	return ssa()->settings_installed->is_installed( 'booking_flows' ) && ssa_is_new_booking_app() ? 1 : 0;
+	return ssa()->settings_installed->is_installed( 'booking_flows' ) ? 1 : 0;
 }
 
 /**

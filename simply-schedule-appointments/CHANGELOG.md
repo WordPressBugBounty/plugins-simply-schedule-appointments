@@ -1,5 +1,14 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.1 - 2025-01-15
+
+### Fixes
+
+- Blackout dates update date selection behavior for staff
+- Support zoomed in booking view on mobile
+- Fix gravity form redirect issue with ssa
+- Fully drop the old booking app
+
 ## SSA-VERSION-PREFIX.6.7.78 - 2024-12-24
 
 ### Fixes

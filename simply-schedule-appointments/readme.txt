@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.7.78
+Stable tag:        1.6.8.1
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,15 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.1 - 2025-01-15 ==
+
+= Fixes =
+
+- Blackout dates update date selection behavior for staff
+- Support zoomed in booking view on mobile
+- Fix gravity form redirect issue with ssa
+- Fully drop the old booking app
+
 == 1.6.7.78 - 2024-12-24 ==
 
 = Fixes =
@@ -296,15 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Fix select component disabled state reactivity
 - Fix team member capability affecting blackout dates
 - Fix deleting webhooks results in switching to edit mode.
-
-== 1.6.7.57 - 2024-10-03 ==
-
-= Fixes =
-
-- Add Euro Support for Alipay
-- Cascade delete queued notifications following an appointment getting deleted.
-
-== 1.6.7.55 - 2024-09-24 ==
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

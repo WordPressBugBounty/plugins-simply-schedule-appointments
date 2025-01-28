@@ -541,11 +541,6 @@
         'help' => __( 'Connect your Google Calendar without creating your own Google Cloud Platform project. Requires an active plugin license.', 'simply-schedule-appointments' ),
         'warning' => __( 'This is only available when SSA is not connected to Google Calendar. After toggling this setting, you will need to reconnect your main Google Calendar, and the team member calendars.', 'simply-schedule-appointments' ),
       ),
-      'old_booking_app' => 
-      array (
-        'label' => __( 'Use the old booking app', 'simply-schedule-appointments' ),
-        'help' => __( 'The old booking app has been deprecated since early 2024. It will be fully removed from the plugin on November 1st 2024, but is available until then if needed.', 'simply-schedule-appointments' ),
-      ),
       'display_appointment_revisions' => 
       array (
         'label' => __( 'Appointments Revisions', 'simply-schedule-appointments' ),

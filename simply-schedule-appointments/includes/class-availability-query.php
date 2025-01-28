@@ -68,6 +68,8 @@ class SSA_Availability_Query {
 		'google_calendar' => true,
 		'staff' => true,
 		'resources' => true,
+
+		'excluded_appointment_ids' => array(),
 	);
 
 
@@ -211,10 +213,45 @@ class SSA_Availability_Query {
 			}
 		}
 
+		if ( ! empty( $args['excluded_appointment_ids'] ) ) {
+			$excluded_appointments_schedule = $this->get_excluded_appointments_schedule( $this->appointment_type, $this->period, $args );
+
+			if ( null !== $excluded_appointments_schedule ) {
+				$this->schedule = $this->schedule->merge_max( $excluded_appointments_schedule );
+			}
+		}
+		
+
 		$this->schedule = $this->schedule->subrange( $query_period ); // cut off the edges
 		$this->period = $query_period;
 
 		return $this->schedule;
+	}
+
+
+	public function get_excluded_appointments_schedule(SSA_Appointment_Type_Object $appointment_type, Period $query_period, $args) {
+		if ( empty( $args['excluded_appointment_ids'] ) ) {
+			return;
+		}
+
+		$query_period = SSA_Utils::get_query_period( $query_period );
+    $schedule = new SSA_Availability_Schedule();
+
+		foreach ( $args['excluded_appointment_ids'] as $appointment_id ) {
+			$appointment = new SSA_Appointment_Object( $appointment_id );
+			$period      = $appointment->get_appointment_period();
+
+			if (!$query_period->overlaps($period)) {
+					continue;
+			}
+
+			$schedule = $schedule->pushmerge( SSA_Availability_Block_Factory::available_for_period( $period, array(
+				'capacity_available' => 1,
+				'buffer_available' => SSA_Constants::CAPACITY_MAX
+			) ) );
+    }
+
+    return $schedule;
 	}
 
 	public function why_not_bookable() {
