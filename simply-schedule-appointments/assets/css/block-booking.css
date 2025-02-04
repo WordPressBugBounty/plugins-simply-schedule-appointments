@@ -11,47 +11,22 @@
 	z-index: 2;
 }
 
-.ssa-toggle-input-container {
-	display: flex;
-	align-items: center;
-}
-
-.ssa-toggle-input-container .components-flex{
-	display: flex !important;
-	flex-direction: row-reverse !important;
-	align-self: flex-end;
-}
-
-.ssa-toggle-input-container label {
-	flex: none !important;
-}
-
+.ssa-toggle-input-container,
 .ssa-checkboxes-input-container {
 	display: flex;
 }
 
+.ssa-toggle-input-container .components-base-control,
 .ssa-checkboxes-input-container .components-base-control {
 	margin-bottom: calc(8px);
 }
 
-.ssa-toggle-input-container .components-base-control {
-	margin-bottom: calc(8px);
-}
-
+.ssa-toggle-input-container  [type="button"].ssa-block-booking-uncheck-all,
 .ssa-checkboxes-input-container [type="button"].ssa-block-booking-uncheck-all {
 	box-shadow: none;
 	padding: 4px 9px;
 	margin: 5px 0 auto auto;
 	height: 100%;
-
-}
-
-.ssa-toggle-input-container [type="button"].ssa-block-booking-uncheck-all {
-	box-shadow: none;
-	padding: 4px 9px;
-	margin: 0 0 auto auto;
-	height: 100%;
-
 }
 
 .ssa_first_available_control_wrapper {

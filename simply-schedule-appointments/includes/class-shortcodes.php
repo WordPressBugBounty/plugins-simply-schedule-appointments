@@ -48,6 +48,7 @@ class SSA_Shortcodes {
 	public function hooks() {
 		add_shortcode( 'ssa_booking', array( $this, 'ssa_booking' ) );
 		add_shortcode( 'tec_ssa_booking', array( $this, 'tec_ssa_booking' ) );
+		add_shortcode( 'mepr_ssa_booking', array( $this, 'mepr_ssa_booking' ) );
 		add_shortcode( 'ssa_past_appointments', array( $this, 'ssa_past_appointments' ) );
 		add_shortcode( 'ssa_upcoming_appointments', array( $this, 'ssa_upcoming_appointments' ) );
 		add_shortcode( 'ssa_admin_upcoming_appointments', array( $this, 'ssa_admin_upcoming_appointments' ) );
@@ -407,6 +408,9 @@ class SSA_Shortcodes {
 			'booking_title'           => urlencode( get_the_title() ),
 			'_wpnonce'                => wp_create_nonce( 'wp_rest' ),
 			'redirect_post_id'        => '',
+
+			// MemberPress Integration
+			'mepr_membership_id' 			=> ''
 		);
 	}
 
@@ -496,6 +500,14 @@ class SSA_Shortcodes {
 		if( $stripe_payment ){
 			$_GET['stripe_payment'] = 0;
 			return $this->ssa_confirmation();
+		}
+
+		// Override atts types/type/label if mepr_membership_id is set
+		if( ! empty( $atts['mepr_membership_id'] ) ) {
+			$atts = $this->convert_mepr_membership_id_to_appt_types_ids( $atts );
+			if ( ! empty( $atts['error_message'] ) ) {
+				return $atts['error_message'];
+			}
 		}
 
 		// First validate atts['types'] if set
@@ -907,6 +919,10 @@ class SSA_Shortcodes {
 			$args['type'] = esc_attr( $params['appointment_type'] );
 		}
 
+		if ( ! empty( $params['mepr_membership_id'] ) ) {
+			$args['mepr_membership_id'] = esc_attr( $params['mepr_membership_id'] );
+		}
+
 		if ( ! empty( $params['accent_color'] ) ) {
 			$args['accent_color'] = ltrim( esc_attr( $params['accent_color'] ), '#' );
 		}
@@ -1038,6 +1054,135 @@ class SSA_Shortcodes {
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * Override atts types/type/label if mepr_membership_id is set
+	 * Handle any issue or error.
+	 *
+	 * @param array $atts
+	 * @return array
+	 */
+	public function convert_mepr_membership_id_to_appt_types_ids( $atts ) {
+
+		if ( empty( $atts['mepr_membership_id'] ) || empty( sanitize_text_field( esc_attr( $atts['mepr_membership_id'] ) ) ) ) {
+			return $atts;
+		}
+
+		$membership_id = sanitize_text_field( esc_attr( $atts['mepr_membership_id'] ) );
+		$is_admin      = current_user_can( 'ssa_manage_site_settings' );
+		$error_message = '';
+		
+		// MemberPress is not installed or active
+		if ( ! class_exists( 'SSA_Memberpress') || ! $this->plugin->memberpress->is_ssa_mepr_integration_active() ) {
+			$error_message .= '<h3 style="text-align: center">' . __('Sorry, no appointment types available, please check back later.', 'simply-schedule-appointments') . '</h3>';
+			if ( $is_admin ) {
+				$error_message .= '<code>' . __('The MemberPress plugin is not available or not activated. Please ensure that the plugin is installed and activated.', 'simply-schedule-appointments') . '</code>';
+				$error_message .= '<code>' . __('(this message is only viewable to site administrators)', 'simply-schedule-appointments') . '</code>';
+			}
+			$atts['error_message'] = $error_message;
+			return $atts;
+		}
+
+		// Invalid input membership_id
+		if ( is_numeric( $membership_id ) ) {
+			$membership_id = (int) $membership_id;
+		} else {
+			$error_message .= '<h3 style="text-align: center">' . __('Sorry, no appointment types available, please check back later.', 'simply-schedule-appointments') . '</h3>';
+			if ( $is_admin ) {
+				$error_message .= '<code>' . __('The membership ID provided is not valid.', 'simply-schedule-appointments') . '</code>';
+				$error_message .= '<code>' . __('(this message is only viewable to site administrators)', 'simply-schedule-appointments') . '</code>';
+			}
+			$atts['error_message'] = $error_message;
+			return $atts;
+		}
+
+		$current_user = wp_get_current_user();
+
+		// We don't have a logged in user
+		if ( empty( $current_user ) || empty( $current_user->ID ) ) {
+			$must_login_err_msg = apply_filters( 'ssa/mepr/shortcode/must_login_msg', __( 'You must be logged in to schedule an appointment. Please log in or register.', 'simply-schedule-appointments' ) );
+			$error_message .= '<h3 class="ssa_mepr_shortcode_msg ssa_mepr_shortcode__must_login_msg">' . $must_login_err_msg . '</h3>';
+			$atts['error_message'] = $error_message;
+			return $atts;
+		}
+
+		$user = new SSA_Mepr_User( $current_user->ID );
+		$appointment_type_ids = $user->get_bookable_types_for_membership( $membership_id );
+
+		if ( empty( $appointment_type_ids ) ) {
+			$error_message .= '<h3 style="text-align: center">' . __('Sorry, no appointment types available, please check back later.', 'simply-schedule-appointments') . '</h3>';
+			if ( $is_admin ) {
+				$error_message .= '<code>' . __('The provided membership ID does not have any associated appointment types. Please ensure that the membership ID is correct and associated with valid appointment types.', 'simply-schedule-appointments') . '</code>';
+				$error_message .= '<code>' . __('(this message is only viewable to site administrators)', 'simply-schedule-appointments') . '</code>';
+			}
+			$atts['error_message'] = $error_message;
+			return $atts;
+		}
+
+		if ( empty( $atts['types'] ) && empty( $atts['type'] ) ) {
+			$atts['types'] = implode( ',', $appointment_type_ids );
+		}
+
+		return $atts;
+		
+	}
+
+	/**
+	 * MemberPress Integration
+	 * The SSA - mepr shortcode wrapper [mepr_ssa_booking]
+	 *
+	 * @return string
+	 */
+	public function mepr_ssa_booking() {
+
+		$is_admin = current_user_can( 'ssa_manage_site_settings' );
+		$error_message = '';
+
+		if (  ! class_exists( 'SSA_Memberpress') || ! $this->plugin->memberpress->is_ssa_mepr_integration_active() ) {
+			$error_message .= '<h3 style="text-align: center">' . __('Sorry, no appointment types available, please check back later.', 'simply-schedule-appointments') . '</h3>';
+			if ( $is_admin ) {
+				$error_message .= '<code>' . __('The MemberPress plugin is not available or not activated. Please ensure that the plugin is installed and activated.', 'simply-schedule-appointments') . '</code>';
+				$error_message .= '<code>' . __('(this message is only viewable to site administrators)', 'simply-schedule-appointments') . '</code>';
+			}
+			return $error_message;
+		}
+
+		$current_user = wp_get_current_user();
+
+		// We don't have a logged in user
+		if ( empty( $current_user ) || empty( $current_user->ID ) ) {
+			$must_login_err_msg = apply_filters( 'ssa/mepr/shortcode/must_login_msg', __( 'You must be logged in to schedule an appointment. Please log in or register.', 'simply-schedule-appointments' ) );
+			return '<h3 class="ssa_mepr_shortcode_msg ssa_mepr_shortcode__must_login_msg">' . $must_login_err_msg . '</h3>';
+		}
+
+		$user = new SSA_Mepr_User( $current_user->ID );
+		$bookable_memberships = $user->get_bookable_memberships();
+
+		if ( empty( $bookable_memberships ) ) {
+			$no_bookable_err_msg = apply_filters( 'ssa/mepr/shortcode/no_bookable_err_msg', __( 'You do not have any memberships that allow booking.', 'simply-schedule-appointments' ) );
+			return '<h3 class="ssa_mepr_shortcode_msg ssa_mepr_shortcode__no_bookable_msg">' . $no_bookable_err_msg . '</h3>';
+		}
+
+		$output = '';
+		if ( count( $bookable_memberships ) > 1 ) {
+			// Let add a title in this case so users can tell which iframe for which 
+			$booking_title = apply_filters( 'ssa/mepr/shortcode/booking_title', __('Booking for %s Membership', 'simply-schedule-appointments' ) );
+			foreach ($bookable_memberships as $membership) {
+        $output .= '<h3 class="ssa_mepr_shortcode_msg ssa_mepr_shortcode__booking_title" >' . sprintf( $booking_title, $membership->get_title() ) . '</h3>';
+        $atts = array(
+					'mepr_membership_id' => $membership->get_product_id()
+				);
+				$output .= $this->ssa_booking( $atts );
+    	}
+		} elseif ( count( $bookable_memberships ) === 1 ) {
+			$atts = array(
+				'mepr_membership_id' => $bookable_memberships[0]->get_product_id()
+			);
+			$output .= $this->ssa_booking( $atts );
+		}
+
+		return $output;
 	}
 
 }

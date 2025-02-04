@@ -822,7 +822,8 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 					'post_information'              => array(),
 					'customer_id'                   => 0,
 					'fetch'                         => array(),
-					'staff_ids'           			=> array(),
+					'mepr_membership'               => array(),
+					'staff_ids'               			=> array(),
 					'selected_resources'            => array(),
 				)
 			),

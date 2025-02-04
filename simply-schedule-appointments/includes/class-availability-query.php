@@ -67,6 +67,11 @@ class SSA_Availability_Query {
 		'blackout_dates' => true,
 		'google_calendar' => true,
 		'staff' => true,
+
+		// MemberPress integration
+		'mepr_membership_id' => 0,
+		'user_id' => 0,
+
 		'resources' => true,
 
 		'excluded_appointment_ids' => array(),
@@ -202,7 +207,15 @@ class SSA_Availability_Query {
 				}
 			}
 		}
+    
+		if ( ! empty( $args['mepr_membership_id'] ) && class_exists( 'SSA_Memberpress' ) ) {
+			$membership_schedule = ssa()->memberpress->get_schedule( $this->appointment_type, $this->period, $args );
 
+			if ( null !== $membership_schedule ) {
+				$this->schedule = $this->schedule->merge_min( $membership_schedule );
+      }
+    }
+    
 		if ( ! empty( $args['resources'] ) ) {
 			if ( ssa()->settings_installed->is_activated( 'resources' ) ) {
 				$resource_schedule = ssa()->resources->get_schedule( $this->appointment_type, $this->period, $args );

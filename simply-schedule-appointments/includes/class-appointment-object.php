@@ -865,6 +865,18 @@ class SSA_Appointment_Object {
 			$payload['post_information']['booking_post_id'] = $payload['meta']['booking_post_id'];
 		}
 
+		// Memberpress integration
+		if( ! empty( $payload['meta']['mepr_membership_id'] ) && class_exists( 'SSA_Mepr_Membership' ) && class_exists( 'MeprProduct' ) ) {
+			$membership = new SSA_Mepr_Membership( $payload['meta']['mepr_membership_id'] );
+			if ( $membership->exists() ) {
+				$payload['mepr_membership'] = array(
+					'id'    => $membership->get_product_id(),
+					'title' => $membership->get_title()
+				);
+			}
+			unset( $payload['meta']['mepr_membership_id'] );
+		}
+
 		return $payload;
 	}
 
@@ -908,4 +920,21 @@ class SSA_Appointment_Object {
 		}
 		return $output;
 	}
+
+	public function cancel( $metas=array() ) {
+		if ( $this->is_canceled() ) return;
+		
+		$this->status = 'canceled';
+		ssa()->appointment_model->update( $this->id, array(
+				'status' => $this->status,
+		));
+
+		if ( ! empty( $metas['cancelation_note'] ) ) {
+			$meta_keys_and_values = array();
+			$meta_keys_and_values['cancelation_note'] = esc_attr( trim( $metas['cancelation_note'] ) );
+			ssa()->appointment_meta_model->bulk_meta_update( $this->id, $meta_keys_and_values );
+		}
+
+	}
+
 }

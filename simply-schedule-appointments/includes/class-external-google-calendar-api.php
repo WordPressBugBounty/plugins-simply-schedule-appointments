@@ -51,28 +51,39 @@ class SSA_External_Google_Calendar_Api extends SSA_External_Calendar_Api {
 		$result = array();
 		try {
 			$calendarList = $this->get_api_service()->get_calendar_list();
-			foreach ( $calendarList as $calendarListEntry ) {
-				$result[ $calendarListEntry->id ] = array(
-					'primary' => isset( $calendarListEntry->primary ) ? $calendarListEntry->primary : false,
-					'summary' => isset($calendarListEntry->summary) ? $calendarListEntry->summary : '',
-					'description' => isset($calendarListEntry->description) ? $calendarListEntry->description : '',
-					'kind' => isset($calendarListEntry->kind) ? $calendarListEntry->kind : '',
-					'location' => isset($calendarListEntry->location) ? $calendarListEntry->location : '',
-					'role' => isset($calendarListEntry->accessRole) ? $calendarListEntry->accessRole : '',
-					'background_color' => isset($calendarListEntry->backgroundColor) ? $calendarListEntry->backgroundColor : '',
-					'foreground_color' => isset($calendarListEntry->foregroundColor) ? $calendarListEntry->foregroundColor : '',
-					'color_id' => isset($calendarListEntry->colorId) ? $calendarListEntry->colorId : '',
-					'default_reminders' => isset($calendarListEntry->defaultReminders) ? $calendarListEntry->defaultReminders : '',
-					'time_zone' => isset($calendarListEntry->timeZone) ? $calendarListEntry->timeZone : '',
-				);
+
+			if ( ! empty( $calendarList ) && is_array( $calendarList ) ) {
+
+				foreach ( $calendarList as $calendarListEntry ) {
+					$result[ $calendarListEntry->id ] = array(
+						'primary' => isset( $calendarListEntry->primary ) ? $calendarListEntry->primary : false,
+						'summary' => isset($calendarListEntry->summary) ? $calendarListEntry->summary : '',
+						'description' => isset($calendarListEntry->description) ? $calendarListEntry->description : '',
+						'kind' => isset($calendarListEntry->kind) ? $calendarListEntry->kind : '',
+						'location' => isset($calendarListEntry->location) ? $calendarListEntry->location : '',
+						'role' => isset($calendarListEntry->accessRole) ? $calendarListEntry->accessRole : '',
+						'background_color' => isset($calendarListEntry->backgroundColor) ? $calendarListEntry->backgroundColor : '',
+						'foreground_color' => isset($calendarListEntry->foregroundColor) ? $calendarListEntry->foregroundColor : '',
+						'color_id' => isset($calendarListEntry->colorId) ? $calendarListEntry->colorId : '',
+						'default_reminders' => isset($calendarListEntry->defaultReminders) ? $calendarListEntry->defaultReminders : '',
+						'time_zone' => isset($calendarListEntry->timeZone) ? $calendarListEntry->timeZone : '',
+					);
+				}
 			}
 		} catch ( \Exception $e ) {
-			if ( class_exists( 'Session' ) ) {
-				Session::set( 'staff_google_auth_error', json_encode( $e->getMessage() ) );
+			ssa_debug_log( 'Google Calendar API error: ' . $e->getMessage(), 10 );
+		}
+
+		if ( empty( $result ) ) {
+			if( empty( $this->staff_id ) ){
+				ssa()->error_notices->add_error_notice( 'google_calendar_get_events');
 			} else {
-				throw new Exception( 'staff_google_auth_error' . $e->getMessage(), '500' );
+				ssa()->error_notices->add_error_notice( 'google_calendar_get_events_for_staff', [
+					"staff_id" => $this->staff_id,
+				]);
 			}
 		}
+
 		return $result;
 	}
 

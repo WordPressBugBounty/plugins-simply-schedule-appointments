@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.3 - 2025-01-28
+
+### Fixes
+
+- Refactor CSS for toggle input containers and checkboxes for improved …
+- Remove exception throwing in get calendar list
+
 ## SSA-VERSION-PREFIX.6.8.1 - 2025-01-15
 
 ### Fixes

@@ -1204,6 +1204,8 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 				'staff_ids_all_required' => array(),
 				'staff_ids_any_required' => array(),
 				'resources_required' => array(),
+				'mepr_membership_id' => 0,
+				'user_id' => 0,
 			), $params['query_args'] );
 		}
 
@@ -1288,6 +1290,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 
 		// $schedule = $appointment_type->get_schedule( $period );
 		$time_start = microtime( true );
+		$args = array_merge( $params , $args);
 		$availability_query = new SSA_Availability_Query(
 			$appointment_type,
 			$period,
@@ -1336,6 +1339,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 		$response = array(
 			'response_code' => 200,
 			'error' => '',
+			'message' => apply_filters('ssa/appointment_type/availability/display_message', '' ),
 			'data' => $bookable_start_datetime_strings,
 		);
 
@@ -1452,6 +1456,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			
 			// should never be empty unless something failed
 			if( empty( $calendar_list ) ) {
+				$this->plugin->error_notices->add_error_notice( 'google_calendar_get_events');
 				return;
 			}
 			

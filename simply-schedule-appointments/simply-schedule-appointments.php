@@ -3,7 +3,7 @@
  * Plugin Name: Simply Schedule Appointments
  * Plugin URI:  https://simplyscheduleappointments.com
  * Description: Easy appointment scheduling
- * Version:     1.6.8.1
+ * Version:     1.6.8.3
  * Requires PHP: 7.4
  * Author:      NSquared
  * Author URI:  https://nsquared.io/
@@ -15,7 +15,7 @@
  * @link    https://simplyscheduleappointments.com
  *
  * @package Simply_Schedule_Appointments
- * @version 1.6.8.1
+ * @version 1.6.8.3
  *
  * Built using generator-plugin-wp (https://github.com/WebDevStudios/generator-plugin-wp)
  */
@@ -204,7 +204,7 @@ final class Simply_Schedule_Appointments {
 	 * @var    string
 	 * @since  0.0.0
 	 */
-	const VERSION = '1.6.8.1';
+	const VERSION = '1.6.8.3';
 
 	/**
 	 * URL of plugin directory.
@@ -434,6 +434,8 @@ final class Simply_Schedule_Appointments {
 			'zoom_settings'                          => 'SSA_Zoom_Settings',
 			'zoom'                                   => 'SSA_Zoom',
 
+			'memberpress'														 => 'SSA_Memberpress',
+
 			'shortcodes'                             => 'SSA_Shortcodes',
 			'block_booking'                          => 'SSA_Block_Booking',
 			'block_upcoming_appointments'            => 'SSA_Block_Upcoming_Appointments',
@@ -473,6 +475,7 @@ final class Simply_Schedule_Appointments {
 			'mailchimp_api'       => 'SSA_Mailchimp_Api',
 			'sms_api'             => 'SSA_Sms_Api',
 			'support_status_api'  => 'SSA_Support_Status_Api',
+			'memberpress_api'  		=> 'SSA_Memberpress_Api',
 			'embed_booking_app_api'=> 'SSA_Embed_Booking_App_Api',
 		);
 
@@ -709,6 +712,65 @@ final class Simply_Schedule_Appointments {
 			case 'version':
 				return self::VERSION;
 			case 'basename':
+			case 'url':
+			case 'path':
+			case 'mailchimp':
+			case 'mailchimp_settings':
+			case 'memberpress':
+			case 'memberpress_api':			
+			case 'mailchimp_api':
+			case 'appointments':
+			case 'appointments_api':
+			case 'appointments_db':
+			case 'db':
+			case 'appointment_types_db':
+			case 'settings':
+			case 'settings_api':
+			case 'settings_global':
+			case 'settings_installed':
+			case 'validation':
+			case 'bootstrap':
+			case 'capabilities':
+			case 'utils':
+			case 'db_model':
+			case 'revision_model':
+			case 'revision_meta_model':
+			case 'appointment_model':
+			case 'appointment_meta_model':
+			case 'appointment_type_model':
+            case 'appointment_type_label_model':
+			case 'wp_admin':
+			case 'availability_model':
+			case 'availability_external_model':
+			case 'availability_functions':
+			case 'availability_default':
+			case 'availability_cache':
+			case 'scheduling_max_per_day':
+			case 'ics_exporter':
+			case 'csv_exporter':
+			case 'block_booking':
+			case 'shortcodes':
+			case 'appointment_object':
+			case 'filesystem':
+			case 'upgrade':
+			case 'gcal_exporter':
+			case 'block_upcoming_appointments':
+			case 'dashboard_upcoming_appointments_widget':
+			case 'notifications':
+			case 'notifications_api':
+			case 'notifications_settings':
+			case 'license':
+			case 'license_api':
+			case 'async_action_model':
+			case 'advanced_scheduling_settings':
+			case 'advanced_scheduling_availability':
+			case 'blackout_dates':
+			case 'blackout_dates_settings':
+			case 'capacity_settings':
+			case 'capacity':
+			case 'cache':
+			case 'customer_information':
+			case 'customers':
 			case 'debug':
 			case 'missing':
 				if ( property_exists( $this, $field ) && ! is_null( $this->$field ) ) {

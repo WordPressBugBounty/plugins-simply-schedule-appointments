@@ -116,19 +116,27 @@ class SSA_Appointment_Meta_Model extends SSA_Db_Model {
 	);
 
 	public function filter_where_conditions( $where, $args ) {
-		global $wpdb;
-		
-		if ( !empty( $args['appointment_id'] ) ) {
-			$where .= $wpdb->prepare( ' AND appointment_id=%d', sanitize_text_field( $args['appointment_id'] ) );
+    global $wpdb;
+
+		if ( ! empty( $args['appointment_id'] ) ) {
+			// Check if appointment_id is an array
+			if ( is_array( $args['appointment_id'] ) ) {
+				$ids = array_map('sanitize_text_field', $args['appointment_id']);
+				$ids = array_map('esc_sql', $ids);
+				$placeholders = implode(',', array_fill(0, count($ids), '%d'));
+				$where .= call_user_func_array(array($wpdb, 'prepare'), array_merge(array(" AND appointment_id IN ($placeholders)"), $ids));
+			} else {
+				$where .= $wpdb->prepare( ' AND appointment_id=%d', sanitize_text_field( $args['appointment_id'] ) );
+			}
 		}
-		if ( !empty( $args['meta_key'] ) ) {
+		if ( ! empty( $args['meta_key'] ) ) {
 			$where .= $wpdb->prepare( ' AND meta_key=%s', sanitize_text_field( $args['meta_key'] ) );
 		}
 
 		if ( ! empty( $args['meta_value'] ) ) {
 			$where .= $wpdb->prepare( ' AND meta_value=%s', sanitize_text_field( $args['meta_value'] ) );
-		  }
-
+    }
+    
 		return $where;
 	}
 

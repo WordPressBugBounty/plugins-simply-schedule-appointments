@@ -122,6 +122,35 @@ class SSA_Utils {
 		return array_keys( $arr ) !== range( 0, count( $arr ) - 1 );
 	}
 
+	public static function arrays_assoc_are_equal( $a, $b ) {
+		if ( ! is_array( $a ) || ! is_array( $b ) ) {
+			return false;
+		}
+
+		if ( count( $a ) !== count( $b ) ) {
+			return false;
+		}
+
+		foreach ( $a as $key => $value ) {
+			if ( ! array_key_exists( $key, $b ) ) {
+					return false;
+			}
+			if ( is_array( $value ) ) {
+				if ( ! is_array( $b[ $key ] ) ) {
+					return false;
+				}
+				if ( ! self::arrays_assoc_are_equal( $value, $b[ $key ] ) ) {
+					return false;
+				}
+			} else {
+				if ( $value !== $b[ $key ] ) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	public static function array_key( $array, $key ) {
 		if ( isset( $array[ $key ] ) ) {
 			return $array[ $key ];
@@ -417,6 +446,15 @@ class SSA_Utils {
 	    return $php_format;
 	}
 
+	public function get_formatted_date( $date, $appointment_type_id = 0 ){
+		$local_date = $this->get_datetime_as_local_datetime( $date, $appointment_type_id );
+		$format 		= self::get_localized_date_format_from_settings();
+		$format			= self::localize_default_date_strings( $format ) . ' (T)';
+		$value 			= $local_date->format( $format );
+		$value 			= self::translate_formatted_date( $value );
+		return $value;
+	}
+
 	/**
 	 * Define constant if not already set.
 	 *
@@ -574,7 +612,7 @@ function ssa_function_exists( $function = '' ) {
  * @param string $hook  Required
  * @return bool|null
  */
-function ssa_has_scheduled_action( $hook = '' ) {
+function ssa_has_scheduled_action( $hook = '', $args = array() ) {
 
 	if ( empty( $hook ) ) {
 		return;
@@ -589,7 +627,7 @@ function ssa_has_scheduled_action( $hook = '' ) {
 	}
 
 	try {
-		return as_has_scheduled_action( $hook );
+		return as_has_scheduled_action( $hook, $args );
 
 	} catch( \Exception $e ) {
 		$var = $e->getMessage();
@@ -949,4 +987,14 @@ function ssa_get_recipient_type_for_recipients_array ( array $recipients ) {
 		return 'staff';
 	}
 	return  'customer';
+}
+
+/**
+ * Build current page URL without query parameters
+ *
+ * @return string
+ */
+function ssa_get_current_page_url() {
+	global $wp;
+	return home_url($wp->request);
 }

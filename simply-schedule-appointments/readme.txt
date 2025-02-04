@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.8.1
+Stable tag:        1.6.8.3
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,13 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.3 - 2025-01-28 ==
+
+= Fixes =
+
+- Refactor CSS for toggle input containers and checkboxes for improved …
+- Remove exception throwing in get calendar list
+
 == 1.6.8.1 - 2025-01-15 ==
 
 = Fixes =
@@ -298,13 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Support booking with Gravity Wiz - GS Product Config
 
 == 1.6.7.61 - 2024-10-23 ==
-
-= Fixes =
-
-- Avoid error when inserting the Google Calendar event in a revision
-- Fix select component disabled state reactivity
-- Fix team member capability affecting blackout dates
-- Fix deleting webhooks results in switching to edit mode.
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
