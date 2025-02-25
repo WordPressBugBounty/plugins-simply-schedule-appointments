@@ -126,8 +126,14 @@ class SSA_Styles {
 		if( $color_type === 'rgba' ) {
 			return $hex_string;
 		}
-
-		sscanf($hex_string, "%02x%02x%02x", $r, $g, $b);
+		
+		if( strlen( $hex_string ) === 6 ) {
+			sscanf($hex_string, "%02x%02x%02x", $r, $g, $b);
+		} else {
+			$r = hexdec(str_repeat($hex_string[0], 2));
+			$g = hexdec(str_repeat($hex_string[1], 2));
+			$b = hexdec(str_repeat($hex_string[2], 2));
+		}
 
 		return "rgba($r,$g,$b,1)";
 	}

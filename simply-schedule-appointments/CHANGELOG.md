@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.5 - 2025-02-04
+
+### Fixes
+
+- Add more input sanitization around iframe URL params
+- Fix Skipping Feb in Monthly View
+
 ## SSA-VERSION-PREFIX.6.8.3 - 2025-01-28
 
 ### Fixes

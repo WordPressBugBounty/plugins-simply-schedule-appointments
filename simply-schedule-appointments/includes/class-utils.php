@@ -998,3 +998,25 @@ function ssa_get_current_page_url() {
 	global $wp;
 	return home_url($wp->request);
 }
+
+/**
+ * Sanitizes the accent color input.
+ *
+ * @param string $color The input color string.
+ * @return string|null The sanitized color or null if the input is invalid.
+ */
+function ssa_sanitize_color_input($color) {
+    $hex_pattern = '/^[a-fA-F0-9]+$/';
+
+    $rgba_pattern = '/^rgba\(\d{1,3},\d{1,3},\d{1,3},(?:0|1|0?\.\d+)\)$/i';
+
+    if (preg_match($hex_pattern, $color) && in_array(strlen($color), [6, 3])) {
+        return strtolower($color);
+    }
+
+    if (preg_match($rgba_pattern, $color)) {
+        return $color;
+    }
+
+    return null;
+}

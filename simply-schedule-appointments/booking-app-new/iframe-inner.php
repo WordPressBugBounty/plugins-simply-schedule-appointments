@@ -43,11 +43,12 @@ foreach ($ssa_appointment_types as $appointment_type_key => $appointment_type) {
   }
 
   if ( ! empty( $_GET['flow'] ) && $ssa->settings_installed->is_installed( 'booking_flows' ) ) {
-    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['booking_flow'] = esc_attr( $_GET['flow'] );
-    if ($_GET['flow'] != 'first_available' ) {
-      $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = false;
-    }else{
-      $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = true;
+    $flow = sanitize_key($_GET['flow']);
+    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['booking_flow'] = $flow;
+    if ($flow != 'first_available' ) {
+        $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = false;
+    } else {
+        $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available'] = true;
     }
   }
 
@@ -178,16 +179,21 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
 
       // if we have style settings on the GET parameters, merge them with the styles settings
       $styles_params = array();
-
+	  
+	  // accent_color possible value patterns: ffffff or rgba(255,255,255,1)
       if( isset( $_GET['accent_color'] ) && ! empty( $_GET['accent_color'] ) ) {
-        $accent_color = $ssa->styles->hex_to_rgba( '#'. $_GET['accent_color'] );
+		$accent_color = ssa_sanitize_color_input( $_GET['accent_color'] );
+		$accent_color = $ssa->styles->hex_to_rgba( '#' . $accent_color );
+		
         if( $accent_color ) {
           $styles_params['accent_color'] = $accent_color;
         }
       }
 
+	  // background possible value patterns: ffffff or rgba(255,255,255,1)
       if( isset( $_GET['background'] ) && ! empty( $_GET['background'] ) ) {
-        $background = $ssa->styles->hex_to_rgba( '#'. $_GET['background'] );
+		$background = ssa_sanitize_color_input( $_GET['background'] );
+        $background = $ssa->styles->hex_to_rgba( '#' . $background );
         if( $background ) {
           $styles_params['background'] = $background;
         }
