@@ -4,6 +4,15 @@
 
 $settings              = ssa()->settings->get();
 $upcoming_appointments = ssa()->appointment_model->query( $atts );
+$all_appointment_types    = ssa()->appointment_type_model->get_all_appointment_types();
+$mapped_appointment_types = array();
+foreach( $all_appointment_types as $appointment_type ){
+	if(empty($mapped_appointment_types[$appointment_type['id']])){
+		$mapped_appointment_types[$appointment_type['id']] = $appointment_type;
+	}
+}
+
+
 $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a' ) . ' (T)';
 ?>
 
@@ -16,16 +25,16 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 		<?php else : ?>
 			<?php
 			foreach ( $upcoming_appointments as $upcoming_appointment ) :
-				$appointment_obj = new SSA_Appointment_Object( $upcoming_appointment['id'] );
-				$upcoming_appointment_type = new SSA_Appointment_Type_Object( $upcoming_appointment['appointment_type_id'] );
+				$members = ssa()->staff_appointment_model->get_staff_details_for_appointment_id( $upcoming_appointment['id'] );
+				$upcoming_appointment_type = $mapped_appointment_types[$upcoming_appointment['appointment_type_id']];
 
 				$members_names = array();
-				if ( $appointment_obj->get_staff_members() ){
-					foreach (  $appointment_obj->get_staff_members() as $member){
-						$members_names[] = $member->name;
+				if ( !empty( $members ) ){
+					foreach (  $members as $member){
+						$members_names[] = $member['name'];
 					}
 				}
-				$label= $upcoming_appointment_type->data['label'];
+				$label= $upcoming_appointment_type['label_color'];
 				?>
 				<li class="ssa-upcoming-appointment">
 					<i aria-hidden="true" class="md-icon md-primary md-size-2x md-theme-<?php echo $label;?> material-icons"> person </i>
@@ -41,7 +50,7 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 						<p>
 							<?php
 							if ( filter_var( $atts['appointment_type_displayed'], FILTER_VALIDATE_BOOLEAN ) ) {
-								echo ' ' . $upcoming_appointment_type->get_title();
+								echo ' ' . $upcoming_appointment_type['title'];
 							}
 							?>
 						<!-- Appointment team members -->

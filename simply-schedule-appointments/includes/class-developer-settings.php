@@ -218,13 +218,4 @@ class SSA_Developer_Settings extends SSA_Settings_Schema {
 
 		$this->plugin->availability_cache_invalidation->invalidate_everything();
 	}
-
-	public function is_in_dev_quick_connect_gcal_mode(){
-		$settings = $this->get();
-		
-		if( empty($settings['quick_connect_gcal_mode'] ) ) {
-			return false;
-		}
-		return true;
-	}
 }

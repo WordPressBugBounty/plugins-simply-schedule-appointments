@@ -1,5 +1,25 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.7 - 2025-02-25
+
+### Fixes
+
+- Fix error while booking identical resources with individual and group capacity
+- Enhance accessibility by adding aria-hidden span for day date in Day.vue
+- Add snackbar notification for dev settings save confirmation
+- UI bug with Booking Flow dropdown - overlap issues
+- Refactor receipt email handling in Stripe payment arguments
+- Translate default customer information keys
+- Ticket: 1.6.8.3 - Unauthenticated Arbitrary Shortcode Execution
+- Ticket: Duplicate Queries getting created by the SSA Plugin
+- Missing slots when going backwards after switching selected team member
+- Follow every CSS comment with new lines to keep CSS valid
+
+### Features and Improvements
+
+- Add huf currency
+- Quick connect UX/UI
+
 ## SSA-VERSION-PREFIX.6.8.5 - 2025-02-04
 
 ### Fixes

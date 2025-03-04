@@ -38,6 +38,7 @@ class SSA_Upgrade {
 		'6.6.21', // Remove public_edit_url from event_type_group_admin type
 		'6.7.13', // Disable old booking app if enabled with resources enabled at the same time
 		'6.7.45', // Disable old booking app for all users
+		'6.8.1', // Update Google Calendar Quick Connect mode from saved dev settings
 	);
 
 	/**
@@ -1294,5 +1295,37 @@ class SSA_Upgrade {
 			$this->plugin->developer_settings->update( $developer_settings );
 		}
 		$this->record_version( '6.7.45' );
+	}
+	
+	/**
+	 * Update Google Calendar Quick Connect mode from saved dev settings
+	 *
+	 * @param string $from_version
+	 * @return void
+	 */
+	public function migrate_to_version_6_8_1() {
+		// global variable skip token invalidation
+		global $ssa_skip_token_invalidation;
+		$ssa_skip_token_invalidation = true;
+		$developer_settings = $this->plugin->developer_settings->get();
+		// if quick connect was on - keep it on
+		if ( ! empty( $developer_settings['quick_connect_gcal_mode'] ) ) {
+			$this->plugin->google_calendar_settings->update( array(
+				'quick_connect_gcal_mode' => true,
+			) );
+		} else {
+			// if quick connect was off
+			$settings = $this->plugin->settings->get();
+			if ( ! empty( $settings[ 'google_calendar' ]['access_token'] ) ) {
+				// and gcal is connected - do nothing
+			} else {
+				// but if gcal is not connected - switch to quick connect mode
+				$this->plugin->google_calendar_settings->update( array(
+					'quick_connect_gcal_mode' => true,
+				) );
+			}
+		}
+		
+		$this->record_version( '6.8.1' );
 	}
 }

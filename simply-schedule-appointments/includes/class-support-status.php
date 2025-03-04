@@ -105,12 +105,9 @@ class SSA_Support_Status {
 		// if google calendar is installed and enabled
 		if ( $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
 			
-			// temporary - beta - remove as gcal ssa-quick-connect feature goes out of beta testing
-			$developer_settings = $this->plugin->developer_settings->get();
-			
 			$google_calendar_settings = ssa()->google_calendar_settings->get();
 			// if google calendar has ssa_quick_connect_gcal_mode set to true
-			if( true === $google_calendar_settings[ "quick_connect_gcal_mode" ] || true === $developer_settings['quick_connect_gcal_mode'] ){
+			if( true === $google_calendar_settings[ "quick_connect_gcal_mode" ] ){
 				$status = array_merge( $status, array( 'ssa_quick_connect_status'=> $site_status->test_ssa_quick_connect_status() ) );
 			}
 		}

@@ -572,8 +572,10 @@
           'action' => __( 'Purge now', 'simply-schedule-appointments' ),
           'settings' => 
           array (
-            'past_appointments' => __( 'Purge past Appointments', 'simply-schedule-appointments' ),
-            'abandoned_appointments' => __( 'Purge abandoned Appointments', 'simply-schedule-appointments' ),
+            'past_appointments' => __( 'Past Appointments', 'simply-schedule-appointments' ),
+            'abandoned_appointments' => __( 'Abandoned Appointments', 'simply-schedule-appointments' ),
+            'past_canceled_appointments' => __( 'Past Canceled Appointments', 'simply-schedule-appointments' ),
+            'future_canceled_appointments' => __( 'Future Canceled Appointments', 'simply-schedule-appointments' ),
           ),
           'modal' => 
           array (
@@ -660,6 +662,8 @@
       'authorize' => __( 'Authorize', 'simply-schedule-appointments' ),
       'googleAuthorize' => __( 'Sign in with Google', 'simply-schedule-appointments' ),
       'quickConnectRequiresLicense' => __( 'SSA Quick Connect requires an active license.', 'simply-schedule-appointments' ),
+      'manualSetup' => __( 'Or setup credentials manually', 'simply-schedule-appointments' ),
+      'quickConnectSetup' => __( 'or connect to Google Calendar with SSA Quick Connect', 'simply-schedule-appointments' ),
       'cloudAuthorize' => __( 'Authorize with SSA Quick Connect', 'simply-schedule-appointments' ),
       'saveAuthorize' => __( 'Save and Authorize', 'simply-schedule-appointments' ),
       'clientSecret' => __( 'Client Secret', 'simply-schedule-appointments' ),

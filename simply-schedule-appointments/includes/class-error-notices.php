@@ -586,7 +586,7 @@ class SSA_Error_Notices {
 			$this->delete_error_notice( $id );
 		}
 		
-		if( $this->plugin->developer_settings->is_in_dev_quick_connect_gcal_mode() || $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
+		if( $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
 			return $this->delete_error_notice( $id );
 		}
 		
@@ -609,7 +609,7 @@ class SSA_Error_Notices {
 			$this->delete_error_notice( $id );
 		}
 
-		if( $this->plugin->developer_settings->is_in_dev_quick_connect_gcal_mode() || $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
+		if( $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
 			return $this->delete_error_notice( $id );
 		}
 		
@@ -631,7 +631,7 @@ class SSA_Error_Notices {
 			return;
 		}
 		
-		if( $this->plugin->developer_settings->is_in_dev_quick_connect_gcal_mode() || $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
+		if( $this->plugin->google_calendar_settings->is_in_quick_connect_gcal_mode() ){
 			return;
 		}
 

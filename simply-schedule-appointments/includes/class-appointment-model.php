@@ -60,7 +60,6 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	}
 	
 	public function format_multiline_customer_information( $item ) {
-		
 		if( ! isset( $item['customer_information'] ) || ! is_array( $item['customer_information'] ) ){
 			return $item;
 		}
@@ -1843,6 +1842,18 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		global $wpdb;
 		$date_modified_max = ssa_datetime();
 
+		// Combine past and future canceled appointments into one condition.
+		if ( isset( $params['purge_past_canceled_appointments'] ) && 'true' === $params['purge_past_canceled_appointments'] && isset( $params['purge_future_canceled_appointments'] ) && 'true' === $params['purge_future_canceled_appointments'] ) {
+			$params['purge_all_canceled_appointments'] = 'true';
+			unset( $params['purge_past_canceled_appointments'] );
+			unset( $params['purge_future_canceled_appointments'] );
+		}
+
+		// Unset past canceled if past appointments is already selected
+		if ( isset( $params['purge_past_appointments'] ) && 'true' === $params['purge_past_appointments'] && isset( $params['purge_past_canceled_appointments'] ) && 'true' === $params['purge_past_canceled_appointments'] ) {
+			unset( $params['purge_past_canceled_appointments'] );
+		}
+
 		$conditions = array();
 		if ( isset( $params['purge_abandoned_appointments'] ) && 'true' === $params['purge_abandoned_appointments'] ) {
 			$conditions[] = 'status = "abandoned"';
@@ -1850,6 +1861,18 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		if ( isset( $params['purge_past_appointments'] ) && 'true' === $params['purge_past_appointments'] ) {
 			$conditions[] = $wpdb->prepare( 'end_date < %s', $date_modified_max->format( 'Y-m-d' ) );
+		}
+
+		if ( isset( $params['purge_past_appointments'] ) &&  'false' === $params['purge_abandoned_appointments'] && isset( $params['purge_past_canceled_appointments'] ) && 'true' === $params['purge_past_canceled_appointments'] ) {
+			$conditions[] = $wpdb->prepare( '(status = "canceled" AND end_date < %s)', $date_modified_max->format( 'Y-m-d' ) );
+		}
+
+		if ( isset( $params['purge_future_canceled_appointments'] ) && 'true' === $params['purge_future_canceled_appointments'] ) {
+			$conditions[] = $wpdb->prepare( '(status = "canceled" AND end_date > %s)', $date_modified_max->format( 'Y-m-d' ) );
+		}
+
+		if ( isset( $params['purge_all_canceled_appointments'] ) && 'true' === $params['purge_all_canceled_appointments'] ) {
+			$conditions[] = 'status = "canceled"';
 		}
 
 		if ( empty( $conditions ) ) {

@@ -18,8 +18,14 @@
     }
     $appointment = new SSA_Appointment_Object( $ssa_current_appointment_id );
     $customer_locale = $appointment->customer_locale;
+    
     if ( ! empty( $customer_locale ) ) {
-      $shortcode .= ' ssa_locale="'. $customer_locale . '"';
+        // Validate locale (only letters, underscores, and dashes allowed)
+        if ( !preg_match( '/^[a-zA-Z_-]+$/', $customer_locale ) ) {
+            // default to en_US if locale is invalid
+            $customer_locale = 'en_US';
+        }
+        $shortcode .= ' ssa_locale="'. esc_attr( $customer_locale ) . '"';
     }
     $shortcode .= ']';
     echo do_shortcode( $shortcode );

@@ -344,7 +344,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       }
 
       html .ssa_booking_initial_spinner-container .ssa_booking_initial_spinner {
-        border: 4px solid var(--mdc-theme-on-primary);
+        border: 4px solid white;
         border-top-color: var(--mdc-theme-primary);
         border-radius: 50%;
         width: 40px;

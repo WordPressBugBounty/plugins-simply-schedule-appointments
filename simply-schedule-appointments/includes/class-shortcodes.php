@@ -215,7 +215,7 @@ class SSA_Shortcodes {
 			return $template;
 		}
 
-		return $this->plugin->dir( 'booking-app/fullscreen-page.php' );
+		return $this->plugin->dir( 'booking-app-new/fullscreen-page.php' );
 	}
 
 	public function hijack_appointment_edit_page( $template ) {
@@ -718,6 +718,7 @@ class SSA_Shortcodes {
 	public function ssa_admin_upcoming_appointments( $atts ) {
 		$atts = shortcode_atts(
 			array(
+				'recursive'                  => -1, // omit the unneeded details
 				'status'                     => 'booked',
 				'number'                     => 5,
 				'orderby'                    => 'start_date',

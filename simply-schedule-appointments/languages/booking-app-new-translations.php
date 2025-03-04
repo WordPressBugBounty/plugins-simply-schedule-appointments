@@ -88,6 +88,7 @@
     'past' => __( 'This appointment is in the past. It cannot be edited.', 'simply-schedule-appointments' ),
     'canceled' => __( 'This appointment has been canceled', 'simply-schedule-appointments' ),
     'reschedule' => __( 'Reschedule', 'simply-schedule-appointments' ),
+    'viewAsAdmin' => __( 'View as admin', 'simply-schedule-appointments' ),
     'cancel' => __( 'Cancel Appointment', 'simply-schedule-appointments' ),
     'edit' => __( 'Edit Information', 'simply-schedule-appointments' ),
     'changeTime' => __( 'Change selected time', 'simply-schedule-appointments' ),

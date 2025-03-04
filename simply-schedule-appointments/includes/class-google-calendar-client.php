@@ -52,14 +52,12 @@
 			return $this;
 		}
 		
-		$google_calendar_settings = $this->plugin->google_calendar_settings->get();
-
-		// temporary - beta - remove as gcal ssa_quick_connect feature goes out of beta testing
-		$developer_settings = $this->plugin->developer_settings->get();
+		$settings = ssa()->settings->get();
+		$google_calendar_settings = $settings['google_calendar'];
 
 		// Only initialize if we're not using the new ssa_quick_connect auth flow
 		// any method besides this one should access the client_id and client_secret directly on this class
-		if( !$google_calendar_settings['quick_connect_gcal_mode'] && !$developer_settings['quick_connect_gcal_mode'] ){
+		if( !$google_calendar_settings['quick_connect_gcal_mode'] ){
 			$this->client_id = $this->plugin->google_calendar->get_client_id();
 			$this->client_secret = $this->plugin->google_calendar->get_client_secret();
 		} else {
@@ -104,10 +102,8 @@
 		// if quick connect enabled, get quick connect access token
 		
 		$google_calendar_settings = $this->plugin->google_calendar_settings->get();
-		// temporary - beta - remove as gcal ssa_quick_connect feature goes out of beta testing
-		$developer_settings = $this->plugin->developer_settings->get();
 		
-		$google_quick_connect_gcal_mode = ( $google_calendar_settings['quick_connect_gcal_mode'] == true ) || ( $developer_settings['quick_connect_gcal_mode'] == true );
+		$google_quick_connect_gcal_mode = $google_calendar_settings['quick_connect_gcal_mode'] == true;
 		
 		if(  true == $google_quick_connect_gcal_mode ){
 			$this->authorize_with_quick_connect( $this->staff_id );

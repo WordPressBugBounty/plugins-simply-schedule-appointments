@@ -303,47 +303,76 @@ class SSA_Utils {
 	}
 	
 	public static function translate_formatted_date( $formatted_date ) {
-		$should_reset = false;
-		unload_textdomain( 'simply-schedule-appointments', true );
+		$translations = array();
 		
 		if( !empty( ssa()->translation->programmatic_locale ) && is_string( ssa()->translation->programmatic_locale ) ){
 			$mo_file = WP_LANG_DIR . '/' . ssa()->translation->programmatic_locale . '.mo';
+			if( ! file_exists( $mo_file ) ){
+				// if the WP core language file doesn't exist, try the plugin language file
+				$mo_file = WP_LANG_DIR . '/plugins/simply-schedule-appointments-' . ssa()->translation->programmatic_locale . '.mo';
+			}
 			if ( file_exists( $mo_file ) ) {
-				$should_reset = true;
-				// use WP core translations for months, assumed always more complete than SSA translations
-				load_textdomain( 'simply-schedule-appointments', $mo_file );
+				// Make sure the MO class is available.
+				if ( ! class_exists( 'MO' ) ) {
+					require_once( ABSPATH . WPINC . '/l10n.php' );
+				}
 
+				// Instantiate a new MO object.
+				$mo = new MO();
+				// Load your specific .mo file.
+				// (Replace '/path/to/your/file.mo' with the correct path.)
+				if ( $mo->import_from_file( $mo_file ) ) {
+
+					// Now translate the strings using the loaded .mo file.
+					$translations = array(
+						'January'   => $mo->translate( 'January' ),
+						'February'  => $mo->translate( 'February' ),
+						'March'     => $mo->translate( 'March' ),
+						'April'     => $mo->translate( 'April' ),
+						'May'       => $mo->translate( 'May' ),
+						'June'      => $mo->translate( 'June' ),
+						'July'      => $mo->translate( 'July' ),
+						'August'    => $mo->translate( 'August' ),
+						'September' => $mo->translate( 'September' ),
+						'October'   => $mo->translate( 'October' ),
+						'November'  => $mo->translate( 'November' ),
+						'December'  => $mo->translate( 'December' ),
+
+						'Monday'    => $mo->translate( 'Monday' ),
+						'Tuesday'   => $mo->translate( 'Tuesday' ),
+						'Wednesday' => $mo->translate( 'Wednesday' ),
+						'Thursday'  => $mo->translate( 'Thursday' ),
+						'Friday'    => $mo->translate( 'Friday' ),
+						'Saturday'  => $mo->translate( 'Saturday' ),
+						'Sunday'    => $mo->translate( 'Sunday' ),
+					);
+				}
 			}
 		}
 		
-		$translations = array(
-			'January' => __( 'January', 'simply-schedule-appointments' ),
-			'February' => __( 'February', 'simply-schedule-appointments' ),
-			'March' => __( 'March', 'simply-schedule-appointments' ),
-			'April' => __( 'April', 'simply-schedule-appointments' ),
-			'May' => __( 'May', 'simply-schedule-appointments' ),
-			'June' => __( 'June', 'simply-schedule-appointments' ),
-			'July' => __( 'July', 'simply-schedule-appointments' ),
-			'August' => __( 'August', 'simply-schedule-appointments' ),
-			'September' => __( 'September', 'simply-schedule-appointments' ),
-			'October' => __( 'October', 'simply-schedule-appointments' ),
-			'November' => __( 'November', 'simply-schedule-appointments' ),
-			'December' => __( 'December', 'simply-schedule-appointments' ),
-
-			'Monday' => __( 'Monday', 'simply-schedule-appointments' ),
-			'Tuesday' => __( 'Tuesday', 'simply-schedule-appointments' ),
-			'Wednesday' => __( 'Wednesday', 'simply-schedule-appointments' ),
-			'Thursday' => __( 'Thursday', 'simply-schedule-appointments' ),
-			'Friday' => __( 'Friday', 'simply-schedule-appointments' ),
-			'Saturday' => __( 'Saturday', 'simply-schedule-appointments' ),
-			'Sunday' => __( 'Sunday', 'simply-schedule-appointments' ),
-		);
-		
-		
-		if( $should_reset ){
-			// this should unload the WP core .mo translation, and load the SSA .mo file instead
-			unload_textdomain( 'simply-schedule-appointments', true );
-			load_plugin_textdomain( 'simply-schedule-appointments', false, dirname( ssa()->basename ) . '/languages' );
+		if(empty($translations)){
+			$translations = array(
+				'January' => __( 'January' ),
+				'February' => __( 'February' ),
+				'March' => __( 'March' ),
+				'April' => __( 'April' ),
+				'May' => __( 'May' ),
+				'June' => __( 'June' ),
+				'July' => __( 'July' ),
+				'August' => __( 'August' ),
+				'September' => __( 'September' ),
+				'October' => __( 'October' ),
+				'November' => __( 'November' ),
+				'December' => __( 'December' ),
+	
+				'Monday' => __( 'Monday' ),
+				'Tuesday' => __( 'Tuesday' ),
+				'Wednesday' => __( 'Wednesday' ),
+				'Thursday' => __( 'Thursday' ),
+				'Friday' => __( 'Friday' ),
+				'Saturday' => __( 'Saturday' ),
+				'Sunday' => __( 'Sunday' ),
+			);
 		}
 		
 		return str_replace( array_keys( $translations ), array_values( $translations ), $formatted_date );
