@@ -873,6 +873,24 @@
         'edit' => __( 'Edit notification', 'simply-schedule-appointments' ),
         'editAll' => __( 'Edit notifications', 'simply-schedule-appointments' ),
       ),
+      'selected' => __( 'Notifications Selected', 'simply-schedule-appointments' ),
+      'optinSettings' => 
+      array (
+        'title' => __( 'Notification Opt-In', 'simply-schedule-appointments' ),
+        'description' => __( 'Enable this option to let customers choose whether they want to receive notifications for their appointments.', 'simply-schedule-appointments' ),
+        'enabled' => __( 'Enabled', 'simply-schedule-appointments' ),
+        'explanation' => __( 'Set the text that will be displayed to customers when they book an appointment. The label appears next to the checkbox, and the description provides additional details.', 'simply-schedule-appointments' ),
+        'labelField' => 
+        array (
+          'label' => __( 'Checkbox Label (required)', 'simply-schedule-appointments' ),
+          'helptext' => __( 'This is the label that will be displayed next to the checkbox.', 'simply-schedule-appointments' ),
+        ),
+        'descriptionField' => 
+        array (
+          'label' => __( 'Checkbox Description', 'simply-schedule-appointments' ),
+          'helptext' => __( 'This text will be displayed below the checkbox.', 'simply-schedule-appointments' ),
+        ),
+      ),
       'fields' => 
       array (
         'title' => __( 'Name', 'simply-schedule-appointments' ),
@@ -2254,6 +2272,7 @@
       'booking_start_date_changed' => __( 'Booking start Date', 'simply-schedule-appointments' ),
       'mailchimp_changed' => __( 'Mailchimp', 'simply-schedule-appointments' ),
       'reminder_not_sent' => __( 'Notification Not Sent', 'simply-schedule-appointments' ),
+      'opt_out_notification' => __( 'Opt Out Notification', 'simply-schedule-appointments' ),
     ),
   ),
 );

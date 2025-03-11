@@ -664,7 +664,20 @@ class SSA_Error_Notices {
 		$staff_id = empty( $params['params']['staff_id'] ) ? 0 : (int) $params['params']['staff_id'];
 
 		if( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
-			$this->delete_error_notice( $id );
+			return $this->delete_error_notice( $id );
+		}
+		
+		// handles the case where some user disconnects, removing the access token, with the error notice still set
+		if(0 === $staff_id){
+			$google_calendar_settings = $this->plugin->google_calendar_settings->get();
+			if( empty( $google_calendar_settings['access_token'] ) ) {
+				return $this->delete_error_notice( $id );
+			}
+		} else {
+			$staff = $this->plugin->staff_model->get( $staff_id );
+			if( empty( $staff['google_access_token'] ) ) {
+				return $this->delete_error_notice( $id );
+			}
 		}
 
 		$calendar_list = $this->plugin->google_calendar->get_calendar_list( $staff_id );

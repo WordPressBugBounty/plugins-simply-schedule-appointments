@@ -792,6 +792,14 @@ class SSA_Appointment_Type_Object {
 		return $schedule;
 	}
 
+	/**
+	 * Is notifications optin option enabled for this appointment type?
+	 */
+	public function is_notifications_optin_enabled() {
+		$settings = $this->__get( 'notifications' );
+		return ! empty( $settings['notifications_opt_in']['enabled'] );
+	}
+
 	public function is_group_event() {
 		$capacity_type = $this->__get( 'capacity_type' );
 		return ( $capacity_type === 'group' );

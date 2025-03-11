@@ -937,4 +937,13 @@ class SSA_Appointment_Object {
 
 	}
 
+
+	/**
+	 * Watch out! This method does not check if the appointment type has the opt-in notifications enabled.
+	 */
+	public function customer_has_not_opted_in() {
+		$meta = ssa()->appointment_model->get_metas( $this->id );
+		return empty( $meta['opt_in_notifications'] );
+	}
+
 }

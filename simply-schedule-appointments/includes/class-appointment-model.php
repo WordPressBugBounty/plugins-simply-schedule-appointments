@@ -824,6 +824,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 					'mepr_membership'               => array(),
 					'staff_ids'               			=> array(),
 					'selected_resources'            => array(),
+					'opt_in_notifications'          => false,
 				)
 			),
 			$params

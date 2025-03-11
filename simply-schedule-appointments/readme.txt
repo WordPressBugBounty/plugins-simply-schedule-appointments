@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.7
-Stable tag:        1.6.8.7
+Stable tag:        1.6.8.9
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,16 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.9 - 2025-03-04 ==
+
+= Fixes =
+
+- Avoid fatal error when access token is missing but error notice was set
+
+= Features and Improvements =
+
+- Introduce Opt-in to receiving notifications option on booking
+
 == 1.6.8.7 - 2025-02-25 ==
 
 = Fixes =
@@ -295,15 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Resource booking not working as expected
 
 == 1.6.7.72 - 2024-12-03 ==
-
-= Fixes =
-
-- Make SSA aware of what payment methods are enabled in Stripe
-- Deleted appointment types not being fetched
-
-== 1.6.7.70 - 2024-11-26 ==
-
-= Fixes =
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

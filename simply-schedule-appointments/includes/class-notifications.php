@@ -47,6 +47,7 @@ class SSA_Notifications {
 		add_action( 'ssa/appointment/booked', array( $this, 'queue_start_date_notifications' ), 1000, 4 );
 		add_action( 'ssa/appointment/customer_information_edited', array( $this, 'queue_customer_information_edited_notifications' ), 1000, 4 );
 		add_action( 'ssa/appointment/canceled', array( $this, 'queue_canceled_notifications' ), 1000, 4 );
+		add_filter( 'ssa/appointment/after_insert', array( $this, 'maybe_save_optin_notifications_settings' ), 1, 3 );
 
 		add_action( 'ssa_fire_appointment_rescheduled_notifications', array( $this, 'maybe_fire_notification'), 10, 2 );
 		add_action( 'ssa_fire_appointment_booked_notifications', array( $this, 'maybe_fire_notification'), 10, 2 );
@@ -54,6 +55,32 @@ class SSA_Notifications {
 		add_action( 'ssa_fire_appointment_customer_information_edited_notifications', array( $this, 'maybe_fire_notification'), 10, 2 );
 		add_action( 'ssa_fire_appointment_canceled_notifications', array( $this, 'maybe_fire_notification'), 10, 2 );
 		add_action( 'ssa/async/send_notifications', array( $this, 'fire_notification' ), 10, 2 );
+	}
+
+	public function maybe_save_optin_notifications_settings( $appointment_id, $data ) {
+		// if notification disabled globally bail
+		if ( ! $this->plugin->settings_installed->is_enabled( 'notifications' ) ) {
+			return $data;
+		}
+
+		// check appointment type settings for optin notifications
+		$appointment_type_id = $data['appointment_type_id'];
+		$appointment_type = new SSA_Appointment_Type_Object( $appointment_type_id );
+		$is_enabled = $appointment_type->is_notifications_optin_enabled();
+
+		if ( empty( $is_enabled ) ) {
+			return $data;
+		}
+
+		$meta_keys_and_values = array();
+		$meta_keys_and_values['opt_in_notifications'] = ! empty( $data['opt_in_notifications'] );
+		$this->plugin->appointment_meta_model->bulk_meta_update( $appointment_id, $meta_keys_and_values );
+
+		if( empty( $data['opt_in_notifications'] )){
+			$this->plugin->revision_model->insert_revision_opt_out_notification($appointment_id, $data );
+		}
+
+		return $data;
 	}
 
 	public function get_payload( $hook, $appointment_id, $data, $data_before = array(), $response = null ) {
@@ -243,6 +270,30 @@ class SSA_Notifications {
 			) );
 		}
 	 }
+
+	/**
+	* Check if the customer has opted out from receiving notifications
+	*/
+	public function customer_has_not_opted_in( $appointment_object, $notification ) {
+		if ( ! empty($notification['sent_to']) && ! in_array( '{{customer_email}}', $notification['sent_to'] ) ) {
+			return false; // this is not even a customer email notification
+		}
+
+		if ( ! empty($notification['sms_to']) && ! in_array( '{{ customer_phone }}', $notification['sms_to'] ) ) {
+			return false; // this is not even a customer sms notification
+		}
+
+		// Check appointment type settings for optin notifications
+		$appointment_type_id = $appointment_object->appointment_type_id;
+		$appointment_type = new SSA_Appointment_Type_Object( $appointment_type_id );
+		$is_enabled = $appointment_type->is_notifications_optin_enabled();
+
+		if ( empty( $is_enabled ) ) {
+			return false;
+		}
+
+		return $appointment_object->customer_has_not_opted_in();
+	}
 	 
 	public function should_fire_notification( $single_notification_settings, $payload ) {
 		// ssa_debug_log( __FUNCTION__ .'()' );
@@ -275,6 +326,10 @@ class SSA_Notifications {
 			$status = $appointment_object->get();
 		} catch (Exception $e) {
 			ssa_debug_log( 'Appointment ID ' . $payload['appointment']['id'] . ' not found in should_fire_notification()' );
+			return false;
+		}
+		
+		if ( $this->customer_has_not_opted_in( $appointment_object, $single_notification_settings ) ) {
 			return false;
 		}
 

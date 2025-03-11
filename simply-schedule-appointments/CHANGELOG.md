@@ -1,5 +1,15 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.9 - 2025-03-04
+
+### Fixes
+
+- Avoid fatal error when access token is missing but error notice was set
+
+### Features and Improvements
+
+- Introduce Opt-in to receiving notifications option on booking
+
 ## SSA-VERSION-PREFIX.6.8.7 - 2025-02-25
 
 ### Fixes

@@ -119,19 +119,25 @@ class SSA_Appointment_Type_Object_Factory extends SSA_Appointment_Type_Object {
 		      'values' => '',
 		    ),
 		  ),
-		  'notifications' => 
-		  array (
-		    0 => 
-		    array (
-		      'field' => 'admin',
-		      'send' => true,
-		    ),
-		    1 => 
-		    array (
-		      'field' => 'customer',
-		      'send' => true,
-		    ),
-		  ),
+		  'notifications' => array (
+				'fields' => array (
+					0 => 
+					array (
+						'field' => 'admin',
+						'send' => true,
+					),
+					1 => 
+					array (
+						'field' => 'customer',
+						'send' => true,
+					),
+				),
+				"notifications_opt_in" => [
+					"enabled" => false,
+					"label" => "Receive notifications",
+					"description" => "Check this box to receive appointment notifications."
+				]
+			),
 		  'payments' => '',
 		  'staff' => '',
 		  'google_calendars_availability' => 

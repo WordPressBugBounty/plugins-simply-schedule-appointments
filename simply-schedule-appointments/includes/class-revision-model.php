@@ -494,6 +494,18 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		);
 	}
 
+	// insert revisions opt out notification
+	public function insert_revision_opt_out_notification( $appointment_id, $data_after ) {
+		$params = array(
+			'result'				 => 'success',
+			'action'				 => 'opt_out_notification',
+			'appointment_id' => $appointment_id,
+			'data_after' 		 => $data_after,
+			'data_before'		 => array(),
+		);
+		$this->insert_revision_appointment( $params );
+	}
+
 	public function insert_revision_abandoned_appointment( $appointment_id, $data_after, $data_before = null ) {
 		$params = array(
 			'result'				 => 'success',
@@ -756,6 +768,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			'reminder_not_sent'=>'Notification Not Sent',
 			'max_booking_notice_changed' => 'Max Booking Notice Changed',
 			'shared_calendar_event_changed' => 'Shared Calendar Event Changed',
+			'opt_out_notification' => 'Opt Out Notification',
 		);
 
 		// Update the array below whenever needed
@@ -958,6 +971,8 @@ class SSA_Revision_Model extends SSA_Db_Model {
 				return 'The notification was sent by {{ notification_type }} to remind the {{ recipient_type }} about the appointment';
 			case 'reminder_not_sent':
 				return 'The notification by {{ notification_type }} to remind the {{ recipient_type }} about the appointment could not be sent';
+			case 'opt_out_notification':
+				return 'The user has not opted to receive notifications';
 			default:
 				return '{{ user }} changed the appointment status to {{ action }}';
 		}

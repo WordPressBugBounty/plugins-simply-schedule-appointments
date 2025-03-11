@@ -39,6 +39,7 @@ class SSA_Upgrade {
 		'6.7.13', // Disable old booking app if enabled with resources enabled at the same time
 		'6.7.45', // Disable old booking app for all users
 		'6.8.1', // Update Google Calendar Quick Connect mode from saved dev settings
+		'6.8.6', // Notifications: update notification column schema in appointment types table
 	);
 
 	/**
@@ -525,6 +526,9 @@ class SSA_Upgrade {
 				}
 
 				foreach ($appointment_type['notifications'] as $notification_key => $notification ) {
+					if ( empty( $notification['field'] ) ) {
+						continue;
+					}
 					if ( $notification['field'] === 'admin' ) {
 						if ( empty( $notification['send'] ) ) {
 							$should_enable_admin_notification_for_all_appointment_types = false;
@@ -1328,4 +1332,52 @@ class SSA_Upgrade {
 		
 		$this->record_version( '6.8.1' );
 	}
+
+	public function migrate_to_version_6_8_6() {
+		$appointment_types = $this->plugin->appointment_type_model->query();
+
+		$old_schema = array (
+		    0 => 
+		    array (
+		      'field' => 'admin',
+		      'send' => true,
+		    ),
+		    1 => 
+		    array (
+		      'field' => 'customer',
+		      'send' => true,
+		    ),
+		);
+		
+		if ( ! empty( $appointment_types ) ) {
+
+			foreach ( $appointment_types as $key => $appointment_type ) {
+
+				if( ! empty( $appointment_type['notifications']['notifications_opt_in'] ) ) {
+					continue;
+				}
+
+				if ( ! empty( $appointment_type['notifications'] ) && is_array( $appointment_type['notifications'] ) && ! empty( $appointment_type['notifications'][0]['field'] ) ) {
+					$old_schema = $appointment_type['notifications'];
+				}
+				
+				$updated_notifications = [
+						"fields" => $old_schema,
+						"notifications_opt_in" => [
+							"enabled"     => false,
+							"label"       => "Receive notifications",
+							"description" => "Check this box to receive appointment notifications."
+						]
+				];
+
+				$this->plugin->appointment_type_model->update( $appointment_type['id'], array(
+					'notifications' => $updated_notifications,
+				));
+			}
+		}
+
+		$this->record_version( '6.8.6' );
+	}
+
 }
+

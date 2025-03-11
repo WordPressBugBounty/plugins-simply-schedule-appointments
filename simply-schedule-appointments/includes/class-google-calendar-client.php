@@ -126,6 +126,11 @@
 	
 	private function authorize_with_client_id_and_secret() {
 		$access_token = $this->get_access_token_for_staff_id();
+		// throwing the exception here to avoid fatal error of accessing an offset on a non-array
+		if( empty( $access_token ) || !is_array( $access_token ) ) {
+			throw new Exception( 'Empty access token for staff id '.$this->staff_id );
+		}
+		
 		if( $this->is_access_token_expired( $access_token ) ) {
 			$this->access_token = $this->refresh_access_token( $access_token );
 			$this->update_token_in_database();
