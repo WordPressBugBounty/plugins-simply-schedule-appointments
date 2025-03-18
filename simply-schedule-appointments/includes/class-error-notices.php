@@ -203,9 +203,40 @@ class SSA_Error_Notices {
 				$this->delete_error_notice( $key );
 				continue;
 			}
+			/**
+			 * Check if the error notice should be hidden
+			 * If the condition is not met, we skip this error notice from being sent to the frontend
+			 */
+			if( ! $this->is_display_condition_met( ['id' => $key, 'value' => $value], $schema ) ){
+				continue;
+			}
 			array_push( $output, $schema[ $key ] );
 		}
 		return $output;
+	}
+
+	/**
+	 * Check if the error notice should be hidden
+	 *
+	 * @since  6.3.1
+	 * 
+	 * @param string $error_id
+	 * @return bool
+	 */
+	public function is_display_condition_met( $params = [], $schema = array() ){
+		if( empty( $schema ) ){
+			$schema = $this->get_schema();
+		}
+		if( ! isset( $schema[ $params['id'] ]['display_condition'] ) ){
+			return true; // No condition to check
+		}
+
+		$display_condition = $schema[ $params['id'] ]['display_condition'];
+		$value = ( isset( $params['value']) && is_array( $params['value'] ) ) ? $params['value'] : array();
+		return call_user_func( array( $this, $display_condition), [
+			'id' => $params['id'],
+			'value' => $value
+		]);
 	}
 
 	/**
@@ -390,7 +421,8 @@ class SSA_Error_Notices {
 				'message'		=> __( 'SSA failed to get Google Calendar events for a staff member. Please disconnect and reconnect their Google Calendar in the Team settings and contact support if this error message persists.', 'simply-schedule-appointments' ),
 				'link'			=> '/ssa/settings/staff/all',
 				'link_message' 	=> __( 'Go to settings', 'simply-schedule-appointments' ),
-				'callback'	=> 'check_if_ssa_can_get_events'
+				'callback'	=> 'check_if_ssa_can_get_events',
+				'display_condition'	=> 'check_if_same_staff_or_admin'
 			),
 			'google_calendar_authentication' => array(
 				'id'			=> 'google_calendar_authentication',
@@ -685,6 +717,34 @@ class SSA_Error_Notices {
 		if ( ! empty( $calendar_list ) ) {
 			$this->delete_error_notice( $id );
 		}
+	}
+
+	public function check_if_same_staff_or_admin( $params = array() ) {
+		if ( ! isset( $params['value']['staff_id'] ) ) {
+			return false; // We shouldn't actually end up here
+		}
+
+		if ( current_user_can( 'ssa_manage_staff' ) ) {
+			return true; // This is the admin
+		}
+
+		$user_id = get_current_user_id();
+
+		if( empty( $user_id ) ) {
+			return false;
+		}
+
+		$staff_id = $this->plugin->staff_model->get_staff_id_for_user_id( $user_id );
+
+		if( empty( $staff_id ) ) {
+			return true; // this should be the admin
+		}
+
+		if ( (int) $params['value']['staff_id'] === (int) $staff_id ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

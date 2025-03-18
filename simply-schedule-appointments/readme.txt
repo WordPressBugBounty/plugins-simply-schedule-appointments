@@ -3,8 +3,8 @@ Contributors:      croixhaug, nataliemac, simplyscheduleappointments
 Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
-Tested up to:      6.7
-Stable tag:        1.6.8.9
+Tested up to:      6.8
+Stable tag:        1.6.8.11
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,14 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.11 - 2025-03-11 ==
+
+= Fixes =
+
+- Fix the custom CSS input alignment with the formatted colored code preview
+- Responsive Refund Policy Field in Booking Form
+- Add display condition logic for error notices based on user roles
+
 == 1.6.8.9 - 2025-03-04 ==
 
 = Fixes =
@@ -297,14 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - PHP notices around loading text domain with WordPress 6.7
 
 == 1.6.7.74 - 2024-12-10 ==
-
-= Fixes =
-
-- Fix refund policy input validation
-- Take REQUEST_SCHEME into consideration to detect SSL
-- Resource booking not working as expected
-
-== 1.6.7.72 - 2024-12-03 ==
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

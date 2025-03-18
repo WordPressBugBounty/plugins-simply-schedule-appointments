@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.11 - 2025-03-11
+
+### Fixes
+
+- Fix the custom CSS input alignment with the formatted colored code preview
+- Responsive Refund Policy Field in Booking Form
+- Add display condition logic for error notices based on user roles
+
 ## SSA-VERSION-PREFIX.6.8.9 - 2025-03-04
 
 ### Fixes
