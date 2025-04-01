@@ -50,6 +50,10 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		add_action( 'ssa/appointment/canceled', array( $this, 'insert_revision_canceled_appointment' ), 10, 3 );
 		add_action( 'ssa/appointment/pending', array( $this, 'insert_revision_pending_appointment' ), 10, 3 );
 
+		// Add revision on appointment no show/reverted
+		add_action( 'ssa/appointment/no_show', array( $this, 'insert_revision_no_show_appointment' ), 10, 3 );
+		add_action( 'ssa/appointment/no_show_reverted', array( $this, 'insert_revision_no_show_reverted_appointment' ), 10, 3 );
+
 		// Add revision first assigned to team member 
 		add_action( 'ssa/appointment/after_insert', array( $this, 'maybe_insert_revision_assigned_appointment' ), 1000, 2 );
 
@@ -588,6 +592,28 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		$this->insert_revision_appointment( $params );
 	}
 
+	public function insert_revision_no_show_appointment( $appointment_id, $data_after, $meta_data ) {
+		$params = array(
+			'result'				 => 'success',
+			'action'				 => 'no_show',
+			'appointment_id' => $appointment_id,
+			'data_after' 		 => $data_after,
+			'data_before'		 => null
+		);
+		$this->insert_revision_appointment( $params );
+	}
+
+	public function insert_revision_no_show_reverted_appointment( $appointment_id, $data_after, $meta_data ) {
+		$params = array(
+			'result'				 => 'success',
+			'action'				 => 'no_show_reverted',
+			'appointment_id' => $appointment_id,
+			'data_after' 		 => $data_after,
+			'data_before'		 => null
+		);
+		$this->insert_revision_appointment( $params );
+	}
+
 	public function insert_revision_appointment( $params ) {
 
 		// below: hints for WP.org to pick up phrases for translation
@@ -731,6 +757,8 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			'abandoned' => 'Appointment Abandoned',
 			'pending_payment' => 'Appointment\'s Payment Pending',
 			'pending_form' => 'Appointment\'s Form Pending',
+			'no_show' => 'Marked as No Show',
+			'no_show_reverted' => 'No Show Reverted',
 			'assigned' => 'Appointment Assigned',
 			'reassigned' => 'Appointment Reassigned',
 			'notification_scheduled' => 'Notification Scheduled',
@@ -901,6 +929,10 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			case 'pending_payment':
 			case 'pending_form':
 				return '{{ user }} changed the appointment status to {{ action }}';
+			case 'no_show':
+				return 'Appointment marked as no show by {{ user }}';
+			case 'no_show_reverted':
+				return 'No show Status reverted by {{ user }}';
 			case 'notification_scheduled':
 				return 'The notification was scheduled to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}.';
 			case 'notification_with_duration':

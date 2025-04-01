@@ -43,6 +43,8 @@ class SSA_Hooks {
 		add_action( 'ssa/appointment/after_insert', array( $this, 'maybe_do_appointment_booked_hook' ), 1000, 2 );
 		add_action( 'ssa/appointment/after_insert', array( $this, 'maybe_do_appointment_pending_hook' ), 1000, 2 );
 		add_action( 'ssa/appointment/after_update', array( $this, 'maybe_do_appointment_booked_hook' ), 1000, 4 );
+		add_action( 'ssa/appointment_meta/after_insert', array( $this, 'maybe_do_appointment_no_show_hook' ), 1000, 2 );
+		add_action( 'ssa/appointment_meta/after_insert', array( $this, 'maybe_do_appointment_no_show_removed_hook' ), 1000, 2 );
 
 		// maybe do_action( 'ssa/appointment/customer_information_edited' );
 		add_action( 'ssa/appointment/after_update', array( $this, 'maybe_do_appointment_customer_information_edited_hook' ), 10, 4 );
@@ -52,6 +54,96 @@ class SSA_Hooks {
 
 		// maybe do_action( 'ssa/appointment/canceled' );
 		add_action( 'ssa/appointment/after_update', array( $this, 'maybe_do_appointment_canceled_hook' ), 10, 4 );
+	}
+
+	/**
+	 * Maybe do_action( 'ssa/appointment/no_show' )
+	 *
+	 * @param integer $appointment_meta_id
+	 * @param array $data:
+	 *									[appointment_id] =>
+	 *									[meta_key] =>
+	 *									[meta_value] =>
+	 * @return void
+	 */
+	public function maybe_do_appointment_no_show_hook( $appointment_meta_id, $data ) {
+		if ( empty( $appointment_meta_id ) ) {
+			ssa_debug_log( 'ssa/appointment_meta/after_insert called with empty $appointment_meta_id', 10 );
+			ssa_debug_log( $data, 10 );
+			return;
+		}
+
+		if ( empty( $data['appointment_id'] ) ) {
+			return;
+		}
+		if( empty( $data['meta_key'] ) ) {
+			return;
+		}
+		if ( empty( $data['meta_value'] ) ) {
+			return;
+		}
+		if ( 'status' !== $data['meta_key'] ) {
+			return;
+		}
+		if ( 'no_show' !== $data['meta_value'] ) {
+			return;
+		}
+
+		$appointment_array = $this->plugin->appointment_model->query( array(
+			'id' => $data['appointment_id'],
+		) );
+
+		$data_after = array_shift( $appointment_array );
+		if ( empty( $data_after ) ) {
+			return;
+		}
+		
+		do_action( 'ssa/appointment/no_show', $data['appointment_id'], $data_after, $data );
+	}
+
+	/**
+	 * Maybe do_action( 'ssa/appointment/no_show_reverted' )
+	 *
+	 * @param integer $appointment_meta_id
+	 * @param array $data:
+	 *									[appointment_id] =>
+	 *									[meta_key] =>
+	 *									[meta_value] =>
+	 * @return void
+	 */
+	public function maybe_do_appointment_no_show_removed_hook( $appointment_meta_id, $data ) {
+		if ( empty( $appointment_meta_id ) ) {
+			ssa_debug_log( 'ssa/appointment_meta/after_insert called with empty $appointment_meta_id', 10 );
+			ssa_debug_log( $data, 10 );
+			return;
+		}
+
+		if ( empty( $data['appointment_id'] ) ) {
+			return;
+		}
+		if( empty( $data['meta_key'] ) ) {
+			return;
+		}
+		if ( empty( $data['meta_value'] ) ) {
+			return;
+		}
+		if ( 'status' !== $data['meta_key'] ) {
+			return;
+		}
+		if ( 'no-show-reverted' !== $data['meta_value'] ) {
+			return;
+		}
+
+		$appointment_array = $this->plugin->appointment_model->query( array(
+			'id' => $data['appointment_id'],
+		) );
+
+		$data_after = array_shift( $appointment_array );
+		if ( empty( $data_after ) ) {
+			return;
+		}
+		
+		do_action( 'ssa/appointment/no_show_reverted', $data['appointment_id'], $data_after, $data );
 	}
 
 

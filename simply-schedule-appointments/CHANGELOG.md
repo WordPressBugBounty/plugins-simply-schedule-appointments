@@ -1,5 +1,18 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.15 - 2025-03-26
+
+### Fixes
+
+- Fix foxy select component to pick up the pre-selected value on mount
+- Appointment Page option missing from General Settings on some hosting solutions
+- Improve error handling in the booking app
+- Improve gravity forms redirect handling
+
+### Features and Improvements
+
+- Introduce appointment no show status
+
 ## SSA-VERSION-PREFIX.6.8.11 - 2025-03-11
 
 ### Fixes

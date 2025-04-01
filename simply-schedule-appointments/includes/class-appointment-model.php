@@ -1638,6 +1638,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			$item['selected_resources'] = $this->get_selected_resources( $item['id'] );
 			$item['label_id']		        = $this->get_label_id( $item['id'] );
 			$item['rescheduling_note']  = $this->get_rescheduling_note( $item['id'] );
+			$item['meta']            	  = $this->get_metas( $item['id'] );
 		}
 
 		return $item;

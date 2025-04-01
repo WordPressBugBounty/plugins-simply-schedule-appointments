@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.13
+Stable tag:        1.6.8.15
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,19 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.15 - 2025-03-26 ==
+
+= Fixes =
+
+- Fix foxy select component to pick up the pre-selected value on mount
+- Appointment Page option missing from General Settings on some hosting solutions
+- Improve error handling in the booking app
+- Improve gravity forms redirect handling
+
+= Features and Improvements =
+
+- Introduce appointment no show status
+
 == 1.6.8.11 - 2025-03-11 ==
 
 = Fixes =
@@ -292,19 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 == 1.6.8.1 - 2025-01-15 ==
 
 = Fixes =
-
-- Blackout dates update date selection behavior for staff
-- Support zoomed in booking view on mobile
-- Fix gravity form redirect issue with ssa
-- Fully drop the old booking app
-
-== 1.6.7.78 - 2024-12-24 ==
-
-= Fixes =
-
-- PHP notices around loading text domain with WordPress 6.7
-
-== 1.6.7.74 - 2024-12-10 ==
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

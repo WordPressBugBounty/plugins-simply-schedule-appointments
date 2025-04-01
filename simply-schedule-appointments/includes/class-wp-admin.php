@@ -62,9 +62,8 @@ class SSA_Wp_Admin {
 	
 	public function register_wp_endpoints(){
 		$namespace = 'ssa/v1';
-		$base = 'wp-admin';
 
-		register_rest_route( $namespace, '/' . $base . '/pages', array(
+		register_rest_route( $namespace, '/pages', array(
 			array(
 				'methods'         => WP_REST_Server::READABLE,
 				'callback'        => array( $this, 'get_wp_pages' ),
