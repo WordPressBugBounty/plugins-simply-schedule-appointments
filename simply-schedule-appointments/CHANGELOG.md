@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.19 - 2025-04-09
+
+### Fixes
+
+- Stripe logo/icon missing in Stripe + SSA integration
+- Translations in the notifications are not working
+
 ## SSA-VERSION-PREFIX.6.8.15 - 2025-03-26
 
 ### Fixes

@@ -55,8 +55,12 @@ class SSA_Translation {
 	public function set_programmatic_locale( $locale = null ){
 		
 		$this->programmatic_locale = $locale;
-		// reload SSA translation domain so that the programmatic_locale takes effect
-		load_plugin_textdomain( 'simply-schedule-appointments', false, dirname( ssa()->basename ) . '/languages' );
+
+		// attempt to reload SSA translation domain so that the programmatic_locale takes effect
+		$mo_file = WP_LANG_DIR . '/plugins/simply-schedule-appointments-' . $locale . '.mo';
+		if( file_exists( $mo_file ) ){
+			load_textdomain( 'simply-schedule-appointments', $mo_file );
+		}
 	}
 	
 	

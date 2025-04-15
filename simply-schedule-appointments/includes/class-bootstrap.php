@@ -133,7 +133,7 @@ class SSA_Bootstrap {
 			$admin_static_url = $this->plugin->url( 'admin-app/public/static' );
 		}
 
-		$booking_static_url = $this->plugin->url( 'booking-app/dist/static' );
+		$booking_static_url = $this->plugin->url( 'booking-app-new/dist/static' );
 		if ( defined( 'WP_SITEURL' ) && WP_SITEURL === 'http://localhost:8080' ) {
 			if ( defined( 'SSA_BOOKING_APP_NEW' ) && SSA_BOOKING_APP_NEW ) {
 				$booking_static_url = $this->plugin->url( 'booking-app/public/static' );
