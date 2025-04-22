@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.21 - 2025-04-15
+
+### Fixes
+
+- Fix ssa fails to handle stripe declined cards
+
 ## SSA-VERSION-PREFIX.6.8.19 - 2025-04-09
 
 ### Fixes
