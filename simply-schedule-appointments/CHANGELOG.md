@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.22 - 2025-04-22
+
+### Fixes
+
+- Refactor revision handling: improve action validation and prevent PHP warning
+- Refactor bulk_delete call and remove unnecessary action_title check i…
+- always validate GCAL access token against API to avoid any time misconfiguration
+
 ## SSA-VERSION-PREFIX.6.8.21 - 2025-04-15
 
 ### Fixes

@@ -109,7 +109,10 @@ class SSA_Revision_Model extends SSA_Db_Model {
 				)
 			);
 			// delete revisions rows
-			$this->bulk_delete( $revisions_ids );
+			$this->bulk_delete(
+				array(
+					'id' => $revisions_ids,
+				) );
 		}
 	}
 
@@ -412,9 +415,6 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			$where .=  $wpdb->prepare( ' AND sub_context=%s', sanitize_text_field( $args['sub_context'] ) );
 		}
 
-		// Only query where the action_title is set, this will help querying after the revisions table had been updated
-		$where .= " AND `action_title` IS NOT NULL AND `action_title` != ''";
-
 		return $where;
 
 	}
@@ -616,6 +616,10 @@ class SSA_Revision_Model extends SSA_Db_Model {
 
 	public function insert_revision_appointment( $params ) {
 
+		if ( empty( $params['action'] || empty( $this->get_action_title( $params['action'] ) ) ) ) {
+			return;
+		}
+
 		// below: hints for WP.org to pick up phrases for translation
 		// __( '{{ user }} changed the appointment status to {{ action }}', 'simply-schedule-appointments' );
 		$revision = array(
@@ -638,6 +642,8 @@ class SSA_Revision_Model extends SSA_Db_Model {
 				'business_previous_start_time' => isset( $params['business_previous_start_time'] ) ? $params['business_previous_start_time'] : null,
 				'business_start_date' => isset( $params['business_start_date'] ) ? $params['business_start_date'] : null,
 				'business_start_time' => isset( $params['business_start_time'] ) ? $params['business_start_time'] : null,
+				'notification_cancelation_reason' => isset( $params['notification_cancelation_reason'] ) ? $params['notification_cancelation_reason'] : null,
+				'notification_title' => isset( $params['notification_title'] ) ? $params['notification_title'] : null,
 			),
 			'context'        => 'booking',
 		);
@@ -765,6 +771,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			'notification_with_duration' => 'Notification Scheduled',
 			'reminder' => 'Notification Scheduled',
 			'notification_sent' => 'Notification Sent',
+			'notification_canceled' => 'Notification Canceled',
 			'notification_not_sent' => 'Notification Not Sent',
 			'publish' => 'Appointment Type Created',
 			'delete' => 'Appointment Type Deleted',
@@ -809,8 +816,8 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		}
 
 		// We shouldn't really end up here
-		ssa_debug_log( "Action `$action` does not exist in get_action_title\n", 10 );
-		return 'Unknown Action';
+		ssa_debug_log( "Action `$action` does not exist in get_action_title\n", 5 );
+		return;
 	}
 
 	public function create_item_permissions_check( $request ) {
@@ -1005,6 +1012,8 @@ class SSA_Revision_Model extends SSA_Db_Model {
 				return 'The notification by {{ notification_type }} to remind the {{ recipient_type }} about the appointment could not be sent';
 			case 'opt_out_notification':
 				return 'The user has not opted to receive notifications';
+			case 'notification_canceled':
+				return 'The "{{ notification_title }}" ({{ notification_type }}) notification to the {{ recipient_type }} was canceled for the following reason: {{ notification_cancelation_reason }}';
 			default:
 				return '{{ user }} changed the appointment status to {{ action }}';
 		}
@@ -1069,6 +1078,34 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		$this->insert_revision_appointment( $params );
 		}
 
+	
+	public function insert_revision_on_notification_canceled( $appointment_id, $data) {
+		$defaults = [
+			'data_after'                      => [],
+			'data_before'                     => [],
+			'recipient_type'                  => '',
+			'notification_type'               => '',
+			'notification_title'              => '',
+			'notification_cancelation_reason' => '',
+		];
+	
+		$data = array_merge($defaults, $data);
+
+		$params = array(
+			'result'            => 'success',
+			'action'            => 'notification_canceled',
+			'appointment_id'    => $appointment_id,
+			'data_after'        => $data['data_after'],
+			'data_before'       => $data['data_before'],
+			'recipient_type'    => $data['recipient_type'],
+			'notification_type' => $data['notification_type'],
+			'notification_title'=> $data['notification_title'],
+			'notification_cancelation_reason'=> $data['notification_cancelation_reason'],
+		);
+
+		$this->insert_revision_appointment( $params );
+	}
+
 	public function insert_revision_on_notification_scheduled( $appointment_id, $action_noun, $action_verb, $notification_date, $notification_time, $duration, $recipient_type, $data_after, $data_before) {
 		if($duration > 0){
 			if($action_noun == 'appointment_start'){
@@ -1102,7 +1139,12 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		}
 
 		public function insert_revision_appointment_type( $params ) {
-						$revision = array(
+
+			if( empty( $params['action'] ) || empty( $this->get_action_title( $params['action'] ) ) ) {
+				return; // This is not a supported action
+			}
+
+			$revision = array(
 				'result'         => $params['result'],
 				'appointment_type_id' => $params['appointment_type_id'],
 				'action'         => $params['action'],
@@ -1144,6 +1186,15 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		}
 
 	public function insert_revision_created_appointment_type( $appointment_type_id, $data_after, $data_before = null) {
+
+		if( gettype($data_after) !== 'array' ){
+			$data_after = array();
+		}
+
+		if( gettype($data_before) !== 'array' ){
+			$data_before = array();
+		}
+
 		$data_after['status'] = 'publish';
 		$params = array(
 			'result'			  => 'success',
@@ -1158,6 +1209,15 @@ class SSA_Revision_Model extends SSA_Db_Model {
 	}
 	
 	public function insert_revision_deleted_appointment_type( $appointment_type_id, $data_after, $data_before) {
+
+		if( gettype($data_after) !== 'array' ){
+			$data_after = array();
+		}
+
+		if( gettype($data_before) !== 'array' ){
+			$data_before = array();
+		}
+
 		$data_after['status'] = 'delete';
 		$params = array(
 			'result'		      => 'success',
@@ -1178,6 +1238,11 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		}
 		$changed_fields = $this->get_appt_type_changed_fields($data_after,$data_before);
 		foreach($changed_fields as $changed_field){
+
+			if ( empty( $data_after[ $changed_field ] ) || empty( $data_before[ $changed_field ] ) ) {
+				continue;
+			}
+
 			$old_field = $data_before[$changed_field];
 			$new_field = $data_after[$changed_field];
 			if($changed_field !== 'capacity' && $changed_field !== 'max_event_count'){
@@ -1190,13 +1255,13 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			}
 			
 			$params = array(
-				'result'		      => 'success',
-				'action'			  => $changed_field.'_changed',
+				'result'          => 'success',
+				'action'          => $changed_field.'_changed',
 				'appointment_type_id' => $appointment_type_id,
-				'old_field' 		  => $old_field ,
-				'new_field'		 	  => $new_field,
-				'data_after'		  => $data_after,
-				'data_before'		  => $data_before
+				'old_field'       => $old_field ,
+				'new_field'       => $new_field,
+				'data_after'      => $data_after,
+				'data_before'     => $data_before
 			);
 			$this->insert_revision_appointment_type( $params );
 		}

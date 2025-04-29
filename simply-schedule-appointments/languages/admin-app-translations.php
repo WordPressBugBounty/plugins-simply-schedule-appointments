@@ -995,6 +995,7 @@
       'warnings' => 
       array (
         'cronWarning' => __( 'This notification might be delayed or not sent as expected.', 'simply-schedule-appointments' ),
+        'cronWarningNoShow' => __( 'This notification will be canceled in the event of a no-show.', 'simply-schedule-appointments' ),
         'cronLinkText' => __( 'More details', 'simply-schedule-appointments' ),
       ),
       'when' => 
@@ -1988,6 +1989,8 @@
       'assigned' => __( 'Assigned', 'simply-schedule-appointments' ),
       'notification_scheduled' => __( 'Notification Scheduled', 'simply-schedule-appointments' ),
       'notification_sent' => __( 'Notification Sent', 'simply-schedule-appointments' ),
+      'reminder' => __( 'Reminder', 'simply-schedule-appointments' ),
+      'notification_canceled' => __( 'Notification Canceled', 'simply-schedule-appointments' ),
       'notification_not_sent' => __( 'Notification Not Sent', 'simply-schedule-appointments' ),
       'publish' => __( 'Created', 'simply-schedule-appointments' ),
       'delete' => __( 'Deleted', 'simply-schedule-appointments' ),
@@ -2254,6 +2257,8 @@
       'assigned' => __( 'Assigned', 'simply-schedule-appointments' ),
       'notification_scheduled' => __( 'Notification Scheduled', 'simply-schedule-appointments' ),
       'notification_sent' => __( 'Notification Sent', 'simply-schedule-appointments' ),
+      'reminder' => __( 'Reminder', 'simply-schedule-appointments' ),
+      'notification_canceled' => __( 'Notification Canceled', 'simply-schedule-appointments' ),
       'notification_not_sent' => __( 'Notification Not Sent', 'simply-schedule-appointments' ),
       'publish' => __( 'Created', 'simply-schedule-appointments' ),
       'delete' => __( 'Deleted', 'simply-schedule-appointments' ),

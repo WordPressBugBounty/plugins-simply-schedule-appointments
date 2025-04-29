@@ -194,6 +194,10 @@
 		);
 		
 		if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) > 299 ) {
+			if( wp_remote_retrieve_response_code( $response ) == 401 ){
+				// expired token
+				return false;
+			}
 			ssa_debug_log( print_r( $response, true ), 10); // phpcs:ignore
 			throw new Exception( 'Failed to validate Google Calendar access token' );
 		}
@@ -483,6 +487,7 @@
 			$token = (array) $token;
 		}
 		
+		// if less than 300 seconds remaining, refresh the token anyways
 		$created = 0;
 		if ( isset( $token['created'] ) ) {
 			$created = $token['created'];
@@ -499,22 +504,20 @@
 					$created = $payload['iat'];
 				}
 			}
-		} else {
-			// id_token is not available, so we can't check the "iat"
-			// check using api response
-			try {
-				$valid = $this->validate_access_token( $token );
-				if( $valid ){
-					return false;
-				}
-			} catch (\Throwable $th) {
-				// we're inside of a method that only checks if the token is expired
+		}
+		
+		if( $created > 0 ){
+			$buffer = 300;
+			$expires_in = 3599;
+			// access tokens usually expire in 3599 seconds
+			if( $created + $expires_in - $buffer < time() ){
+				// consider expired to stay on the safe side
 				return true;
 			}
 		}
-
-		// If the token is set to expire in the next 30 seconds.
-		return ( $created + ( $token['expires_in'] - 30 ) ) < time();
+		
+		// invert
+		return ! $this->validate_access_token( $token );
 	}
 	
 	/**

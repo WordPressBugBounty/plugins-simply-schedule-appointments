@@ -333,6 +333,19 @@ class SSA_Notifications {
 			return false;
 		}
 
+		if ( ! empty( $payload['appointment']['meta']['status'] ) && $payload['appointment']['meta']['status'] === 'no_show' ) {
+			$data = [
+				'data_after' => $payload['appointment'],
+				'data_before' => isset($payload['data_before']) ? $payload['data_before'] : array(),
+				'recipient_type' => ssa_get_recipient_type_for_recipients_array( $single_notification_settings['sent_to'] ),
+				'notification_type' => $single_notification_settings['type'],
+				'notification_title' => $single_notification_settings['title'],
+				'notification_cancelation_reason' => esc_html__( 'Appointment marked as no-show.', 'simply-schedule-appointments' ),
+			];
+			$this->plugin->revision_model->insert_revision_on_notification_canceled( $appointment_object->id, $data );
+			return false;
+		}
+
 		if ( $appointment_object->status === 'canceled' ) {
 			// We shouldn't send notifications if the appointment was canceled after this action was queued
 			if (  $payload['action'] !== 'appointment_canceled' ) {

@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.21
+Stable tag:        1.6.8.22
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -13,7 +13,7 @@ Unlimited appointments, booking calendars, and notifications. Powerful appointme
 
 == Description ==
 
-**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 50,000+ businesses, with a 5-star review average.
+**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 60,000+ businesses, with a 5-star review average.
 
 The Simply Schedule Appointments booking calendars are easy and fast to set up. And enjoyable for your customers and clients to book and schedule appointments. **You can set up the appointment scheduling calendars to take your first booking in less than 5 minutes!**
 
@@ -25,10 +25,10 @@ Features included with the Simply Schedule Appointments Free Basic Edition for b
 
 * [Unlimited Booking Calendars](https://simplyscheduleappointments.com/guides/appointment-type-settings/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=unlimited-booking-calendars) and [Customizable Notifications](https://simplyscheduleappointments.com/guides/email-notifications/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=customizable-notifications)
 * Use [Advanced Scheduling Options](https://simplyscheduleappointments.com/guides/advanced-scheduling-options/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=advanced-scheduling-options) and [Blackout Dates](https://simplyscheduleappointments.com/guides/blackout-dates/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=blackout-dates) to highly tailor your schedule
-* Embed the appointment booking calendars using the Block editor, [Elementor widgets](https://simplyscheduleappointments.com/elementor-appointment-booking/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=elementor), [Beaver Builder modules](https://simplyscheduleappointments.com/beaver-builder-appointment-scheduling/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=beaver-builder), and [Divi modules](https://simplyscheduleappointments.com/integrations/divi-booking-widgets/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=divi)
+* Embed the appointment booking calendars using the Block Editor, [Elementor widgets](https://simplyscheduleappointments.com/elementor-appointment-booking/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=elementor), [Beaver Builder modules](https://simplyscheduleappointments.com/beaver-builder-appointment-scheduling/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=beaver-builder), and [Divi modules](https://simplyscheduleappointments.com/integrations/divi-booking-widgets/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=divi)
 * [Style and Customize the Booking Calendars](https://simplyscheduleappointments.com/guides/custom-styles?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=custom-styles) to match your brand and website
 * [Translation-ready](https://simplyscheduleappointments.com/guides/translating-simply-schedule-appointments/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=translating-ssa) - including Spanish, German, French, and more!
-* Deeply connected with WordPress including integrations for the [The Events Calendar](https://simplyscheduleappointments.com/guides/the-events-calendar-setup/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=the-events-calendar) plugin, [WP Fusion Automations](https://simplyscheduleappointments.com/guides/wp-fusion-automations/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=wp-fusion), and more!
+* Deeply connected with WordPress, including integrations for the [The Events Calendar](https://simplyscheduleappointments.com/guides/the-events-calendar-setup/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=the-events-calendar) plugin, [WP Fusion Automations](https://simplyscheduleappointments.com/guides/wp-fusion-automations/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=wp-fusion), and more!
 
 Features included with the Simply Schedule Appointments Paid Premium Editions for booking appointments:
 
@@ -237,6 +237,14 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.22 - 2025-04-22 ==
+
+= Fixes =
+
+- Refactor revision handling: improve action validation and prevent PHP warning
+- Refactor bulk_delete call and remove unnecessary action_title check i…
+- always validate GCAL access token against API to avoid any time misconfiguration
+
 == 1.6.8.21 - 2025-04-15 ==
 
 = Fixes =
@@ -297,13 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Follow every CSS comment with new lines to keep CSS valid
 
 = Features and Improvements =
-
-- Add huf currency
-- Quick connect UX/UI
-
-== 1.6.8.5 - 2025-02-04 ==
-
-= Fixes =
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
