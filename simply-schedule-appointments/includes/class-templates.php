@@ -375,7 +375,7 @@ class SSA_Templates {
 		try {
 			$rendered_template = $twig->render( 'template', $vars );
 		} catch ( Exception $e ) {
-			return $e;
+			return $this->generate_twig_error_summary($e, $template_string);
 		}
 		
 		// need to unescape the html so PHP can process it in wp_kses_post
@@ -383,6 +383,25 @@ class SSA_Templates {
 		$rendered_template = html_entity_decode($rendered_template);
 		
 		return wp_kses_post($rendered_template);
+	}
+
+	protected function get_template_line_at_error( $line = null, $template_string = null ) {
+		if( empty( $line ) || empty( $template_string ) ) {
+			return;
+		}
+		$line = (int) $line - 1; // Convert to 0-indexed
+		$lines = explode("\n", $template_string);
+		return isset($lines[ $line ]) ? $lines[ $line ] : null;
+	}
+
+	protected function generate_twig_error_summary(Exception $e, $template_string) {
+		$msg = '<p>Error on Line: ' . $e->getTemplateLine() . "</p>";
+		$msg .= "<p>" . $e->getRawMessage() . "</p>";
+		$affected_line = $this->get_template_line_at_error( $e->getTemplateLine(), $template_string );
+		if( $affected_line ) {
+			$msg .= "<p>Check this part of your template: <p><pre>" . $affected_line . "</pre>";
+		}
+		return $msg;
 	}
 	
 	

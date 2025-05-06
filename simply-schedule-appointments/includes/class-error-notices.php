@@ -319,6 +319,9 @@ class SSA_Error_Notices {
 						$name 
 					);
 				}
+
+				$message .= "\n\nUpdate your settings: " . $this->plugin->wp_admin->url();
+
 				$this->plugin->notifications->ssa_wp_mail(
 					$settings['global']['admin_email'],
 					$title,

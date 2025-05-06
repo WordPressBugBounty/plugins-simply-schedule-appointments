@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.24 - 2025-04-29
+
+### Fixes
+
+- Improve twilio error handling
+
 ## SSA-VERSION-PREFIX.6.8.22 - 2025-04-22
 
 ### Fixes
