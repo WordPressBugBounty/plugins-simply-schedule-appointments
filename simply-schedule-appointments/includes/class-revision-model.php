@@ -114,6 +114,61 @@ class SSA_Revision_Model extends SSA_Db_Model {
 					'id' => $revisions_ids,
 				) );
 		}
+
+		$this->check_orphaned_revisions_meta();
+	}
+
+	/**
+	 * Check for orphaned revisions meta, that their revision_id doesn't exist and delete them
+	 * TODO: Consider removing this function in the future
+	 *
+	 * @return void
+	 */
+	public function check_orphaned_revisions_meta() {
+		// make sure to query all the revisions entries
+		$revisions = $this->query(
+			array(
+				'number'  => -1,
+				'orderby' => 'id',
+				'order'   => 'ASC', 
+				'fields'  => ['id']
+			)
+		);
+
+		if ( empty( $revisions ) ) {
+			return; // This should be a new site with no appointments yet.
+		}
+
+		$revisions = wp_list_pluck( $revisions, 'id', 'id' );
+
+		$revision_meta = $this->plugin->revision_meta_model->query(
+			array(
+				'number'  => 50,
+				'orderby' => 'id',
+				'order'   => 'ASC', 
+			)
+		);
+
+		if ( empty( $revision_meta ) ) {
+			return;
+		}
+
+		$revision_meta = wp_list_pluck( $revision_meta, 'id', 'revision_id' );
+
+		$revisons_ids_to_delete = array();
+		foreach ( $revision_meta as $revison_id => $id ) {
+			if ( ! isset( $revisions[ $revison_id ] ) ) {
+				$revisons_ids_to_delete[] = $revison_id;
+			}
+		}
+
+		if ( ! empty( $revisons_ids_to_delete ) ) {
+			$this->plugin->revision_meta_model->bulk_delete(
+				array(
+					'revision_id' => $revisons_ids_to_delete,
+				)
+			);
+		}
 	}
 
 	public function has_many() {
