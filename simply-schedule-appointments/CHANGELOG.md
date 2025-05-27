@@ -1,5 +1,18 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.30 - 2025-05-20
+
+### Fixes
+
+- Fix availability logic error
+
+## SSA-VERSION-PREFIX.6.8.28 - 2025-05-13
+
+### Fixes
+
+- Prevent fatal error on Gravity Forms when user inputs wrong credit card details
+- Fix sync resources module to appointment types updates
+
 ## SSA-VERSION-PREFIX.6.8.24 - 2025-04-29
 
 ### Fixes
