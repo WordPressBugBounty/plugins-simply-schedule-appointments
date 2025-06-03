@@ -19,9 +19,9 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 <div class="ssa-upcoming-appointments">
 	<ul class="ssa-upcoming-appointments">
 		<?php if ( ! is_user_logged_in() ) : ?>
-			<?php echo $atts['logged_out_message']; ?>
+			<?php echo wp_kses_post( $atts['logged_out_message'] ); ?>
 		<?php elseif ( empty( $upcoming_appointments ) ) : ?>
-			<?php echo $atts['no_results_message']; ?>
+			<?php echo wp_kses_post( $atts['no_results_message'] ); ?>
 		<?php else : ?>
 			<?php
 			foreach ( $upcoming_appointments as $upcoming_appointment ) :
@@ -84,11 +84,11 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 							<?php
 							// link meeting details to the admin ssa panel.
 							if ( ! empty( $upcoming_appointment['web_meeting_url'] ) && filter_var( $atts['web_meeting_url'], FILTER_VALIDATE_BOOLEAN ) ) {
-								echo ' <a target="_blank" href="' . $upcoming_appointment['web_meeting_url'] . '"> ' . $atts['web_meeting_link_label'] . ' </a>';
+								echo ' <a target="_blank" href="' . $upcoming_appointment['web_meeting_url'] . '"> ' . wp_kses_post( $atts['web_meeting_link_label'] ) . ' </a>';
 							}
 
 							if ( ! empty( $atts['details_link_displayed'] ) ) {
-								echo '<a target="_blank" href=' . ssa()->wp_admin->url( '/ssa/appointment/' ) . $upcoming_appointment['id'] . '>' . $atts['details_link_label'] . '</a>';
+								echo '<a target="_blank" href=' . ssa()->wp_admin->url( '/ssa/appointment/' ) . $upcoming_appointment['id'] . '>' . wp_kses_post( $atts['details_link_label'] ) . '</a>';
 							}
 							?>
 
@@ -98,7 +98,7 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 				<?php endforeach; ?>
 				<?php 
 					if ( ! empty( $upcoming_appointments ) ) {
-							echo '<a href=' . ssa()->wp_admin->url( '/ssa/appointments' ) . '><li class="ssa-upcoming-appointment"><div class="md-list-text-container">'.$atts['all_appointments_link_label']. '</div></li></a>'; 
+							echo '<a href=' . ssa()->wp_admin->url( '/ssa/appointments' ) . '><li class="ssa-upcoming-appointment"><div class="md-list-text-container">'.wp_kses_post( $atts['all_appointments_link_label'] ). '</div></li></a>'; 
 					}
 				?>
 		<?php endif; ?>

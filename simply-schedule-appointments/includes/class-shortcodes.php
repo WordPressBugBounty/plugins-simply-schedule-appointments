@@ -355,6 +355,9 @@ class SSA_Shortcodes {
 	}
 
 	public function tec_ssa_booking( $atts = array() ) {
+		// sanitize all atts
+		$atts = array_map( 'sanitize_text_field', $atts );
+
 		$post_id = get_the_ID();
 		if ( ! function_exists( 'tribe_is_event' ) || ! tribe_is_event( $post_id ) ) {
 			return $this->ssa_booking( $atts );
@@ -480,6 +483,9 @@ class SSA_Shortcodes {
 	}
 
 	public function ssa_booking( $atts, $is_embedded_page = false ) {
+		// sanitize all atts
+		$atts = array_map( 'sanitize_text_field', $atts );
+		
 		$atts = shortcode_atts( $this->get_ssa_booking_arg_defaults(), $atts, 'ssa_booking' );
 		$atts = apply_filters( 'ssa_booking_shortcode_atts', $atts );
 		// escape JS
@@ -716,6 +722,8 @@ class SSA_Shortcodes {
 	}
 
 	public function ssa_admin_upcoming_appointments( $atts ) {
+		// sanitize - currently the shortcode is hardcoded but sanitize anyway
+		$atts = array_map( 'sanitize_text_field', $atts );
 		$atts = shortcode_atts(
 			array(
 				'recursive'                  => -1, // omit the unneeded details
@@ -752,6 +760,7 @@ class SSA_Shortcodes {
 
 
 	public function ssa_past_appointments( $atts ) {
+		$atts = array_map( 'sanitize_text_field', $atts );
 		$atts = shortcode_atts(
 			array(
 				'status'                     => 'booked',
@@ -782,6 +791,7 @@ class SSA_Shortcodes {
 	}
 
 	public function ssa_upcoming_appointments( $atts ) {
+		$atts = array_map( 'sanitize_text_field', $atts );
 		$block_settings = isset($atts['block_settings']) ? $atts['block_settings'] : array();
 		
 		$atts = shortcode_atts(

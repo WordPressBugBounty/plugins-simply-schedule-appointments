@@ -11,11 +11,11 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 <div class="ssa-upcoming-appointments-container" role="region" aria-labelledby="appointments-heading">
 	<div class="ssa-upcoming-appointments">
 		<?php if ( ! is_user_logged_in() ) : ?>
-			<?php echo $atts['logged_out_message']; ?>
+			<?php echo wp_kses_post( $atts['logged_out_message'] ); ?>
 		<?php elseif ( empty( $upcoming_appointments ) && !empty( $atts['block_settings']['no_results_message'] ) ) : ?>
-			<?php echo $atts['block_settings']['no_results_message']; ?>
+			<?php echo wp_kses_post( $atts['block_settings']['no_results_message'] ); ?>
 		<?php elseif ( empty( $upcoming_appointments ) ) : ?>
-			<?php echo $atts['no_results_message']; ?>
+			<?php echo wp_kses_post( $atts['no_results_message'] ); ?>
 		<?php else : ?>
 			<?php foreach ( $upcoming_appointments as $upcoming_appointment ) : ?>
 				<?php $staff_details = ssa()->staff_appointment_model->get_staff_details_for_appointment_id( $upcoming_appointment['id'] );
@@ -185,7 +185,7 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 							<div class="action-bar">
 								<?php
 								if ( ! empty( $atts['details_link_displayed'] ) ) {
-									echo '<button id="details_button" onclick="window.open(\'' . ssa()->appointment_model->get_public_edit_url($upcoming_appointment['id']) . '\', \'_blank\')">' . $atts['details_link_label'] . '</button>';
+									echo '<button id="details_button" onclick="window.open(\'' . ssa()->appointment_model->get_public_edit_url($upcoming_appointment['id']) . '\', \'_blank\')">' . wp_kses_post( $atts['details_link_label'] ) . '</button>';
 								}
 								?>
 							</div>

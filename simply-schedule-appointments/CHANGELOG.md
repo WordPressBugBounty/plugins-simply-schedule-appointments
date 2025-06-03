@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.32 - 2025-05-27
+
+### Fixes
+
+- Automatically remove error notice if staff is inactive or deleted or if they had disconnected
+
 ## SSA-VERSION-PREFIX.6.8.30 - 2025-05-20
 
 ### Fixes

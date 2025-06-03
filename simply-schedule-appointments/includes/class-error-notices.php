@@ -210,7 +210,16 @@ class SSA_Error_Notices {
 			if( ! $this->is_display_condition_met( ['id' => $key, 'value' => $value], $schema ) ){
 				continue;
 			}
-			array_push( $output, $schema[ $key ] );
+			
+			$notice = $schema[ $key ];
+			
+			if( ! empty( $value['staff_id'] ) ) {
+				$notice['staff_id'] = $value['staff_id'];
+				$name = SSA_Staff_Model::get_staff_name_by_id( $value['staff_id'] );
+				$notice['message'] = $notice['message'] . ' - staff #' . $value['staff_id'] . ' (' . $name . ')';
+			}
+			
+			array_push( $output, $notice );
 		}
 		return $output;
 	}
@@ -500,7 +509,8 @@ class SSA_Error_Notices {
 				'priority' 		=> 10,
 				'message'		=> __( 'Looks like SSA Quick Connect\'s access to your Google Calendar was revoked. Please connect your calendar again', 'simply-schedule-appointments' ),
 				'link'			=> $this->plugin->wp_admin->url( '/ssa/settings/google-calendar' ),
-				'link_message' 	=> 'Go to your calendar settings'
+				'link_message' 	=> 'Go to your calendar settings',
+				'callback'	=> 'check_if_quick_connect_gcal_re_authorize_is_needed'
 			),
 			'quick_connect_gcal_backoff'	=> array(
 				'id'			=> 'quick_connect_gcal_backoff',
@@ -579,6 +589,23 @@ class SSA_Error_Notices {
 		}
 	}
 	
+	public function check_if_quick_connect_gcal_re_authorize_is_needed( $params = array() ) {
+		if ( empty( $params['id'] ) ) {
+			return;
+		}
+		
+		if( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
+			return $this->delete_error_notice( $params['id'] );
+		}
+		
+		$google_calendar_settings = ssa()->google_calendar_settings->get();
+		if( ! empty( $google_calendar_settings['quick_connect_gcal_mode'] ) ){
+			// we delete the error notice inside get_quick_connect_access_token when relevant
+			$this->plugin->google_calendar->get_quick_connect_access_token();
+		} else {
+			return $this->delete_error_notice( $params['id'] );
+		}
+	}
 	public function check_if_quick_connect_gcal_backoff_is_reset( $params = array() ) {
 		$id = empty( $params['id'] ) ? '' : $params['id'];
 		if ( empty( $id ) ) {

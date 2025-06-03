@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.30
+Stable tag:        1.6.8.32
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.32 - 2025-05-27 ==
+
+= Fixes =
+
+- Automatically remove error notice if staff is inactive or deleted or if they had disconnected
+
 == 1.6.8.30 - 2025-05-20 ==
 
 = Fixes =
@@ -299,12 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Add display condition logic for error notices based on user roles
 
 == 1.6.8.9 - 2025-03-04 ==
-
-= Fixes =
-
-- Avoid fatal error when access token is missing but error notice was set
-
-= Features and Improvements =
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

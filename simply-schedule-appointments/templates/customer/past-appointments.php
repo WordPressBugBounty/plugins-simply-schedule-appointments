@@ -11,9 +11,9 @@ $date_format = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a' ) . ' (T
 <div class="ssa-past-appointments">
 	<ul class="ssa-past-appointments">
 		<?php if ( ! is_user_logged_in() ) : ?>
-			<?php echo $atts['logged_out_message']; ?>
+			<?php echo wp_kses_post( $atts['logged_out_message'] ); ?>
 		<?php elseif ( empty( $past_appointments ) ) : ?>
-			<?php echo $atts['no_results_message']; ?>
+			<?php echo wp_kses_post( $atts['no_results_message'] ); ?>
 		<?php else : ?>
 			<?php foreach ( $past_appointments as $past_appointment ) : ?>
 				<li>
@@ -41,7 +41,7 @@ $date_format = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a' ) . ' (T
 								echo ' <a target="_blank" href="' . $past_appointment['web_meeting_url'] . '">' . 'Open Web Meeting' . '</a>';
 							}
 							if ( ! empty( $atts['details_link_displayed'] ) ) {
-								echo ' <a target="_blank" href="' . ssa()->appointment_model->get_public_edit_url( $past_appointment['id'] ) . '">' . $atts['details_link_label'] . '</a>';
+								echo ' <a target="_blank" href="' . ssa()->appointment_model->get_public_edit_url( $past_appointment['id'] ) . '">' . wp_kses_post( $atts['details_link_label'] ) . '</a>';
 							}
 							?>
 						</span>
