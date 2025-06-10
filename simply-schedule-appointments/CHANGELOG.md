@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.34 - 2025-06-03
+
+### Fixes
+
+- Fix issue with vo and monthly dates
+- Group appointments with identical resources should have common group parent
+- Rescheduling X group appointments fixes
+
 ## SSA-VERSION-PREFIX.6.8.32 - 2025-05-27
 
 ### Fixes

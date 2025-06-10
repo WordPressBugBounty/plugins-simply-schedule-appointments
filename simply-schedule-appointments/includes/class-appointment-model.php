@@ -56,7 +56,6 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		add_action( 'ssa/appointment/after_insert', array( $this, 'update_rescheduled_to_appointment_id' ), 10, 3 );
 		
 		add_filter( 'ssa/appointment/after_get', array( $this, 'format_multiline_customer_information' ), 10, 1 );
-		
 	}
 	
 	public function format_multiline_customer_information( $item ) {
@@ -1053,6 +1052,42 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			$appointment_meta['rescheduled_from_start_dates'][] = $appointment->data['start_date'];
 			// include the meta data so it gets updated
 			$params['meta_data'] = $appointment_meta;
+			$capacity_type = $appointment_type->capacity_type;
+		
+			// if belonged to a group event, remove old event, inherit new one if it exists, or keep empty
+			if ( ! empty( $capacity_type ) && $capacity_type === 'group' ) {
+				$previous_group_appointments_array = $this->plugin->capacity->get_matching_group_appointments( $appointment->data, $appointment_type );
+				// only detach if there are other appointments in the group
+				if ( ! empty( $previous_group_appointments_array ) && count( $previous_group_appointments_array ) > 1 ) {
+					// default to the current appointment id as group_id, maybe override in the next step
+					$params['group_id'] = $item_id;
+					// also detach from shared details
+					$params['web_meeting_password'] = '';
+					$params['web_meeting_id'] = '';
+					$params['web_meeting_url'] = '';
+					
+					// we remove ref to calendar details
+					// because if this was the parent, it should not move all group with it
+					// if it's not the parent, these will already be empty
+					$params['google_calendar_id'] = '';
+					$params['google_calendar_event_id'] = '';
+				}
+				
+				$group_appointments_array = $this->plugin->capacity->get_matching_group_appointments( $params, $appointment_type );
+				if ( ! empty( $group_appointments_array ) ) {
+					// find the parent appointment
+					foreach( $group_appointments_array as $index => $group_appointment ){
+						if( $group_appointment['id'] != $item_id  && $group_appointment['id'] == $group_appointment['group_id']){
+							// copy select fields over from group parent
+							$params['group_id'] = $group_appointment['group_id'];
+							$params['web_meeting_password'] = $group_appointment['web_meeting_password'];
+							$params['web_meeting_id'] = $group_appointment['web_meeting_id'];
+							$params['web_meeting_url'] = $group_appointment['web_meeting_url'];
+							break;
+						}
+					}
+				}
+			}
 		}
 		
 		// if existing appointment has status of booked, prevent updating it to a status of abandoned
