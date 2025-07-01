@@ -54,6 +54,10 @@ class SSA_Action_Scheduler {
 	 * @return void
 	 */
 	public function schedule_async_actions() {
+		if( ssa_should_skip_async_logic() ) {
+			return;
+		}
+		
 		if ( ! class_exists( 'ActionScheduler' ) ) {
 			return;
 		}

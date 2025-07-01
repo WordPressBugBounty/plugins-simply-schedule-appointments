@@ -504,6 +504,8 @@ class SSA_Availability_Query {
 	}
 
 	public function is_prospective_appointment_bookable( SSA_Appointment_Object $appointment ) {
+		global $ssa_staff_unavailable_start_dates;
+
 		$schedule = $this->get_schedule( array(
 			'skip_appointment_id' => $appointment->id,
 		) );
@@ -516,6 +518,10 @@ class SSA_Availability_Query {
 			$appointment_type = $this->appointment_type;
 		} else {
 			$appointment_type = $appointment->get_appointment_type();
+		}
+
+		if ( ! empty( $ssa_staff_unavailable_start_dates[$appointment->start_date] ) ) {
+			return false; // staff member is unavailable at this time
 		}
 
 		if ( ! $schedule->is_appointment_period_available( $appointment, $appointment_type ) ) {

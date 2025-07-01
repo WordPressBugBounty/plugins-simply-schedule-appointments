@@ -81,6 +81,10 @@ class SSA_Revision_Model extends SSA_Db_Model {
 	 * @return void
 	 */
 	public function schedule_async_actions() {
+		if( ssa_should_skip_async_logic() ) {
+			return;
+		}
+		
 		// below functions wrap the action scheduler methods, make all the needed checks and log any failures
 		if ( false === ssa_has_scheduled_action( 'ssa/revisions/cleanup' ) ) {
 			ssa_schedule_recurring_action( strtotime( 'now' ), DAY_IN_SECONDS, 'ssa/revisions/cleanup' );

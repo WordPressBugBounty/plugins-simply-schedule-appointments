@@ -1674,6 +1674,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			$item['label_id']		        = $this->get_label_id( $item['id'] );
 			$item['rescheduling_note']  = $this->get_rescheduling_note( $item['id'] );
 			$item['meta']            	  = $this->get_metas( $item['id'] );
+			$item['payments']						= $this->get_payments_for_appointment( $item['id'] );
 		}
 
 		return $item;
@@ -1682,6 +1683,20 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	public function get_rescheduling_note( $id ) {
 		$meta = $this->get_metas( $id, array( 'rescheduling_note' ) );
 		return isset( $meta['rescheduling_note'] ) ? $meta['rescheduling_note'] : "";
+	}
+
+	/**
+	 * Get the payments for a specific appointment.
+	 * Only returns payments if the payments module is installed and enabled.
+	 *
+	 * @param [type] $appointment_id
+	 * @return void
+	 */
+	public function get_payments_for_appointment( $appointment_id ) {
+		if ( ! $this->plugin->settings_installed->is_enabled( 'payments' ) ) {
+			return array();
+		}
+		return $this->plugin->payment_model->query( array( 'appointment_id' => $appointment_id ) );
 	}
 
 	/**

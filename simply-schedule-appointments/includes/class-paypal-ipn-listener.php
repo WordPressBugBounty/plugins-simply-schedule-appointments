@@ -23,7 +23,7 @@ class SSA_Paypal_Ipn_Listener {
 	 *  @package    PHP-PayPal-IPN
 	 *  @author     Micah Carrick
 	 *  @copyright  (c) 2011 - Micah Carrick
-	 *  @version    1.6.8.36
+	 *  @version    1.6.8.38
 	 *  @license    http://opensource.org/licenses/gpl-3.0.html
 	 */
 

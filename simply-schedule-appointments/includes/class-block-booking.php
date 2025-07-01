@@ -39,223 +39,245 @@ class SSA_Block_Booking {
 	 * @since  2.4.0
 	 */
 	public function hooks() {
-		add_action( 'init', array( $this, 'register_booking_block' ) );
+		add_action( 'init', array( $this, 'maybe_register_booking_block' ) );
+	}
+
+	public function maybe_register_booking_block() {
+		if( ssa_doing_async() ) {
+			return;
+		}
+		
+		if ( wp_doing_cron() ) {
+			return;
+		}
+		
+		if( ssa_is_json_request() ) {
+			return;
+		}
+		
+		if( ssa_is_file_request() ) {
+			return;
+		}
+		
+		if ( ! function_exists( 'register_block_type' ) ) {
+			return;
+		}
+		
+		return $this->register_booking_block();
 	}
 
 	public function register_booking_block() {
-		if ( function_exists( 'register_block_type' ) ) {
-			wp_register_script(
-				'ssa-booking-block-js',
-				$this->plugin->url( 'assets/js/block-booking.js' ),
-				array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-editor' )
+		wp_register_script(
+			'ssa-booking-block-js',
+			$this->plugin->url( 'assets/js/block-booking.js' ),
+			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-editor' )
+		);
+		wp_register_style(
+			'ssa-booking-block-css',
+			$this->plugin->url( 'assets/css/block-booking.css' )
+		);
+
+		$appointment_types = $this->plugin->appointment_type_model->query( array(
+			'status' => 'publish',
+		) );
+		$ssa_appointment_key_values = wp_list_pluck( $appointment_types, 'title', 'slug' );
+		asort( $ssa_appointment_key_values );
+
+		wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypes', $ssa_appointment_key_values );
+
+		$appointment_type_labels = $this->plugin->appointment_type_label_model->query();
+
+		$ssa_appointment_label_key_values = wp_list_pluck( $appointment_type_labels, 'name', 'id' );
+		asort( $ssa_appointment_label_key_values );
+
+		wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypeLabels', $ssa_appointment_label_key_values );
+
+		/* Booking flow */
+		if ( ssa_should_render_booking_flow() ) {
+			$booking_flow_options = array(
+				'main_booking_flow' => array(
+					array(
+						'value' => 'appt_type_settings',
+						'label' => __('Use default settings from appointment type', 'simply-schedule-appointments'),
+					),
+					array(
+						'value' => 'expanded',
+						'label' => __('Expanded', 'simply-schedule-appointments'),
+					),
+					array(
+						'value' => 'express',
+						'label' => __('Express', 'simply-schedule-appointments'),
+					),
+					array(
+						'value' => 'first_available',
+						'label' => __('First available', 'simply-schedule-appointments'),
+					),
+				),
+				'suggest_first_available' => array(
+					'duration' => array(
+						'value' => 0,
+						'label' => __('Duration', 'simply-schedule-appointments'),
+					),
+					'duration_unit' => array(
+						array(
+							'value' => 'minutes',
+							'label' => __('Minutes', 'simply-schedule-appointments'),
+						),
+						array(
+							'value' => 'hours',
+							'label' => __('Hours', 'simply-schedule-appointments'),
+						),
+						array(
+							'value' => 'days',
+							'label' => __('Days', 'simply-schedule-appointments'),
+						),
+						array(
+							'value' => 'weeks',
+							'label' => __('Weeks', 'simply-schedule-appointments'),
+						),
+					),
+				),
+				'fallback_flow' => array(
+					array(
+						'value' => 'expanded',
+						'label' => __('Expanded', 'simply-schedule-appointments'),
+					),
+					array(
+						'value' => 'express',
+						'label' => __('Express', 'simply-schedule-appointments'),
+					),
+				),
+				'date_view' => array(
+					array(
+						'value' => 'week',
+						'label' => __('Weekly', 'simply-schedule-appointments'),
+					),
+					array(
+						'value' => 'month',
+						'label' => __('Monthly', 'simply-schedule-appointments'),
+					),
+					array(
+						'value' => 'only_available',
+						'label' => __('Only available dates', 'simply-schedule-appointments'),
+					),
+				),
+				'time_view' => array(
+					array(
+						'value' => 'time_of_day_columns',
+						'label' => __('Time of day columns', 'simply-schedule-appointments'),
+					),
+					array(
+						'value' => 'single_column',
+						'label' => __('Single column', 'simply-schedule-appointments'),
+					),
+				)
 			);
-			wp_register_style(
-				'ssa-booking-block-css',
-				$this->plugin->url( 'assets/css/block-booking.css' )
-			);
-
-			$appointment_types = $this->plugin->appointment_type_model->query( array(
-				'status' => 'publish',
-			) );
-			$ssa_appointment_key_values = wp_list_pluck( $appointment_types, 'title', 'slug' );
-			asort( $ssa_appointment_key_values );
-
-			wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypes', $ssa_appointment_key_values );
-
-			$appointment_type_labels = $this->plugin->appointment_type_label_model->query();
-
-			$ssa_appointment_label_key_values = wp_list_pluck( $appointment_type_labels, 'name', 'id' );
-			asort( $ssa_appointment_label_key_values );
-
-			wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypeLabels', $ssa_appointment_label_key_values );
-
-			/* Booking flow */
-			if ( ssa_should_render_booking_flow() ) {
-				$booking_flow_options = array(
-					'main_booking_flow' => array(
-						array(
-							'value' => 'appt_type_settings',
-							'label' => __('Use default settings from appointment type', 'simply-schedule-appointments'),
-						),
-						array(
-							'value' => 'expanded',
-							'label' => __('Expanded', 'simply-schedule-appointments'),
-						),
-						array(
-							'value' => 'express',
-							'label' => __('Express', 'simply-schedule-appointments'),
-						),
-						array(
-							'value' => 'first_available',
-							'label' => __('First available', 'simply-schedule-appointments'),
-						),
-					),
-					'suggest_first_available' => array(
-						'duration' => array(
-							'value' => 0,
-							'label' => __('Duration', 'simply-schedule-appointments'),
-						),
-						'duration_unit' => array(
-							array(
-								'value' => 'minutes',
-								'label' => __('Minutes', 'simply-schedule-appointments'),
-							),
-							array(
-								'value' => 'hours',
-								'label' => __('Hours', 'simply-schedule-appointments'),
-							),
-							array(
-								'value' => 'days',
-								'label' => __('Days', 'simply-schedule-appointments'),
-							),
-							array(
-								'value' => 'weeks',
-								'label' => __('Weeks', 'simply-schedule-appointments'),
-							),
-						),
-					),
-					'fallback_flow' => array(
-						array(
-							'value' => 'expanded',
-							'label' => __('Expanded', 'simply-schedule-appointments'),
-						),
-						array(
-							'value' => 'express',
-							'label' => __('Express', 'simply-schedule-appointments'),
-						),
-					),
-					'date_view' => array(
-						array(
-							'value' => 'week',
-							'label' => __('Weekly', 'simply-schedule-appointments'),
-						),
-						array(
-							'value' => 'month',
-							'label' => __('Monthly', 'simply-schedule-appointments'),
-						),
-						array(
-							'value' => 'only_available',
-							'label' => __('Only available dates', 'simply-schedule-appointments'),
-						),
-					),
-					'time_view' => array(
-						array(
-							'value' => 'time_of_day_columns',
-							'label' => __('Time of day columns', 'simply-schedule-appointments'),
-						),
-						array(
-							'value' => 'single_column',
-							'label' => __('Single column', 'simply-schedule-appointments'),
-						),
-					)
-				);
-				wp_localize_script( 'ssa-booking-block-js', 'ssaBookingFlowOptions', $booking_flow_options );
-			}
-			/* End booking flow */
-
-			/* Appointment types view */
-			$appointment_types_views_options = array(
-				array(
-					'value' => 'cardList',
-					'label' => __('List', 'simply-schedule-appointments'),
-				),
-				array(
-					'value' => 'cardGrid',
-					'label' => __('Grid', 'simply-schedule-appointments'),
-				),
-				array(
-					'value' => 'cardColumns',
-					'label' => __('Two Columns', 'simply-schedule-appointments'),
-				),
-			);
-			wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypesViewOptions', $appointment_types_views_options );
-			/* End appointment types view */
-
-			register_block_type( 'ssa/booking', array(
-				'editor_script' => 'ssa-booking-block-js',
-				'editor_style'  => 'ssa-booking-block-css',
-				'keywords' => array( 'ssa', 'appointments', 'simply', 'booking' ),
-				'attributes' => array (
-					'filter' => array (
-						'type' => 'string',
-						'default' => '',
-					),
-					'type' => array (
-						'type' => 'string',
-						'default' => '' ,
-					),
-					'types' => array (
-						'type' => 'array',
-						'default' => [] ,
-					),
-					'label' => array (
-						'type' => 'string',
-						'default' => '',
-					),
-
-					/* Appointment type config */
-
-					'appointment_types_view' => array(
-						'type' => 'string',
-						'default' => 'cardList',
-					),
-
-					/* End appointment type config */
-
-					/* Booking flow config */
-
-					'suggest_first_available' => array (
-						'type' => 'string',
-						'default' => '',
-					),
-					'suggest_first_available_duration' => array (
-						'type' => 'number',
-						'default' => 1,
-					),
-					'suggest_first_available_duration_unit' =>  array(
-						'type' => 'string',
-						'default' => 'week',
-					),
-					'flow' => array (
-						'type' => 'string',
-						'default' => 'appt_type_settings',
-					),
-					'fallback_flow' => array (
-						'type' => 'string',
-						'default' => 'expanded',
-					),
-					'time_view' => array (
-						'type' => 'string',
-						'default' => 'time_of_day_columns',
-					),
-					'date_view' => array (
-						'type' => 'string',
-						'default' => 'week',
-					),
-
-					/* End booking flow config */
-
-					'accent_color' => array (
-						'type' => 'string',
-						'default' => '',
-					),
-					'background' => array (
-						'type' => 'string',
-						'default' => '',
-					),
-					'padding' => array (
-						'type' => 'number',
-						'default' => 0,
-					),
-					'padding_unit' => array (
-						'type' => 'string',
-						'default' => '',
-					),
-				),
-
-				'render_callback' => array( $this, 'render' ),
-			) );
+			wp_localize_script( 'ssa-booking-block-js', 'ssaBookingFlowOptions', $booking_flow_options );
 		}
+		/* End booking flow */
+
+		/* Appointment types view */
+		$appointment_types_views_options = array(
+			array(
+				'value' => 'cardList',
+				'label' => __('List', 'simply-schedule-appointments'),
+			),
+			array(
+				'value' => 'cardGrid',
+				'label' => __('Grid', 'simply-schedule-appointments'),
+			),
+			array(
+				'value' => 'cardColumns',
+				'label' => __('Two Columns', 'simply-schedule-appointments'),
+			),
+		);
+		wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypesViewOptions', $appointment_types_views_options );
+		/* End appointment types view */
+
+		register_block_type( 'ssa/booking', array(
+			'editor_script' => 'ssa-booking-block-js',
+			'editor_style'  => 'ssa-booking-block-css',
+			'keywords' => array( 'ssa', 'appointments', 'simply', 'booking' ),
+			'attributes' => array (
+				'filter' => array (
+					'type' => 'string',
+					'default' => '',
+				),
+				'type' => array (
+					'type' => 'string',
+					'default' => '' ,
+				),
+				'types' => array (
+					'type' => 'array',
+					'default' => [] ,
+				),
+				'label' => array (
+					'type' => 'string',
+					'default' => '',
+				),
+
+				/* Appointment type config */
+
+				'appointment_types_view' => array(
+					'type' => 'string',
+					'default' => 'cardList',
+				),
+
+				/* End appointment type config */
+
+				/* Booking flow config */
+
+				'suggest_first_available' => array (
+					'type' => 'string',
+					'default' => '',
+				),
+				'suggest_first_available_duration' => array (
+					'type' => 'number',
+					'default' => 1,
+				),
+				'suggest_first_available_duration_unit' =>  array(
+					'type' => 'string',
+					'default' => 'week',
+				),
+				'flow' => array (
+					'type' => 'string',
+					'default' => 'appt_type_settings',
+				),
+				'fallback_flow' => array (
+					'type' => 'string',
+					'default' => 'expanded',
+				),
+				'time_view' => array (
+					'type' => 'string',
+					'default' => 'time_of_day_columns',
+				),
+				'date_view' => array (
+					'type' => 'string',
+					'default' => 'week',
+				),
+
+				/* End booking flow config */
+
+				'accent_color' => array (
+					'type' => 'string',
+					'default' => '',
+				),
+				'background' => array (
+					'type' => 'string',
+					'default' => '',
+				),
+				'padding' => array (
+					'type' => 'number',
+					'default' => 0,
+				),
+				'padding_unit' => array (
+					'type' => 'string',
+					'default' => '',
+				),
+			),
+
+			'render_callback' => array( $this, 'render' ),
+		) );
 	}
 
 	function convertDurationToMinutes($duration, $unit) {

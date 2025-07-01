@@ -75,12 +75,17 @@ class SSA_Async_Action_Model extends TD_Async_Action_Model {
 		
 		return $where;
 	}
+	
 	/**
 	 * Scheduling the cleanup of completed async actions
 	 *
 	 * @return void
 	 */
 	public function schedule_async_action_cleanup() {
+		if( ssa_should_skip_async_logic() ) {
+			return;
+		}
+
 		if ( false === ssa_has_scheduled_action( 'ssa/async_actions/cleanup' ) ) {
 			ssa_schedule_recurring_action( strtotime( 'now' ), DAY_IN_SECONDS, 'ssa/async_actions/cleanup' );
 		}

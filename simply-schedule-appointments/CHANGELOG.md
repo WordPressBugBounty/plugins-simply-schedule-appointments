@@ -1,5 +1,16 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.38 - 2025-06-24
+
+### Fixes
+
+- Admin App SMS Twilio – Allow Alphanumeric Characters
+- Enhance appointment slot availability for teams
+
+### Features and Improvements
+
+- Append transaction id to appointments CSV export
+
 ## SSA-VERSION-PREFIX.6.8.34 - 2025-06-03
 
 ### Fixes

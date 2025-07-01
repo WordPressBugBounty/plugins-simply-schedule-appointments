@@ -1049,3 +1049,36 @@ function ssa_sanitize_color_input($color) {
 
     return null;
 }
+
+// sometimes the request hits the php code even though it's a file request
+function ssa_is_json_request() {
+	// wp_is_json_request checks for the headers - not helpful here
+	// so we check if /wp-json/ is in the request URI
+	return strpos( $_SERVER['REQUEST_URI'], '/wp-json/' ) !== false;
+}
+
+function ssa_is_file_request() {
+    $request_uri = $_SERVER['REQUEST_URI'];
+    $file_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico', 'css', 'js', 'woff', 'woff2', 'ttf', 'eot', 'otf', 'svg', 'webp', 'map'];
+    $path_info = pathinfo($request_uri);
+
+    if ( isset( $path_info['extension'] ) && in_array( strtolower( $path_info['extension'] ), $file_extensions ) ) {
+        return true;
+    }
+    return false;
+}
+
+function ssa_should_skip_async_logic() {
+	$should_skip = true;
+		
+	if( ssa_doing_async() ) {
+		$should_skip = false;
+	}
+	
+	// wp cron
+	if ( wp_doing_cron() ) {
+		$should_skip = false;
+	}
+	
+	return $should_skip;
+}
