@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.40 - 2025-07-01
+
+### Fixes
+
+- Gracefully handle when user did not give SSA enough permissions
+
 ## SSA-VERSION-PREFIX.6.8.38 - 2025-06-24
 
 ### Fixes

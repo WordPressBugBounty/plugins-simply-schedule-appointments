@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.38
+Stable tag:        1.6.8.40
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.40 - 2025-07-01 ==
+
+= Fixes =
+
+- Gracefully handle when user did not give SSA enough permissions
+
 == 1.6.8.38 - 2025-06-24 ==
 
 = Fixes =
@@ -296,13 +302,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Fix ssa fails to handle stripe declined cards
 
 == 1.6.8.19 - 2025-04-09 ==
-
-= Fixes =
-
-- Stripe logo/icon missing in Stripe + SSA integration
-- Translations in the notifications are not working
-
-== 1.6.8.15 - 2025-03-26 ==
 
 = Fixes =
 
