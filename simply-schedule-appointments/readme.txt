@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.42
+Stable tag:        1.6.8.43
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.43 - 2025-07-15 ==
+
+= Fixes =
+
+- Fix mobile screens support express booking layout
+
 == 1.6.8.40 - 2025-07-01 ==
 
 = Fixes =
@@ -296,12 +302,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - always validate GCAL access token against API to avoid any time misconfiguration
 
 == 1.6.8.21 - 2025-04-15 ==
-
-= Fixes =
-
-- Fix ssa fails to handle stripe declined cards
-
-== 1.6.8.19 - 2025-04-09 ==
 
 = Fixes =
 

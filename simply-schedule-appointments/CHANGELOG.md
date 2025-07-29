@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.43 - 2025-07-15
+
+### Fixes
+
+- Fix mobile screens support express booking layout
+
 ## SSA-VERSION-PREFIX.6.8.40 - 2025-07-01
 
 ### Fixes
