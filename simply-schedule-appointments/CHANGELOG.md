@@ -1,5 +1,18 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.45 - 2025-07-29
+
+### Fixes
+
+- Add missing z-index variable for dialog in foxy-material styles
+- Add isOkToReturn method to validate availability for returning slots
+- Error loading block: Invalid block
+- Bug: Phone field
+
+### Features and Improvements
+
+- Improve Vue Telephone Field Component
+
 ## SSA-VERSION-PREFIX.6.8.43 - 2025-07-15
 
 ### Fixes

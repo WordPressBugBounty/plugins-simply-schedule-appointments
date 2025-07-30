@@ -2,6 +2,7 @@
 
 module.exports = {
   filenameHashing: false,
+  transpileDependencies: ['vue-tel-input'], // Ensures that vue-tel-input is transpiled by Babel to support modern JS syntax (e.g., ??, ?.)
   chainWebpack: config => {
     config
       .plugin('html')

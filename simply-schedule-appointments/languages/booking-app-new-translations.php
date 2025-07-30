@@ -5,6 +5,7 @@
     'editTimezone' => __( 'Change the timezone.', 'simply-schedule-appointments' ),
     'forward' => __( 'Go forward', 'simply-schedule-appointments' ),
     'saveTimezone' => __( 'Save timezone', 'simply-schedule-appointments' ),
+    'searchCountry' => __( 'Search country...', 'simply-schedule-appointments' ),
   ),
   'general' => 
   array (
@@ -138,6 +139,7 @@
     'retry' => __( 'Retry', 'simply-schedule-appointments' ),
     'bookingFailed' => __( 'Sorry, we couldn\'t save your appointment', 'simply-schedule-appointments' ),
     'connectionError' => __( 'Connection lost. We\'re having trouble communicating', 'simply-schedule-appointments' ),
+    'noResults' => __( 'No results found', 'simply-schedule-appointments' ),
     'noSlotsOnDate' => __( 'No available appointments for this date.', 'simply-schedule-appointments' ),
   ),
   'day' => 

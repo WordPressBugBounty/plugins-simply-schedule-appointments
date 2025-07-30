@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.43
+Stable tag:        1.6.8.45
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,19 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.45 - 2025-07-29 ==
+
+= Fixes =
+
+- Add missing z-index variable for dialog in foxy-material styles
+- Add isOkToReturn method to validate availability for returning slots
+- Error loading block: Invalid block
+- Bug: Phone field
+
+= Features and Improvements =
+
+- Improve Vue Telephone Field Component
+
 == 1.6.8.43 - 2025-07-15 ==
 
 = Fixes =
@@ -292,18 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 = Fixes =
 
 - Improve twilio error handling
-
-== 1.6.8.22 - 2025-04-22 ==
-
-= Fixes =
-
-- Refactor revision handling: improve action validation and prevent PHP warning
-- Refactor bulk_delete call and remove unnecessary action_title check i…
-- always validate GCAL access token against API to avoid any time misconfiguration
-
-== 1.6.8.21 - 2025-04-15 ==
-
-= Fixes =
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

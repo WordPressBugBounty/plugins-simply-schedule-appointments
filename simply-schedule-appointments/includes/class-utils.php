@@ -1054,7 +1054,7 @@ function ssa_sanitize_color_input($color) {
 function ssa_is_json_request() {
 	// wp_is_json_request checks for the headers - not helpful here
 	// so we check if /wp-json/ is in the request URI
-	return strpos( $_SERVER['REQUEST_URI'], '/wp-json/' ) !== false;
+	return strpos( $_SERVER['REQUEST_URI'], '/wp-json/' ) !== false && strpos( $_SERVER['REQUEST_URI'], '/block-renderer/ssa') === false;
 }
 
 function ssa_is_file_request() {
