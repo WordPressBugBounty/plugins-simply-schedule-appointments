@@ -1477,7 +1477,7 @@ window.addEventListener('blur', function(){
 // helper function to initialize the IframeResizer
 var ssaInitIframeResizer = function() {
 	var ssaIframeSettings = {
-		heightCalculationMethod: 'bodyOffset',
+		heightCalculationMethod: 'max',
 		checkOrigin: false,
 		warningTimeout: 20000,
 		onResized: ssaDebouncedScroll,
