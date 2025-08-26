@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.49 - 2025-08-19
+
+### Fixes
+
+- Ticket: Contact Support backend button not working on the client site
+
 ## SSA-VERSION-PREFIX.6.8.47 - 2025-08-05
 
 ### Fixes

@@ -186,8 +186,11 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 
 
 	public function create_support_ticket( $request ) {
+		// queue the minimal ticket sending here
 		$params = $request->get_params();
 		$debug_logs_hash = SSA_Debug::get_site_unique_hash_for_debug_logs();
+		ssa_schedule_single_action( time() + 30, 'ssa/support/send_minimal_support_ticket', array( 'params' => [...$params, 'export_code' => '{}', 'debug_logs_hash' => $debug_logs_hash] ) );
+		
 		if ( ! empty( $params['include_active_plugins'] ) ) {
 			$params['active_plugins'] = array();
 			$active_plugins = get_option( 'active_plugins' );
@@ -205,7 +208,15 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 			$params['site_hash_for_debug_logs'] = $debug_logs_hash;
 			unset( $params['include_settings'] );
 		}
-
+		
+		$result = self::ssa_send_support_ticket( $params, $debug_logs_hash );
+		if ( !is_wp_error( $result ) ) {
+			// remove the queued ticket from the queue
+			ssa_unschedule_action( 'ssa/support/send_minimal_support_ticket' );
+		}
+		return $result;
+	}
+	public static function ssa_send_support_ticket($params = array(), $debug_logs_hash = '') {
 		$response = wp_remote_post( 'https://api.simplyscheduleappointments.com/support_ticket/', array(
 		    'sslverify' => false,
 			'headers' => array(
@@ -234,7 +245,6 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 			ssa_debug_log( "Failed to submit support ticket - status != success - response: " .print_r ( $response, true), 100 ); //phpcs:ignore
 			return new WP_Error( 'failed_submission', __( 'Your support ticket failed to be sent, please send details to support@ssaplugin.com', 'simply-schedule-appointments' ), $debug_logs_hash );
 		}
-
 		return $response;
 	}
 

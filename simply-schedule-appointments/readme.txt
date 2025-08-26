@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.47
+Stable tag:        1.6.8.49
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.49 - 2025-08-19 ==
+
+= Fixes =
+
+- Ticket: Contact Support backend button not working on the client site
+
 == 1.6.8.47 - 2025-08-05 ==
 
 = Fixes =
@@ -298,13 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 = Fixes =
 
 - Fix availability logic error
-
-== 1.6.8.28 - 2025-05-13 ==
-
-= Fixes =
-
-- Prevent fatal error on Gravity Forms when user inputs wrong credit card details
-- Fix sync resources module to appointment types updates
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

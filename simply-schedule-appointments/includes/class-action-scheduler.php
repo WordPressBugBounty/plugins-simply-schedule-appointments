@@ -42,6 +42,7 @@ class SSA_Action_Scheduler {
 		add_action( 'init', array( $this, 'schedule_async_actions' ) );
 		add_action( 'ssa/async/ics_cleanup', array( $this, 'cleanup_ics_files' ) );
 		add_action( 'ssa/async/csv_cleanup', array( $this, 'cleanup_csv_files' ) );
+		add_action( 'ssa/support/send_minimal_support_ticket', array( $this, 'create_minimal_support_ticket' ) );
 	}
 
 	/**
@@ -110,6 +111,11 @@ class SSA_Action_Scheduler {
 		}
 	}
 
+	
+	public function create_minimal_support_ticket( $params ) {
+		return SSA_Support_Status_Api::ssa_send_support_ticket( $params, $params['debug_logs_hash'] );
+	}
+	
 	/**
 	 * Logic to cleanup .ics files periodically.
 	 *
