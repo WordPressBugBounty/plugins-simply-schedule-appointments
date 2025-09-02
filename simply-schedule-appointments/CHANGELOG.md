@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.51 - 2025-08-26
+
+### Fixes
+
+- Specify a non default timeout to account for cold starts in Gcloud functions
+- ❗Ticket: Only available view is not working with Advance settings
+
 ## SSA-VERSION-PREFIX.6.8.49 - 2025-08-19
 
 ### Fixes

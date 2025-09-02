@@ -543,6 +543,7 @@
 						// return also the refresh token
 						'access_type' => 'offline',
 					),
+					'timeout' => 60
 				)
 			);
 
@@ -674,7 +675,9 @@
 		
 		
 		try {
-			$response = wp_remote_post( $gcal_api_endpoint . $this->get_params_from_options( $params ));
+			$response = wp_remote_post( $gcal_api_endpoint . $this->get_params_from_options( $params ), array(
+				'timeout' => 20
+			));
 			
 			if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
 				throw new \Throwable( $response );
