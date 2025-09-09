@@ -331,11 +331,12 @@ class SSA_Error_Notices {
 
 				$message .= "\n\nUpdate your settings: " . $this->plugin->wp_admin->url();
 
-				$this->plugin->notifications->ssa_wp_mail(
-					$settings['global']['admin_email'],
-					$title,
-					$message
-				);				
+				// Disabling the email until we have a better way to detect false positives
+				// $this->plugin->notifications->ssa_wp_mail(
+				// 	$settings['global']['admin_email'],
+				// 	$title,
+				// 	$message
+				// );				
 			}
 			
 			return true;

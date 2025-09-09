@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.54 - 2025-09-02
+
+### Fixes
+
+- Google Calendar disconnected + Unable to reconnect
+
 ## SSA-VERSION-PREFIX.6.8.51 - 2025-08-26
 
 ### Fixes
