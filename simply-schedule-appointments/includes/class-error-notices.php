@@ -324,7 +324,8 @@ class SSA_Error_Notices {
 					$name = SSA_Staff_Model::get_staff_name_by_id( $staff_id );
 					$title = __( 'SSA Staff Calendar Disconnected', 'simply-schedule-appointments' );
 					$message = sprintf( 
-						__( 'SSA failed to get Google Calendar events for %s. Please disconnect and reconnect Google Calendar in the settings and contact support if this error message persists.', 'simply-schedule-appointments' ), 
+						__( 'SSA on <strong>%1$s</strong> failed to get Google Calendar events for <strong>%2$s</strong>. Please disconnect and reconnect Google Calendar in the settings and contact support if this error message persists.', 'simply-schedule-appointments' ), 
+						get_bloginfo( 'name' ),
 						$name 
 					);
 				}

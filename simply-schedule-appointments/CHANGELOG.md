@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.57 - 2025-09-09
+
+### Fixes
+
+- Fix reactivity issue in the capacity accordion
+- Fix loading spinner issue when changing selected time with available …
+
 ## SSA-VERSION-PREFIX.6.8.54 - 2025-09-02
 
 ### Fixes
