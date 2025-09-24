@@ -902,6 +902,7 @@
         'smsTo' => __( 'Send to', 'simply-schedule-appointments' ),
         'cc' => __( 'Cc', 'simply-schedule-appointments' ),
         'bcc' => __( 'Bcc', 'simply-schedule-appointments' ),
+        'replyTo' => __( 'Reply-to', 'simply-schedule-appointments' ),
         'trigger' => __( 'Trigger', 'simply-schedule-appointments' ),
         'triggerLegend' => __( 'When to send this notification', 'simply-schedule-appointments' ),
         'when' => __( 'When', 'simply-schedule-appointments' ),
@@ -932,6 +933,7 @@
         'messageError' => __( 'Message is required', 'simply-schedule-appointments' ),
         'noAdminPhone' => __( 'No admin phone number is set', 'simply-schedule-appointments' ),
         'noCustomerEmail' => __( 'No appointment types have phone number fields', 'simply-schedule-appointments' ),
+        'replyToHelpText' => __( 'Reply-To is filled in automatically depending on the recipient (admin, staff, or customer). Leave it empty unless you need to set your own.', 'simply-schedule-appointments' ),
       ),
       'tokenDetailsTitle' => __( 'Notification Template Details', 'simply-schedule-appointments' ),
       'tokenDetails' => __( 'Notification templates are created with Twig. The following tokens are available.', 'simply-schedule-appointments' ),
@@ -1011,6 +1013,8 @@
       'confirmIgnoreChangesOkay' => __( 'Leave without saving', 'simply-schedule-appointments' ),
       'confirmIgnoreChangesCancel' => __( 'Keep editing', 'simply-schedule-appointments' ),
       'ccSent' => __( 'Cc/Bcc', 'simply-schedule-appointments' ),
+      'showCcBccReplyToLabel' => __( 'CC/BCC/Reply-To', 'simply-schedule-appointments' ),
+      'hideCcBccReplyToLabel' => __( 'Hide CC/BCC/Reply-To', 'simply-schedule-appointments' ),
       'preview' => 
       array (
         'title' => __( 'Live Preview', 'simply-schedule-appointments' ),

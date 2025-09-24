@@ -212,7 +212,7 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 		$result = self::ssa_send_support_ticket( $params, $debug_logs_hash );
 		if ( !is_wp_error( $result ) ) {
 			// remove the queued ticket from the queue
-			ssa_unschedule_action( 'ssa/support/send_minimal_support_ticket' );
+			ssa_unschedule_all_actions( 'ssa/support/send_minimal_support_ticket' );
 		}
 		return $result;
 	}

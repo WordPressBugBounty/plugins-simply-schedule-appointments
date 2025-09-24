@@ -740,6 +740,40 @@ function ssa_unschedule_action( $hook='', $args = array(), $group = '' ) {
 }
 
 /**
+ * SSA custom as_unschedule_all_actions that does all the checking needed
+ * 
+ * @since   6.0.3
+ *
+ * @param string $hook      Required
+ * @param array $args       Optional
+ * @param string $group     Optional
+ */
+function ssa_unschedule_all_actions( $hook='', $args = array(), $group = '' ) {
+
+	if ( empty( $hook ) ) {
+		return;
+	}
+
+	if ( ! ssa_class_exists( 'ActionScheduler' ) ) {
+		return;
+	}
+
+	if ( ! ssa_function_exists( 'as_unschedule_all_actions' ) ) {
+		return;
+	}
+
+	try {
+		return as_unschedule_all_actions( $hook, $args, $group );
+
+	} catch( \Exception $e ) {
+		$var = $e->getMessage();
+		$debug_level = 10;
+		$label = 'Action Scheduler';
+		ssa_debug_log( $var, $debug_level, $label );
+	}
+}
+
+/**
  * SSA custom as_schedule_single_action that does all the checking needed
  * 
  * @since   6.0.3

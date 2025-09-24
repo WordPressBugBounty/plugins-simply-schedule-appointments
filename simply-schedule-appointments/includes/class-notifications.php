@@ -576,7 +576,7 @@ class SSA_Notifications {
 
 			if ( 'email' === $notification['type'] && ! empty( $recipients['sent_to'] ) ) {			
 				$headers = array(
-					'Reply-To: '.$this->get_reply_to_email_for_appointment( $appointment_object, $recipient_type, 'notification' ),
+					'Reply-To: '.$this->get_reply_to_email_for_appointment( $appointment_object, $recipient_type, 'notification', $notification ),
 					'Content-Type: text/html',
 				);
 				if ( ! empty( $recipients['cc'] ) ) {
@@ -715,16 +715,18 @@ class SSA_Notifications {
 	// 	return $value;
 	// }
 
-	public function get_reply_to_email_for_appointment( SSA_Appointment_Object $appointment_object, $recipient, $template ) {
+	public function get_reply_to_email_for_appointment( SSA_Appointment_Object $appointment_object, $recipient, $template, $notification ) {
 		$settings = $this->plugin->settings->get();
 
-		if ( $recipient == 'customer' ) {
+		if ( ! empty( $notification['replyTo'] ) && is_array( $notification['replyTo'] ) ) {
+			$value = current( $notification['replyTo'] );
+		} elseif ( $recipient == 'customer' ) {
 			$value = $settings['global']['admin_email'];
 		} elseif ( $recipient == 'staff' ) {
 			$value = $appointment_object->customer_information['Email'];
 		}
 		
-		return $value;
+		return is_email( $value ) ? $value : $settings['global']['admin_email'];
 	}
 
 	public function set_ssa_from_name( $name ) {

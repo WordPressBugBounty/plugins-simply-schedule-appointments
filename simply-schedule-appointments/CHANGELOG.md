@@ -1,5 +1,16 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.59 - 2025-09-16
+
+### Fixes
+
+- Clear staff error notice after successfully accessing list of Google calendars
+- 🐞 Ticket: Formatting issue with line breaks in the CSV export
+
+### Features and Improvements
+
+- Add Option to Override the Reply-To Value for Email Notifications
+
 ## SSA-VERSION-PREFIX.6.8.57 - 2025-09-09
 
 ### Fixes

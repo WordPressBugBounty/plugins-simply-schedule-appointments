@@ -183,19 +183,24 @@ class SSA_Error_Notices {
 	 * @return array
 	 */
 	public function get_error_notices(){
-
+		$output = array();
+		
+		$temporary_error_notices = $this->get_temporary_error_notices();
+		if( ! empty( $temporary_error_notices ) ){
+			array_push( $output, $temporary_error_notices );
+		}
+		
 		$this->maybe_scan_for_errors();
-
 		$stored_error_ids = $this->fetch_error_notices_ids();
 
 		if( empty( $stored_error_ids ) ) {
-			return array();
+			return $output;
 		}
 
 		$stored_error_ids = $this->run_callbacks( $stored_error_ids );
 
 		$schema = $this->get_schema();
-		$output = array();
+
 
 		foreach ( $stored_error_ids as $key => $value ) {
 			// Assert that the stored id has a match in the schema
@@ -221,9 +226,21 @@ class SSA_Error_Notices {
 			
 			array_push( $output, $notice );
 		}
+		
 		return $output;
 	}
 
+	public function get_temporary_error_notices(){
+		// only on admin ssa page for now
+		if( isset( $_GET['error'] ) && isset( $_GET['page'] ) && $_GET['page'] === "simply-schedule-appointments" ){
+			return array(
+				'id' => 'temporary_error_notice',
+				'type' => 'warning',
+				'message' => sanitize_text_field( $_GET['error'] ),
+			);
+		}
+	}
+	
 	/**
 	 * Check if the error notice should be hidden
 	 *

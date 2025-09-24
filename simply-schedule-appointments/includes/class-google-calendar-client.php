@@ -719,4 +719,16 @@
 		}
 		return $params_string;
 	}
+	
+	public function revoke_token( $token ) {
+		$response = wp_remote_post(
+			'https://oauth2.googleapis.com/revoke',
+			array(
+				'body' => array(
+					'token' => $token,
+				),
+			)
+		);
+		
+	}
 }
