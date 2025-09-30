@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.8.61 - 2025-09-24
+
+### Fixes
+
+- Bug - Europe/Kiev booking throws an error on outdated servers
+- Ticket: Canceled appointments not updating on Google Calendar on the client site
+
 ## SSA-VERSION-PREFIX.6.8.59 - 2025-09-16
 
 ### Fixes

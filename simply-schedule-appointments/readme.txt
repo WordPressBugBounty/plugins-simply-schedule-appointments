@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.8
-Stable tag:        1.6.8.59
+Stable tag:        1.6.8.61
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,13 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.8.61 - 2025-09-24 ==
+
+= Fixes =
+
+- Bug - Europe/Kiev booking throws an error on outdated servers
+- Ticket: Canceled appointments not updating on Google Calendar on the client site
+
 == 1.6.8.59 - 2025-09-16 ==
 
 = Fixes =
@@ -298,12 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 = Fixes =
 
 - Fix mobile screens support express booking layout
-
-== 1.6.8.40 - 2025-07-01 ==
-
-= Fixes =
-
-- Gracefully handle when user did not give SSA enough permissions
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
