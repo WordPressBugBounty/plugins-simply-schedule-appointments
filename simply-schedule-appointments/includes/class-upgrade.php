@@ -74,6 +74,25 @@ class SSA_Upgrade {
 		add_action( 'ssa_upgrade_free_to_paid', array( $this, 'migrate_free_to_paid_customer_info' ), 30 );
 		add_action( 'ssa_downgrade_paid_to_free', array( $this, 'migrate_paid_to_free_customer_info' ), 30 );
 	}
+	
+	public function record_version_change( $current_version, $stored_version ) {
+		$ssa_version_changes = get_option('ssa_version_changes', []);
+		if( ! isset( $ssa_version_changes[ $stored_version . '--' . $current_version ] ) ) {
+			$utc_timezone = new DateTimeZone( 'UTC' );
+			$utc_datetime = new DateTimeImmutable( 'now', $utc_timezone );
+			
+			$record = [
+				'home_url' => home_url(),
+				'wordpress_version' => get_bloginfo('version'),
+				'php_version' => phpversion(),
+				'current_version' => $current_version,
+				'previous_version' => $stored_version,
+				'timestamp' => $utc_datetime
+			];
+			$ssa_version_changes[ $stored_version . '--' .$current_version ] = $record;
+			update_option('ssa_version_changes', $ssa_version_changes);
+		}
+	}
 
 	/**
 	 * Helper function to check version changes - when the user upgrades or downgrades - and to run migration logic when necessary.
@@ -91,8 +110,8 @@ class SSA_Upgrade {
 		if ( $current_version_num > 1 && ! empty( $stored_version ) ) {
 
 			if ( $current_version !== $stored_version ) {
-
 				$this->reset_beta_option();
+				$this->record_version_change( $current_version, $stored_version );
 			}
 		}
 
@@ -334,13 +353,6 @@ class SSA_Upgrade {
 			$this->$method_name( $this->last_version_seen );
 		}
 	}
-
-	// public function migrate_to_version_0_0_3( $from_version ) {
-	// 	$post_id = $this->plugin->wp_admin->maybe_create_booking_page();
-	// 	if ( !empty( $post_id ) ) {
-	// 		$this->record_version( '0.0.3' );
-	// 	}
-	// }
 
 	public function migrate_to_version_1_2_3( $from_version ) {
 		if ( $from_version === '0.0.0' ) {

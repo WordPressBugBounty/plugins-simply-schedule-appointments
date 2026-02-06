@@ -641,7 +641,7 @@
 		$params['state'] = strtr( base64_encode( json_encode( array(
 			'authorize' => 'google',
 			'staff_id' => $staff_id,
-			'staff_token' => SSA_Utils::hash( $staff_id ),
+			'staff_token' => SSA_Utils::site_unique_hash( $staff_id ),
 			'token' => $license,
 			'redirect_uri' => $this->plugin->google_calendar->get_redirect_uri(),
 			'wp_callback_uri' => $this->plugin->google_calendar::get_wp_callback_uri(),

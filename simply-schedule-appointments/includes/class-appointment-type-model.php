@@ -1130,64 +1130,6 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 		return $appointment_type;
 	}
 
-	public function DEPRECATED_get_availability( $request ) {
-		$params = $request->get_params();
-		if ( empty( $params['id'] ) ) {
-			return false;
-		}
-		$appointment_type_id = (int)sanitize_text_field( $params['id'] );
-
-		$params = shortcode_atts( array(
-			'start_date_min' => '',
-			'start_date_max' => '',
-			'end_date_min' => '',
-			'end_date_max' => '',
-			'refresh' => '',
-
-			'excluded_appointment_ids' => array(),
-		), $params );
-
-		$transient_key = 'ssa_api_availability_'.$appointment_type_id.'_'.md5( json_encode( $params ) );
-		// $response = get_transient( $transient_key ); // TODO: Implement cache
-		if ( empty( $params['refresh'] ) && !empty( $response ) ) {
-			$response['cached'] = true;
-			return $response;
-		}
-
-		$this->plugin->google_calendar->maybe_queue_refresh_check( $appointment_type_id );
-
-		if ( empty( $params['start_date_min'] ) ) {
-			$params['start_date_min'] = $params['start_date_max'];
-		}
-		if ( empty( $params['end_date_max'] ) ) {
-			$params['end_date_max'] = $params['end_date_min'];
-		}
-		if ( empty( $params['start_date_min'] ) ) {
-			$params['start_date_min'] = gmdate('Y-m-d H:i:s');
-		}
-		if ( empty( $params['start_date_max'] ) && empty( $params['end_date_max'] ) ) {
-			$params['start_date_max'] = gmdate('Y-m-d', strtotime( $params['start_date_min'] ) + 3600*24*29 );
-		}
-
-		$params = array_filter( $params );
-
-		$bookable_appointments = $this->plugin->availability_functions->get_bookable_appointments( $appointment_type_id, $params );
-		$data = array();
-		foreach ($bookable_appointments as $key => $bookable_appointment) {
-			$data[] = array(
-				'start_date' => $bookable_appointment['period']->getStartDate()->format('Y-m-d H:i:s'),
-			);
-		}
-
-		$response = array(
-			'response_code' => 200,
-			'error' => '',
-			'data' => $data,
-		);
-
-		return $response;
-	}
-
 	// only used for testing availability data in CI - invalidates cache
 	public function get_availability_refreshed( $request ) {
 		// invalidate caches

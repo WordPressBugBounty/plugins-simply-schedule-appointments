@@ -43,4 +43,8 @@ class SSADM_SsaDiviModule extends DiviExtension {
 	}
 }
 
-new SSADM_SsaDiviModule;
+// Only instantiate for Divi 4 (not Divi 5)
+// In Divi 5, this would cause duplicate entries in the migrator
+if ( ! defined( 'ET_BUILDER_PRODUCT_VERSION' ) || version_compare( ET_BUILDER_PRODUCT_VERSION, '5.0', '<' ) ) {
+	new SSADM_SsaDiviModule;
+}

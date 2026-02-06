@@ -1,5 +1,96 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.9.21 - 2026-01-06
+
+### Features and Improvements
+
+- Divi five integration
+
+## SSA-VERSION-PREFIX.6.9.19 - 2025-12-23
+
+### Fixes
+
+- Ticket: SA number series (75) not getting accepted within the Phone field
+
+### Features and Improvements
+
+- Feature request: Add 'today' class on the current day for easier custom styling
+
+## SSA-VERSION-PREFIX.6.9.17 - 2025-12-09
+
+### Fixes
+
+- Fix RTL support for tel phone field
+- Fix auto-scroll to phone field on form validation
+- Block logged out users from loading admin app single-page-app
+
+## SSA-VERSION-PREFIX.6.9.15 - 2025-12-02
+
+### Fixes
+
+- Track SSA versions and update time stamp
+
+## SSA-VERSION-PREFIX.6.9.13 - 2025-11-26
+
+### Fixes
+
+- Fix SSA Admin Shortcode Not Rendering Due to Missing Iframe Tag
+
+## SSA-VERSION-PREFIX.6.9.11 - 2025-11-25
+
+### Fixes
+
+- Fix name and email fields don't get automatically autofilled
+
+## SSA-VERSION-PREFIX.6.9.9 - 2025-11-18
+
+### Fixes
+
+- Fix extra white space around the booking app iframe element
+
+## SSA-VERSION-PREFIX.6.9.8 - 2025-11-11
+
+### Fixes
+
+- SSA MemberPress integration cover multiple active transactions for one membership
+- Ticket: Appointment type settings not saving
+
+## SSA-VERSION-PREFIX.6.9.6 - 2025-11-04
+
+### Fixes
+
+- Clear request boundary dates on reschedule action
+- Improvement: switch all hash calls to site_unique_hash - also cleanup deprecated code
+
+## SSA-VERSION-PREFIX.6.9.4 - 2025-10-21
+
+### Fixes
+
+- Enhance opt-in notification handling by populating default values
+
+### Features and Improvements
+
+- Enhance customer information handling in notifications templates
+- Feature Improvement: Ability to disable "Pay Via Card" option for Stripe Payments
+
+## SSA-VERSION-PREFIX.6.9.2 - 2025-10-14
+
+### Features and Improvements
+
+- Feature Improvement: Upsize emojis in notification message field
+
+## SSA-VERSION-PREFIX.6.8.65 - 2025-10-07
+
+### Fixes
+
+- Update button styles for selectable days in monthly view
+
+## SSA-VERSION-PREFIX.6.8.63 - 2025-09-30
+
+### Fixes
+
+- Fix day selector in dark mode for samsung internet
+
 ## SSA-VERSION-PREFIX.6.8.61 - 2025-09-24
 
 ### Fixes

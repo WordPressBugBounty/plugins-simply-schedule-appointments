@@ -62,7 +62,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     <link rel='stylesheet' id='ssa-admin-custom-css'  href='<?php echo $admin_css_url; ?>' type='text/css' media='all' />
     <?php do_action( 'ssa_admin_head' ); ?>
   </head>
-  <body <?php body_class(); ?>>
+  <body <?php body_class(); ?> data-iframe-height>
   <?php echo '<div id="ssa-admin-app">
 			<noscript>
 				<div class="unsupported">

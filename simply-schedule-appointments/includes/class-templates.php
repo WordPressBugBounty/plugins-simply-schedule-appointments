@@ -195,12 +195,14 @@ class SSA_Templates {
 		$vars['Appointment']['customer_information_strings'] = array();
 		foreach ( $vars['Appointment']['customer_information'] as $key => $value ) {
 			if (is_array($value)) {
-				$value = implode(', ', $value);
+				$string_value = implode(', ', $value);
+				$vars['Appointment']['customer_information_strings'][$key] = htmlspecialchars($string_value);
+				$vars['Appointment']['customer_information'][$key] = array_map('htmlspecialchars', $value);
+			} else {
+				$value = htmlspecialchars($value);
+				$vars['Appointment']['customer_information'][$key] = $value;
+				$vars['Appointment']['customer_information_strings'][$key] = $value;
 			}
-
-			$value = htmlspecialchars($value);
-			$vars['Appointment']['customer_information'][$key] = $value;
-			$vars['Appointment']['customer_information_strings'][$key] = $value;
 		}
 
 		if ( isset( $vars['Appointment']['AppointmentType']['availability'] ) ) {

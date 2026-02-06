@@ -86,6 +86,7 @@
         let max_num_of_appointments_per_cycle = appointment_type.max_num_of_appointments_per_cycle;
         let is_renewable = product.is_renewable
         let is_active = appointment_type.active
+        let active_txn_count = product.active_txn_count || 1; // Number of active transactions/renewals
 
         var tr = $('<tr>').addClass('mepr-appointment-row');
         let membershipCell = $('<td>').addClass('ssa-loading-indicator').text(product.membership).appendTo(tr);
@@ -104,6 +105,7 @@
           is_on_trial,
           product_id,
           is_active,
+          active_txn_count,
           // Row & Cells
           tr,
           membershipCell,
@@ -201,6 +203,7 @@
     let $output = $('<div>');
     let count   = appointments.length;
     let remaining;
+    let totalAllowed; // Total allowed appointments considering early renewals
 
     if (info.is_on_trial){
       remaining = info.appointment_type.max_num_of_appointments_during_trials - count;
@@ -219,7 +222,10 @@
 
     // Check for booking limit per cycle
     else if (info.limit_booking_per_cycle && !info.is_renewable){
-      remaining = info.max_num_of_appointments_per_cycle - count
+      // For non-renewable memberships with early renewals, multiply limit by number of active transactions
+      totalAllowed = info.max_num_of_appointments_per_cycle * (info.active_txn_count || 1);
+      remaining = totalAllowed - count;
+      
       if(remaining <= 0){
         $('<span>').addClass('ssa-mepr_grayed-out').text(translations.no_remaining_appointments).appendTo($output);
         canBook = false;

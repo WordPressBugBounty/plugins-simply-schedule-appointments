@@ -4,7 +4,7 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit0d738555de56ff033a1f937a32ee2054
+class ComposerStaticInitac976778682823519fec1635a03c7f12
 {
     public static $files = array (
         '6e3fae29631ef280660b3cdad06f25a8' => __DIR__ . '/..' . '/symfony/deprecation-contracts/function.php',
@@ -20,54 +20,54 @@ class ComposerStaticInit0d738555de56ff033a1f937a32ee2054
     );
 
     public static $prefixLengthsPsr4 = array (
-        'T' => 
+        'T' =>
         array (
             'Twig\\' => 5,
         ),
-        'S' => 
+        'S' =>
         array (
             'Symfony\\Polyfill\\Php81\\' => 23,
             'Symfony\\Polyfill\\Php80\\' => 23,
             'Symfony\\Polyfill\\Mbstring\\' => 26,
             'Symfony\\Polyfill\\Ctype\\' => 23,
         ),
-        'L' => 
+        'L' =>
         array (
             'League\\Period\\' => 14,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'Twig\\' => 
+        'Twig\\' =>
         array (
             0 => __DIR__ . '/..' . '/twig/twig/src',
         ),
-        'Symfony\\Polyfill\\Php81\\' => 
+        'Symfony\\Polyfill\\Php81\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php81',
         ),
-        'Symfony\\Polyfill\\Php80\\' => 
+        'Symfony\\Polyfill\\Php80\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-php80',
         ),
-        'Symfony\\Polyfill\\Mbstring\\' => 
+        'Symfony\\Polyfill\\Mbstring\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-mbstring',
         ),
-        'Symfony\\Polyfill\\Ctype\\' => 
+        'Symfony\\Polyfill\\Ctype\\' =>
         array (
             0 => __DIR__ . '/..' . '/symfony/polyfill-ctype',
         ),
-        'League\\Period\\' => 
+        'League\\Period\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/period/src',
         ),
     );
 
     public static $prefixesPsr0 = array (
-        'N' => 
+        'N' =>
         array (
-            'NSquared\\SSA\\Vendor\\' => 
+            'NSquared\\SSA\\Vendor\\' =>
             array (
                 0 => __DIR__ . '/../..' . '/includes/third-party',
             ),
@@ -88,10 +88,10 @@ class ComposerStaticInit0d738555de56ff033a1f937a32ee2054
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit0d738555de56ff033a1f937a32ee2054::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit0d738555de56ff033a1f937a32ee2054::$prefixDirsPsr4;
-            $loader->prefixesPsr0 = ComposerStaticInit0d738555de56ff033a1f937a32ee2054::$prefixesPsr0;
-            $loader->classMap = ComposerStaticInit0d738555de56ff033a1f937a32ee2054::$classMap;
+            $loader->prefixLengthsPsr4 = ComposerStaticInitac976778682823519fec1635a03c7f12::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInitac976778682823519fec1635a03c7f12::$prefixDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInitac976778682823519fec1635a03c7f12::$prefixesPsr0;
+            $loader->classMap = ComposerStaticInitac976778682823519fec1635a03c7f12::$classMap;
 
         }, null, ClassLoader::class);
     }

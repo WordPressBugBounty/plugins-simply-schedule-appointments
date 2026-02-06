@@ -1,5 +1,9 @@
 <?php
 
+// Only define this Divi 4 module class if not using Divi 5
+// This prevents it from appearing in the migrator's "Will Not Be Converted" list
+if ( ! defined( 'ET_BUILDER_PRODUCT_VERSION' ) || version_compare( ET_BUILDER_PRODUCT_VERSION, '5.0', '<' ) ) :
+
 class SSA_Divi_Booking_Module extends ET_Builder_Module {
 
 	public $slug       = 'ssa_divi_booking_module';
@@ -176,3 +180,5 @@ class SSA_Divi_Booking_Module extends ET_Builder_Module {
 }
 
 new SSA_Divi_Booking_Module;
+
+endif; // End Divi 4 only

@@ -418,7 +418,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     ?>
     <?php do_action( 'ssa_booking_head' ); ?>
   </head>
-  <body <?php body_class(); ?>>
+  <body <?php body_class(); ?> data-iframe-height>
     <?php echo '<div id="ssa-booking-app">
         <div class="ssa_booking_initial_spinner-container">
           <div class="ssa_booking_initial_spinner"></div>

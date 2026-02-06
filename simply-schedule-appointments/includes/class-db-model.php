@@ -236,11 +236,7 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 		}
 		return false;
 	}
-
-	/**
-	 * New get_id_token that uses the id alongside the date_created field
-	 */
-	public function get_id_token( $input ) {
+	public function get_string_to_tokenize( $input ) {
 		$id = $this->extract_id_from_input( $input );
 		if ( empty( $id ) ) {
 			return false;
@@ -254,48 +250,31 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 			$string_to_tokenize .= $model_entity['date_created'];
 		}
 
-		return SSA_Utils::hash( $string_to_tokenize );
+		return $string_to_tokenize;
 	}
 
 	/**
-	 * Deprecated get_id_token that existed in class SSA_Db_Model
-	 * Consider removing this code after 2025-06-01
-	 *
+	 * New get_id_token that uses the id alongside the date_created field
 	 */
-	public function deprecated_get_id_token( $request ) {
-		if ( empty( $request['id'] ) ) {
+	public function get_id_token( $input ) {
+		$string_to_tokenize = $this->get_string_to_tokenize( $input );
+		if ( empty( $string_to_tokenize ) ) {
 			return false;
 		}
-		return SSA_Utils::hash( sanitize_text_field( $request['id'] ) );
+		return SSA_Utils::site_unique_hash( $string_to_tokenize );
 	}
-
+	
 	/**
-	 * Deprecated get_id_token that existed in class SSA_Appointment_Model
-	 * Consider removing this code after 2025-06-01
-	 *
+	 * Consider removing this code after 2026-10-10
 	 */
-	public function deprecated_appointment_get_id_token( $appointment ) {
-		if ( ! is_array( $appointment ) && ! is_a( $appointment, 'WP_REST_Request' ) && (int) $appointment == $appointment && $appointment > 0 ) {
-			$appointment = array( 'id' => $appointment );
-		}
-
-		if ( empty( $appointment['id'] ) ) {
+	public function deprecated_get_id_token( $input ) {
+		$string_to_tokenize = $this->get_string_to_tokenize( $input );
+		if ( empty( $string_to_tokenize ) ) {
 			return false;
 		}
-
-		$appointment_id     = sanitize_text_field( $appointment['id'] );
-		$string_to_tokenize = $appointment_id;
-
-		if ( empty( $appointment['appointment_type_id'] ) ) {
-			$appointment = $this->get( $appointment['id'], -1 );
-		}
-
-		if ( ! empty( $appointment['id'] ) && ! empty( $appointment['appointment_type_id'] ) ) {
-			$string_to_tokenize .= $appointment['appointment_type_id'];
-		}
-
-		return SSA_Utils::hash( $string_to_tokenize );
+		return SSA_Utils::deprecated_hash( $string_to_tokenize );
 	}
+	
 
 	/**
 	 * All tokens verification should be handled here
@@ -312,27 +291,18 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 		if ( ! empty( $correct_token ) && $correct_token == $token_to_verify ) {
 			return true;
 		}
+		
+		// TODO remove when all users are guaranteed to have updated - after 2026-09-30
+		$target_timestamp = strtotime( '2026-09-30 00:00:00' );
+		$current_timestamp = current_time( 'timestamp' );
 
-		/**
-		 * Maintain backward compatibility
-		 * First call to deprecated_get_id_token
-		 * Consider removing this code after 2025-06-01
-		 */
-		$deprecated_correct_token = $this->deprecated_get_id_token( $input );
-		if ( ! empty( $deprecated_correct_token ) && $deprecated_correct_token == $token_to_verify ) {
-			return true;
+		if ( $current_timestamp < $target_timestamp ) {
+			$deprecated_correct_token = $this->deprecated_get_id_token( $input );
+			if ( ! empty( $deprecated_correct_token ) && $deprecated_correct_token == $token_to_verify ) {
+				return true;
+			}
 		}
-
-		/**
-		 * Maintain backward compatibility
-		 * Call to deprecated_appointment_get_id_token
-		 * Consider removing this code after 2025-06-01
-		 */
-		$deprecated_appointment_correct_token = $this->deprecated_appointment_get_id_token( $input );
-		if ( ! empty( $deprecated_appointment_correct_token ) && $deprecated_appointment_correct_token == $token_to_verify ) {
-			return true;
-		}
-
+		
 		return false;
 	}
 

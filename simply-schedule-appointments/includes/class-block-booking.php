@@ -196,8 +196,9 @@ class SSA_Block_Booking {
 
 		register_block_type( 'ssa/booking', array(
 			'editor_script' => 'ssa-booking-block-js',
-			'editor_style'  => 'ssa-booking-block-css',
-			'keywords' => array( 'ssa', 'appointments', 'simply', 'booking' ),
+		'editor_style'  => 'ssa-booking-block-css',
+		'd4Shortcode' => 'ssa_divi_booking_module',
+		'keywords' => array( 'ssa', 'appointments', 'simply', 'booking' ),
 			'attributes' => array (
 				'filter' => array (
 					'type' => 'string',

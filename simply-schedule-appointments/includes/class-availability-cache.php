@@ -222,29 +222,6 @@ class SSA_Availability_Cache {
 		$availability_id = $this->plugin->availability_model->db_insert( $args );
 	}
 
-	public function deprecated_merge_and_update_schedule( SSA_Availability_Schedule $new_schedule, $args = array() ) {
-		if ( ! $this->is_enabled() ) {
-			return;
-		}
-
-		$boundaries = $new_schedule->boundaries();
-		if ( ! empty( $boundaries ) ) {		
-			$old_schedule = $this->query( SSA_Appointment_Type_Object::null(), $boundaries , $args );
-			if ( empty( $old_schedule ) || $old_schedule->is_empty() ) {
-				$this->insert_schedule( $new_schedule, $args );
-				return;
-			}
-
-			if ( $boundaries->contains( $old_schedule->boundaries() ) ) {
-				$this->insert_schedule( $new_schedule, $args );
-				return;
-			}
-		}
-		
-		$merged_schedule = $old_schedule->merge_min( $new_schedule );
-		$this->insert_schedule( $merged_schedule, $args );
-	}
-
 	public function insert_schedule( SSA_Availability_Schedule $schedule, $args = array() ) {
 		if ( ! $this->is_enabled() ) {
 			return;

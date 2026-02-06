@@ -906,11 +906,15 @@ class SSA_Shortcodes {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'get_embed_inner_admin_output' ),
-					'permission_callback' => '__return_true',
+					'permission_callback' => array( $this, 'current_user_can_manage_appointments' ),
 					'args'                => array(),
 				),
 			)
 		);
+	}
+	
+	public function current_user_can_manage_appointments() {
+		return current_user_can( 'ssa_manage_appointments' );
 	}
 
 	/**

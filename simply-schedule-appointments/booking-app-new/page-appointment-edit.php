@@ -6,7 +6,7 @@
     <title><?php echo apply_filters( 'ssa_appointment_edit_page_title', __( 'Edit Appointment', 'simply-schedule-appointments' ) ); ?></title>
     <?php wp_head(); ?>
   </head>
-  <body <?php body_class(); ?>>
+  <body <?php body_class(); ?> data-iframe-height>
     <?php
     global $ssa_current_appointment_id;
     if ( empty( $ssa_current_appointment_id ) ) {

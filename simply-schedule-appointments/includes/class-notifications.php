@@ -756,7 +756,7 @@ class SSA_Notifications {
 		$args = array (
 			'to' => $to,
 			'subject' => $subject,
-			'message' => $message,
+			'message' => '<style>.emoji {width: 1em;height: 1em;vertical-align: -0.1em;display: inline-block;}</style>' . $message,
 			'headers' => $headers,
 			'attachments' => $attachments,
 			'from_email' => $from_email,

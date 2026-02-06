@@ -3,8 +3,8 @@ Contributors:      croixhaug, nataliemac, simplyscheduleappointments
 Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
-Tested up to:      6.8
-Stable tag:        1.6.8.61
+Tested up to:      6.9
+Stable tag:        1.6.9.23
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -33,7 +33,7 @@ Features included with the Simply Schedule Appointments Free Basic Edition for b
 Features included with the Simply Schedule Appointments Paid Premium Editions for booking appointments:
 
 * [Group or class event booking](https://simplyscheduleappointments.com/guides/capacity-and-group-bookings/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=capacity-and-group-booking) - Book time slots up to a certain capacity
-* [Booking Flows](https://simplyscheduleappointments.com/guides/booking-flows/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=booking-flows) - Choose from a selection of booking steps and layouts.
+* [Booking Flows](https://simplyscheduleappointments.com/guides/booking-flows/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=booking-flows) - Choose from a selection of booking steps and layouts
 * [Google Calendar Sync](https://simplyscheduleappointments.com/guides/syncing-google-calendar/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=google-calendar) - Allow your site's booking system to check your personal calendar for conflicts and customize those [calendar events](https://simplyscheduleappointments.com/guides/customize-calendar-events/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=customize-calendar-events)
 * [Team booking](https://simplyscheduleappointments.com/guides/setup-team-booking/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=team-booking) - Allow your staff to receive bookings and customize their own schedules
 * [Resource booking](https://simplyscheduleappointments.com/guides/start-here-resource-booking/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=resource-booking) - Schedule meeting rooms, rental items and things such as bikes or tables, or set max occupancies
@@ -237,74 +237,73 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
-== 1.6.8.61 - 2025-09-24 ==
-
-= Fixes =
-
-- Bug - Europe/Kiev booking throws an error on outdated servers
-- Ticket: Canceled appointments not updating on Google Calendar on the client site
-
-== 1.6.8.59 - 2025-09-16 ==
-
-= Fixes =
-
-- Clear staff error notice after successfully accessing list of Google calendars
-- 🐞 Ticket: Formatting issue with line breaks in the CSV export
+== 1.6.9.21 - 2026-01-06 ==
 
 = Features and Improvements =
 
-- Add Option to Override the Reply-To Value for Email Notifications
+- Divi five integration
 
-== 1.6.8.57 - 2025-09-09 ==
-
-= Fixes =
-
-- Fix reactivity issue in the capacity accordion
-- Fix loading spinner issue when changing selected time with available …
-
-== 1.6.8.54 - 2025-09-02 ==
+== 1.6.9.19 - 2025-12-23 ==
 
 = Fixes =
 
-- Google Calendar disconnected + Unable to reconnect
-
-== 1.6.8.51 - 2025-08-26 ==
-
-= Fixes =
-
-- Specify a non default timeout to account for cold starts in Gcloud functions
-- ❗Ticket: Only available view is not working with Advance settings
-
-== 1.6.8.49 - 2025-08-19 ==
-
-= Fixes =
-
-- Ticket: Contact Support backend button not working on the client site
-
-== 1.6.8.47 - 2025-08-05 ==
-
-= Fixes =
-
-- Prevent the iframe from being cut off - force min height
-
-== 1.6.8.45 - 2025-07-29 ==
-
-= Fixes =
-
-- Add missing z-index variable for dialog in foxy-material styles
-- Add isOkToReturn method to validate availability for returning slots
-- Error loading block: Invalid block
-- Bug: Phone field
+- Ticket: SA number series (75) not getting accepted within the Phone field
 
 = Features and Improvements =
 
-- Improve Vue Telephone Field Component
+- Feature request: Add 'today' class on the current day for easier custom styling
 
-== 1.6.8.43 - 2025-07-15 ==
+== 1.6.9.17 - 2025-12-09 ==
 
 = Fixes =
 
-- Fix mobile screens support express booking layout
+- Fix RTL support for tel phone field
+- Fix auto-scroll to phone field on form validation
+- Block logged out users from loading admin app single-page-app
+
+== 1.6.9.15 - 2025-12-02 ==
+
+= Fixes =
+
+- Track SSA versions and update time stamp
+
+== 1.6.9.13 - 2025-11-26 ==
+
+= Fixes =
+
+- Fix SSA Admin Shortcode Not Rendering Due to Missing Iframe Tag
+
+== 1.6.9.11 - 2025-11-25 ==
+
+= Fixes =
+
+- Fix name and email fields don't get automatically autofilled
+
+== 1.6.9.9 - 2025-11-18 ==
+
+= Fixes =
+
+- Fix extra white space around the booking app iframe element
+
+== 1.6.9.8 - 2025-11-11 ==
+
+= Fixes =
+
+- SSA MemberPress integration cover multiple active transactions for one membership
+- Ticket: Appointment type settings not saving
+
+== 1.6.9.6 - 2025-11-04 ==
+
+= Fixes =
+
+- Clear request boundary dates on reschedule action
+- Improvement: switch all hash calls to site_unique_hash - also cleanup deprecated code
+
+== 1.6.9.4 - 2025-10-21 ==
+
+= Fixes =
+
+- Enhance opt-in notification handling by populating default values
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

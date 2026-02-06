@@ -6,7 +6,7 @@
     <title><?php the_title(); ?></title>
     <?php wp_head(); ?>
   </head>
-  <body <?php body_class(); ?>>
+  <body <?php body_class(); ?> data-iframe-height>
     <?php while ( have_posts() ) : the_post(); ?>
       <?php the_content(); ?>
     <?php endwhile; // End of the loop. ?>

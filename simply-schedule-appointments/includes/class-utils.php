@@ -103,7 +103,13 @@ class SSA_Utils {
 		return hash_hmac('md5', $string, $salt);
 	}
 
-	public static function hash( $string ) {
+	/**
+	 * 
+	 *
+	 * @param [type] $string
+	 * @return void
+	 */
+	public static function deprecated_hash( $string ) {
 		if ( defined( 'SSA_AUTH_SALT' ) ) {
 			$salt = SSA_AUTH_SALT;
 		} else {
@@ -114,7 +120,7 @@ class SSA_Utils {
 	}
 
 	public static function get_home_id() {
-		return self::hash( get_home_url() );
+		return self::site_unique_hash( get_home_url() );
 	}
 
 	public static function is_assoc_array( array $arr ) {

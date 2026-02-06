@@ -222,8 +222,8 @@ abstract class TD_DB_Model extends TD_API_Model {
 	 */
 	public function db_get_by( $field, $row_id, $recursive=0 ) {
 		global $wpdb;
-		$field = esc_sql( $field );
-		$row = (array)$wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->get_table_name()} WHERE $field = %s LIMIT 1;", $row_id ) );
+		$sanitized_field = sanitize_key( esc_sql( $field ) );
+		$row = (array)$wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->get_table_name()} WHERE $sanitized_field = %s LIMIT 1;", $row_id ) );
 		$row = $this->prepare_item_for_response( $row, $recursive );
 		return $row;
 	}
@@ -237,8 +237,8 @@ abstract class TD_DB_Model extends TD_API_Model {
 	 */
 	public function db_get_field( $field, $row_id ) {
 		global $wpdb;
-		$field = esc_sql( $field );
-		return $wpdb->get_var( $wpdb->prepare( "SELECT $field FROM {$this->get_table_name()} WHERE $this->primary_key = %s LIMIT 1;", $row_id ) );
+		$sanitized_field = sanitize_key( esc_sql( $field ) );
+		return $wpdb->get_var( $wpdb->prepare( "SELECT $sanitized_field FROM {$this->get_table_name()} WHERE $this->primary_key = %s LIMIT 1;", $row_id ) );
 	}
 
 	/**
@@ -250,9 +250,9 @@ abstract class TD_DB_Model extends TD_API_Model {
 	 */
 	public function db_get_field_by( $field, $field_where, $field_value ) {
 		global $wpdb;
-		$field_where = esc_sql( $field_where );
-		$field       = esc_sql( $field );
-		return $wpdb->get_var( $wpdb->prepare( "SELECT $field FROM {$this->get_table_name()} WHERE $field_where = %s LIMIT 1;", $field_value ) );
+		$sanitized_field_where = sanitize_key( esc_sql( $field_where ) );
+		$sanitized_field = sanitize_key( esc_sql( $field ) );
+		return $wpdb->get_var( $wpdb->prepare( "SELECT $sanitized_field FROM {$this->get_table_name()} WHERE $sanitized_field_where = %s LIMIT 1;", $field_value ) );
 	}
 	
 	public function get_meta_foreign_key(){
@@ -1015,7 +1015,8 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$where = '';
 		$schema = $this->get_schema();
 
-		if ( ! empty( $args['append_where_sql'] ) ) {
+		// we allow append_where_sql to be set in the backend, but not in the request parameters
+		if ( ! empty( $args['append_where_sql'] ) && empty( $_REQUEST['append_where_sql']) ) {
 			if( ! is_array( $args['append_where_sql'] ) ) {
 				$args['append_where_sql'] = array( $args['append_where_sql'] );
 			}
@@ -1164,13 +1165,13 @@ abstract class TD_DB_Model extends TD_API_Model {
 
 		// $rows = wp_cache_get( $cache_key, 'rows' );
 
-		$args['orderby'] = esc_sql( $args['orderby'] );
-		$args['order']   = esc_sql( $args['order'] );
+		$sanitized_orderby = sanitize_key(esc_sql( $args['orderby'] ));
+		$sanitized_order = 'ASC' === strtoupper( esc_sql( $args['order'] ) ) ? 'ASC' : 'DESC';
 		$table_name      = $this->get_table_name();
 		$fields          = empty( $args['fields'] ) ? '*' : '`' . implode( '`, `', $args['fields'] ) . '`';
 
 		// if( $rows === false ) {
-			$sql = $wpdb->prepare( "SELECT $fields FROM  $table_name $where ORDER BY {$args['orderby']} {$args['order']} LIMIT %d,%d;", absint( $args['offset'] ), absint( $args['number'] ) );
+			$sql = $wpdb->prepare( "SELECT $fields FROM  $table_name $where ORDER BY $sanitized_orderby $sanitized_order LIMIT %d,%d;", absint( $args['offset'] ), absint( $args['number'] ) );
 			$rows = $wpdb->get_results( $sql );
 			$rows = array_map( function($row) { return (array)$row; }, $rows );
 		// }

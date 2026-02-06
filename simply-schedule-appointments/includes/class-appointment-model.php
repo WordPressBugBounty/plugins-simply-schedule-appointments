@@ -1651,13 +1651,6 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		return $url;
 	}
 
-	public function deprecated_get_public_edit_url( $appointment_id, $appointment = array() ) {
-		$appointment['id'] = $appointment_id;
-		$token             = $this->get_id_token( $appointment );
-		$url               = home_url( trailingslashit( $this->plugin->shortcodes->get_appointment_edit_permalink() ) . $token . $appointment_id );
-		return $url;
-	}
-
 	public function get_admin_edit_url( $appointment_id, $appointment = array() ) {
 		$url = $this->plugin->wp_admin->url( 'ssa/appointment/' . $appointment_id );
 		return $url;
