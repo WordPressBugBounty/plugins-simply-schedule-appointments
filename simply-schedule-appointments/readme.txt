@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      6.9
-Stable tag:        1.6.9.23
+Stable tag:        1.6.9.25
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -13,7 +13,7 @@ Unlimited appointments, booking calendars, and notifications. Powerful appointme
 
 == Description ==
 
-**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 60,000+ businesses, with a 5-star review average.
+**Simply Schedule Appointments® is an easy-to-use WordPress appointment booking plugin.** It's an automated appointment booking system loved by 70,000+ businesses, with a 5-star review average.
 
 The Simply Schedule Appointments booking calendars are easy and fast to set up. And enjoyable for your customers and clients to book and schedule appointments. **You can set up the appointment scheduling calendars to take your first booking in less than 5 minutes!**
 
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.9.25 - 2026-02-03 ==
+
+= Fixes =
+
+- Ticket: Issue with inserting links over text in the calendar events template
+
 == 1.6.9.21 - 2026-01-06 ==
 
 = Features and Improvements =
@@ -298,12 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 - Clear request boundary dates on reschedule action
 - Improvement: switch all hash calls to site_unique_hash - also cleanup deprecated code
-
-== 1.6.9.4 - 2025-10-21 ==
-
-= Fixes =
-
-- Enhance opt-in notification handling by populating default values
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

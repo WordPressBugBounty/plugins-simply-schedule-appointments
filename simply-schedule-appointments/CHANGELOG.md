@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.9.25 - 2026-02-03
+
+### Fixes
+
+- Ticket: Issue with inserting links over text in the calendar events template
+
 ## SSA-VERSION-PREFIX.6.9.21 - 2026-01-06
 
 ### Features and Improvements
