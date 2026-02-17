@@ -3,8 +3,8 @@ Contributors:      croixhaug, nataliemac, simplyscheduleappointments
 Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
-Tested up to:      6.9
-Stable tag:        1.6.9.25
+Tested up to:      7.0
+Stable tag:        1.6.9.27
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.9.27 - 2026-02-10 ==
+
+= Fixes =
+
+- Implement permission checks for Memberpress API endpoints
+
 == 1.6.9.25 - 2026-02-03 ==
 
 = Fixes =
@@ -299,11 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Ticket: Appointment type settings not saving
 
 == 1.6.9.6 - 2025-11-04 ==
-
-= Fixes =
-
-- Clear request boundary dates on reschedule action
-- Improvement: switch all hash calls to site_unique_hash - also cleanup deprecated code
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

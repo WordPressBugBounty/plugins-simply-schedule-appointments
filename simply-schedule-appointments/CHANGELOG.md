@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.9.27 - 2026-02-10
+
+### Fixes
+
+- Implement permission checks for Memberpress API endpoints
+
 ## SSA-VERSION-PREFIX.6.9.25 - 2026-02-03
 
 ### Fixes
