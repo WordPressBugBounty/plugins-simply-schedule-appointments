@@ -1016,13 +1016,26 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$schema = $this->get_schema();
 
 		// we allow append_where_sql to be set in the backend, but not in the request parameters
-		if ( ! empty( $args['append_where_sql'] ) && empty( $_REQUEST['append_where_sql']) ) {
-			if( ! is_array( $args['append_where_sql'] ) ) {
-				$args['append_where_sql'] = array( $args['append_where_sql'] );
-			}
-
-			foreach ($args['append_where_sql'] as $where_sql) {
-				$where .= $where_sql;
+		if ( ! empty( $args['append_where_sql'] ) ) {
+			// confirm not coming from request params or body
+			// also check file_get_contents('php://input');
+			$input_raw = file_get_contents('php://input');
+			$input_json = json_decode($input_raw, true) ?? [];
+			$found_in_payload = (
+				isset($_REQUEST['append_where_sql']) || 
+				isset($_FILES['append_where_sql']) ||
+				isset($input_json['append_where_sql'])
+			);
+			
+			// only append the where sql if it's not coming from the request params or body, to prevent potential sql injection
+			if( ! $found_in_payload ) {
+				if( ! is_array( $args['append_where_sql'] ) ) {
+					$args['append_where_sql'] = array( $args['append_where_sql'] );
+				}
+	
+				foreach ($args['append_where_sql'] as $where_sql) {
+					$where .= $where_sql;
+				}
 			}
 		}
 

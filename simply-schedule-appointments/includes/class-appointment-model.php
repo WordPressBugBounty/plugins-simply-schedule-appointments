@@ -1361,6 +1361,11 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 
 		$data = $this->query( $params );
+
+		// If complete_group is set, fetch additional appointments to complete any partial groups
+		if ( ! empty( $params['complete_group'] ) ) {
+			$data = $this->complete_group_appointments( $data );
+		}
 		
 		foreach( $data as $index => $appointment ) {
 			$data[$index] = $this->format_multiline_customer_information($appointment);
@@ -1973,5 +1978,57 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	public function get_label_id( $id ){
 		$appointment_object = new SSA_Appointment_Object( $id );
 		return $appointment_object->get_label_id();
+	}
+
+	/**
+	 * Complete group appointments by fetching any missing appointments from partial groups.
+	 * 
+	 * When appointments are fetched with pagination, group appointments may be split across pages.
+	 * This method ensures all appointments belonging to the same group are returned together.
+	 * 
+	 * @since 6.7.0
+	 * 
+	 * @param array $data The initially fetched appointments.
+	 * @return array The appointments with any missing group members added.
+	 */
+	public function complete_group_appointments( $data ) {
+		if ( empty( $data ) ) {
+			return $data;
+		}
+
+		// Collect all group_ids and track which appointment IDs we already have
+		$group_ids          = array();
+		$existing_appt_ids  = array();
+
+		foreach ( $data as $appointment ) {
+			if ( ! empty( $appointment['group_id'] ) && $appointment['group_id'] > 0 ) {
+				$group_ids[] = $appointment['group_id'];
+			}
+			$existing_appt_ids[] = $appointment['id'];
+		}
+
+		$group_ids = array_unique( $group_ids );
+
+		// No groups found, return original data
+		if ( empty( $group_ids ) ) {
+			return $data;
+		}
+
+		// Query for appointments in each group that we don't already have
+		foreach ( $group_ids as $group_id ) {
+			$group_appointments = $this->query( array(
+				'group_id' => $group_id,
+				'number'   => -1,
+			) );
+
+			foreach ( $group_appointments as $appointment ) {
+				if ( ! in_array( $appointment['id'], $existing_appt_ids, true ) ) {
+					$data[]              = $appointment;
+					$existing_appt_ids[] = $appointment['id'];
+				}
+			}
+		}
+
+		return $data;
 	}
 }

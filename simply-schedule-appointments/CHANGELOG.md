@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.9.29 - 2026-02-24
+
+### Fixes
+
+- Fixed admin app displaying incomplete number of grouped appointments
+- Vulnerability - Unauthenticated SQL Injection via 'append_where_sql' Parameter
+
 ## SSA-VERSION-PREFIX.6.9.27 - 2026-02-10
 
 ### Fixes
