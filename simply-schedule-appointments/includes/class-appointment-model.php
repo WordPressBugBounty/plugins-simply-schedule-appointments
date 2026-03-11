@@ -1440,7 +1440,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 
 		if ( current_user_can( 'ssa_manage_appointments' ) ) {
-			return true;
+			$params = $request->get_params();
+			if ( ! empty( $params['id'] ) && $this->plugin->staff_appointment_model->user_has_appointment_id( get_current_user_id(), (int) $params['id'] ) ) {
+				return true;
+			}
 		}
 
 		$params = $request->get_params();

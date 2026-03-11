@@ -128,6 +128,7 @@ class SSA_Settings_Api extends WP_REST_Controller {
 	 */
 	public function get_item( $request ) {
 		$settings = $this->plugin->settings->get();
+		$settings = $this->plugin->settings->remove_unauthorized_settings_for_current_user( $settings );
 		if ( empty( $settings[$request['id']] ) ) {
 			return array(
 				'response_code' => 404,

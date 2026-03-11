@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.10.0 - 2026-03-05
+
+### Fixes
+
+- Vulnerability - Insecure Direct Object Reference to Authenticated (Staff+) Sensitive Information Exposure
+- Add Authorization to Settings REST API Endpoint
+- Unauthenticated SQL Injection in Simply Schedule Appointments Plugin
+
 ## SSA-VERSION-PREFIX.6.9.29 - 2026-02-24
 
 ### Fixes

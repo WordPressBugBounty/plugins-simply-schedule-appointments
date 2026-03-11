@@ -1181,7 +1181,15 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$sanitized_orderby = sanitize_key(esc_sql( $args['orderby'] ));
 		$sanitized_order = 'ASC' === strtoupper( esc_sql( $args['order'] ) ) ? 'ASC' : 'DESC';
 		$table_name      = $this->get_table_name();
-		$fields          = empty( $args['fields'] ) ? '*' : '`' . implode( '`, `', $args['fields'] ) . '`';
+
+		if ( empty( $args['fields'] ) ) {
+			$fields = '*';
+		} else {
+			$valid_fields   = array_keys( $this->get_fields() );
+			$requested      = array_map( 'sanitize_key', (array) $args['fields'] );
+			$safe_fields    = array_intersect( $requested, $valid_fields );
+			$fields         = empty( $safe_fields ) ? '*' : '`' . implode( '`, `', $safe_fields ) . '`';
+		}
 
 		// if( $rows === false ) {
 			$sql = $wpdb->prepare( "SELECT $fields FROM  $table_name $where ORDER BY $sanitized_orderby $sanitized_order LIMIT %d,%d;", absint( $args['offset'] ), absint( $args['number'] ) );

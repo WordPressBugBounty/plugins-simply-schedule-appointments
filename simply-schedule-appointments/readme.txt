@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.9.29
+Stable tag:        1.6.10.0
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,14 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.10.0 - 2026-03-05 ==
+
+= Fixes =
+
+- Vulnerability - Insecure Direct Object Reference to Authenticated (Staff+) Sensitive Information Exposure
+- Add Authorization to Settings REST API Endpoint
+- Unauthenticated SQL Injection in Simply Schedule Appointments Plugin
+
 == 1.6.9.29 - 2026-02-24 ==
 
 = Fixes =
@@ -297,14 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 = Fixes =
 
 - Fix name and email fields don't get automatically autofilled
-
-== 1.6.9.9 - 2025-11-18 ==
-
-= Fixes =
-
-- Fix extra white space around the booking app iframe element
-
-== 1.6.9.8 - 2025-11-11 ==
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
