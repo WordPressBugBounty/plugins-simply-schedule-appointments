@@ -22,6 +22,15 @@ class SSA_Appointment_Object {
 	protected $resources;
 	protected $recursive_fetched = -2;
 
+	/**
+	 * Per-request cache: raw data arrays keyed by appointment ID.
+	 * Populated by from_data() so any subsequent new SSA_Appointment_Object( $id )
+	 * skip DB queries for data already fetched in bulk.
+	 *
+	 * @var array
+	 */
+	protected static $data_cache = array();
+
 	protected $status;
 
 	/**
@@ -60,6 +69,27 @@ class SSA_Appointment_Object {
 
 		$appointment = new SSA_Appointment_Object( $appointment );
 		return $appointment;
+	}
+
+	/**
+	 * Factory function to create from a pre-loaded data array.
+	 * Bypasses lazy loading — avoids N+1 queries when building collections.
+	 *
+	 * @param array $data Full appointment data array (must include 'id').
+	 * @param int   $recursive_level The recursive level of the pre-loaded data (default 0 for flat query results).
+	 * @return SSA_Appointment_Object
+	 */
+	public static function from_data( array $data, int $recursive_level = 0 ): self {
+		$obj                    = new self( $data['id'] );
+		$obj->data              = $data;
+		$obj->recursive_fetched = $recursive_level;
+		// Pre-populate the request cache so any new SSA_Appointment_Object( $id )
+		// created later (e.g. inside template-var filters) skips the DB entirely.
+		self::$data_cache[ $data['id'] ] = array(
+			'data'  => $data,
+			'level' => $recursive_level,
+		);
+		return $obj;
 	}
 
 	/**
@@ -130,6 +160,15 @@ class SSA_Appointment_Object {
 
 	public function get( $recursive = -1 ) {
 		if ( $recursive > $this->recursive_fetched ) {
+			// Read-only check of the pre-load cache (written exclusively by from_data()).
+			// from_data() is only called during bulk ICS fetches, so for every other code
+			// path in the app this cache is empty and this check is a no-op.
+			if ( isset( self::$data_cache[ $this->id ] ) && $recursive <= self::$data_cache[ $this->id ]['level'] ) {
+				$this->data             = array_merge( $this->data ?? array(), self::$data_cache[ $this->id ]['data'] );
+				$this->recursive_fetched = self::$data_cache[ $this->id ]['level'];
+				return;
+			}
+
 			if ( null === $this->data ) {
 				$this->data = array();
 			}
@@ -142,6 +181,8 @@ class SSA_Appointment_Object {
 			}
 			$this->data = array_merge( $this->data, $model_data );
 			$this->recursive_fetched = $recursive;
+			// Intentionally NOT writing back to $data_cache here.
+			// The cache is exclusively managed by from_data() for bulk ICS pre-loading.
 		}
 	}
 
@@ -401,7 +442,7 @@ class SSA_Appointment_Object {
 		if ( empty( $customer_timezone ) ) {
 			return null;
 		}
-		return new DateTimeZone( $customer_timezone );
+		return SSA_Utils::safe_timezone( $customer_timezone );
 	}
 
 	/**

@@ -1,5 +1,14 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.10.2 - 2026-03-11
+
+### Fixes
+
+- Improve lifetime license status message in admin support
+- PHP 8.3 Compatibility Fixes
+- Switch fetch wp users to be a post request
+- Ics subscribe to calendar request improvements
+
 ## SSA-VERSION-PREFIX.6.10.0 - 2026-03-05
 
 ### Fixes

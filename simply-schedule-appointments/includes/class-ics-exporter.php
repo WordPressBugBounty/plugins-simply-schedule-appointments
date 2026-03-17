@@ -161,6 +161,48 @@ class SSA_Ics_Exporter {
 	}
 
 	/**
+	 * Fold a content line per RFC 5545 (max 75 octets, fold with CRLF + space)
+	 *
+	 * @param string $line The full line including property name (e.g., "DESCRIPTION:text...")
+	 * @return string The folded line(s)
+	 */
+	protected function fold_line( $line ) {
+		$max_length = 75;
+		
+		// If line is already short enough, return as-is
+		if ( strlen( $line ) <= $max_length ) {
+			return $line;
+		}
+		
+		$result = '';
+		$remaining = $line;
+		$first_line = true;
+		
+		while ( strlen( $remaining ) > 0 ) {
+			if ( $first_line ) {
+				// First line: take up to 75 chars
+				$chunk_length = $max_length;
+				$first_line = false;
+			} else {
+				// Continuation lines: account for the leading space (74 chars of content + 1 space = 75)
+				$chunk_length = $max_length - 1;
+			}
+			
+			// Get chunk respecting UTF-8 boundaries
+			$chunk = mb_strcut( $remaining, 0, $chunk_length, 'UTF-8' );
+			$remaining = substr( $remaining, strlen( $chunk ) );
+			
+			if ( $result !== '' ) {
+				// Add CRLF + space before continuation
+				$result .= "\r\n ";
+			}
+			$result .= $chunk;
+		}
+		
+		return $result;
+	}
+
+	/**
 	 * Generate the .ics content
 	 *
 	 * @return string
@@ -178,30 +220,49 @@ class SSA_Ics_Exporter {
 		$ics .= 'X-WR-CALDESC:' . $this->sanitize_string( sprintf( __( 'Appointments from %s', 'simply-schedule-appointments' ), $sitename ) ) . $this->eol;
 		$ics .= 'TRANSP:' . 'OPAQUE' . $this->eol;
 
+		// Create recipient and URL once — avoids N×3 object creations inside the
+		// per-appointment get_calendar_event_title/description/location calls.
+		if ( 'staff' === $this->template ) {
+			$recipient = SSA_Recipient_Staff::create();
+			$url       = ssa()->wp_admin->url( 'ssa/appointments' );
+		} else {
+			$recipient = SSA_Recipient_Customer::create();
+			$url       = '';
+		}
+
+		// Enable batch-mode caching on the template engine for the duration of this loop.
+		// Each appointment needs title, description, and location — all three trigger the
+		// same heavy filter chain (DB queries + meta lookups) on get_template_vars().
+		// Batch mode caches the result after the first call per appointment so the 2nd
+		// and 3rd calls are instant. Disabled immediately after the loop; zero side effects
+		// on any other part of the application.
+		ssa()->templates->enable_batch_mode();
+
 		foreach ( $this->appointments as $appointment ) {
 			if ( in_array( $this->template, array( 'customer', 'staff' ) ) ) {
-				$url = $this->template === 'staff' ? ssa()->wp_admin->url( 'ssa/appointments' ) : "";
-				$summary     = $appointment->get_title( $this->template );
-				$description = $appointment->get_description( $this->template );
+				$summary     = $appointment->get_calendar_event_title( $recipient );
+				$description = $appointment->get_calendar_event_description( $recipient );
+				$location    = $appointment->get_calendar_event_location( $recipient );
 				$date_prefix = ( $appointment->is_all_day() ) ? ';VALUE=DATE:' : ':';
 			}
 
 			$ics     .= 'BEGIN:VEVENT' . $this->eol;
 			$ics     .= 'UID:' . $this->uid_prefix . $appointment->id . $this->template . $this->eol;
 			$ics     .= 'DTSTAMP:' . $this->format_date( time() ) . $this->eol;
-			$location = $appointment->get_location( $this->template );
 			if ( ! empty( $location ) ) {
-				$ics .= 'LOCATION:' . $location . $this->eol;
+				$ics .= $this->fold_line( 'LOCATION:' . $this->sanitize_string( $location ) ) . $this->eol;
 			} else {
 				$ics .= 'LOCATION:' . $this->eol;
 			}
-			$ics .= 'DESCRIPTION:' . $this->sanitize_string( $description ) . $this->eol;
-			$ics .= 'URL;VALUE=URI:' . $this->sanitize_string( $url ) . $this->eol;
-			$ics .= 'SUMMARY:' . $this->sanitize_string( $summary ) . $this->eol;
+			$ics .= $this->fold_line( 'DESCRIPTION:' . $this->sanitize_string( $description ) ) . $this->eol;
+			$ics .= $this->fold_line( 'URL;VALUE=URI:' . $this->sanitize_string( $url ) ) . $this->eol;
+			$ics .= $this->fold_line( 'SUMMARY:' . $this->sanitize_string( $summary ) ) . $this->eol;
 			$ics .= 'DTSTART' . $date_prefix . $this->format_date( $appointment->start_date_timestamp, $appointment ) . $this->eol;
 			$ics .= 'DTEND' . $date_prefix . $this->format_date( $appointment->end_date_timestamp, $appointment ) . $this->eol;
 			$ics .= 'END:VEVENT' . $this->eol;
 		}
+
+		ssa()->templates->disable_batch_mode();
 
 		$ics .= 'END:VCALENDAR';
 

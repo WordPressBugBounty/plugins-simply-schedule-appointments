@@ -197,9 +197,181 @@ class SSA_Utils {
 		return $datetime->setTimestamp( $time );
 	}
 
+	/**
+	 * Create DateTimeZone safely, handling PHP 8.3+ deprecated timezone names.
+	 * 
+	 * @since 5.8.8
+	 * @param string $timezone_string Timezone identifier
+	 * @param DateTimeZone|null $fallback Optional fallback timezone if creation fails
+	 * @return DateTimeZone
+	 */
+	public static function safe_timezone( $timezone_string, $fallback = null ) {
+		if ( $timezone_string instanceof DateTimeZone ) {
+			return $timezone_string;
+		}
+
+		try {
+			return new DateTimeZone( $timezone_string );
+		} catch ( Exception $e ) {
+			// Map deprecated timezone names to modern equivalents (PHP 8.3+)
+			// Based on IANA timezone database backward compatibility file
+			$deprecated_timezones = array(
+				// US timezones
+				'US/Alaska'        => 'America/Anchorage',
+				'US/Aleutian'      => 'America/Adak',
+				'US/Arizona'       => 'America/Phoenix',
+				'US/Central'       => 'America/Chicago',
+				'US/Eastern'       => 'America/New_York',
+				'US/East-Indiana'  => 'America/Indiana/Indianapolis',
+				'US/Hawaii'        => 'Pacific/Honolulu',
+				'US/Indiana-Starke'=> 'America/Indiana/Knox',
+				'US/Michigan'      => 'America/Detroit',
+				'US/Mountain'      => 'America/Denver',
+				'US/Pacific'       => 'America/Los_Angeles',
+				'US/Samoa'         => 'Pacific/Pago_Pago',
+				
+				// Canada
+				'Canada/Atlantic'     => 'America/Halifax',
+				'Canada/Central'      => 'America/Winnipeg',
+				'Canada/Eastern'      => 'America/Toronto',
+				'Canada/Mountain'     => 'America/Edmonton',
+				'Canada/Newfoundland' => 'America/St_Johns',
+				'Canada/Pacific'      => 'America/Vancouver',
+				'Canada/Saskatchewan' => 'America/Regina',
+				'Canada/Yukon'        => 'America/Whitehorse',
+				
+				// Asia
+				'Asia/Calcutta'       => 'Asia/Kolkata',
+				'Asia/Katmandu'       => 'Asia/Kathmandu',
+				'Asia/Saigon'         => 'Asia/Ho_Chi_Minh',
+				'Asia/Chongqing'      => 'Asia/Shanghai',
+				'Asia/Chungking'      => 'Asia/Shanghai',
+				'Asia/Dacca'          => 'Asia/Dhaka',
+				'Asia/Harbin'         => 'Asia/Shanghai',
+				'Asia/Kashgar'        => 'Asia/Urumqi',
+				'Asia/Macao'          => 'Asia/Macau',
+				'Asia/Tel_Aviv'       => 'Asia/Jerusalem',
+				'Asia/Thimbu'         => 'Asia/Thimphu',
+				'Asia/Ujung_Pandang'  => 'Asia/Makassar',
+				'Asia/Ulan_Bator'     => 'Asia/Ulaanbaatar',
+				
+				// Europe
+				'Europe/Belfast'   => 'Europe/London',
+				'Europe/Tiraspol'  => 'Europe/Chisinau',
+				'Europe/Nicosia'   => 'Asia/Nicosia',
+				
+				// Africa
+				'Africa/Asmera'    => 'Africa/Asmara',
+				'Africa/Timbuktu'  => 'Africa/Bamako',
+				
+				// America
+				'America/Argentina/ComodRivadavia' => 'America/Argentina/Catamarca',
+				'America/Atka'                     => 'America/Adak',
+				'America/Buenos_Aires'             => 'America/Argentina/Buenos_Aires',
+				'America/Catamarca'                => 'America/Argentina/Catamarca',
+				'America/Coral_Harbour'            => 'America/Atikokan',
+				'America/Cordoba'                  => 'America/Argentina/Cordoba',
+				'America/Ensenada'                 => 'America/Tijuana',
+				'America/Fort_Wayne'               => 'America/Indiana/Indianapolis',
+				'America/Indianapolis'             => 'America/Indiana/Indianapolis',
+				'America/Jujuy'                    => 'America/Argentina/Jujuy',
+				'America/Knox_IN'                  => 'America/Indiana/Knox',
+				'America/Louisville'               => 'America/Kentucky/Louisville',
+				'America/Mendoza'                  => 'America/Argentina/Mendoza',
+				'America/Porto_Acre'               => 'America/Rio_Branco',
+				'America/Rosario'                  => 'America/Argentina/Cordoba',
+				'America/Virgin'                   => 'America/St_Thomas',
+				
+				// Australia
+				'Australia/ACT'        => 'Australia/Sydney',
+				'Australia/Canberra'   => 'Australia/Sydney',
+				'Australia/LHI'        => 'Australia/Lord_Howe',
+				'Australia/NSW'        => 'Australia/Sydney',
+				'Australia/North'      => 'Australia/Darwin',
+				'Australia/Queensland' => 'Australia/Brisbane',
+				'Australia/South'      => 'Australia/Adelaide',
+				'Australia/Tasmania'   => 'Australia/Hobart',
+				'Australia/Victoria'   => 'Australia/Melbourne',
+				'Australia/West'       => 'Australia/Perth',
+				'Australia/Yancowinna' => 'Australia/Broken_Hill',
+				
+				// Brazil
+				'Brazil/Acre'       => 'America/Rio_Branco',
+				'Brazil/DeNoronha'  => 'America/Noronha',
+				'Brazil/East'       => 'America/Sao_Paulo',
+				'Brazil/West'       => 'America/Manaus',
+				
+				// Chile
+				'Chile/Continental'  => 'America/Santiago',
+				'Chile/EasterIsland' => 'Pacific/Easter',
+				
+				// Pacific
+				'Pacific/Ponape' => 'Pacific/Pohnpei',
+				'Pacific/Samoa'  => 'Pacific/Pago_Pago',
+				'Pacific/Truk'   => 'Pacific/Chuuk',
+				'Pacific/Yap'    => 'Pacific/Chuuk',
+				
+				// Country shortcuts
+				'Egypt'     => 'Africa/Cairo',
+				'Eire'      => 'Europe/Dublin',
+				'GB'        => 'Europe/London',
+				'GB-Eire'   => 'Europe/London',
+				'Greenwich' => 'Etc/GMT',
+				'Hongkong'  => 'Asia/Hong_Kong',
+				'Iceland'   => 'Atlantic/Reykjavik',
+				'Iran'      => 'Asia/Tehran',
+				'Israel'    => 'Asia/Jerusalem',
+				'Jamaica'   => 'America/Jamaica',
+				'Japan'     => 'Asia/Tokyo',
+				'Kwajalein' => 'Pacific/Kwajalein',
+				'Libya'     => 'Africa/Tripoli',
+				'NZ'        => 'Pacific/Auckland',
+				'NZ-CHAT'   => 'Pacific/Chatham',
+				'Navajo'    => 'America/Denver',
+				'PRC'       => 'Asia/Shanghai',
+				'Poland'    => 'Europe/Warsaw',
+				'Portugal'  => 'Europe/Lisbon',
+				'ROC'       => 'Asia/Taipei',
+				'ROK'       => 'Asia/Seoul',
+				'Singapore' => 'Asia/Singapore',
+				'Turkey'    => 'Europe/Istanbul',
+				'UCT'       => 'Etc/UTC',
+				'Universal' => 'Etc/UTC',
+				'W-SU'      => 'Europe/Moscow',
+				'Zulu'      => 'Etc/UTC',
+				
+				// Mexico
+				'Mexico/BajaNorte' => 'America/Tijuana',
+				'Mexico/BajaSur'   => 'America/Mazatlan',
+				'Mexico/General'   => 'America/Mexico_City',
+			);
+
+			if ( isset( $deprecated_timezones[ $timezone_string ] ) ) {
+				try {
+					return new DateTimeZone( $deprecated_timezones[ $timezone_string ] );
+				} catch ( Exception $e2 ) {
+					// Mapped timezone also failed - this shouldn't happen with valid mappings
+					error_log( sprintf( 
+						'SSA: Deprecated timezone "%s" mapped to "%s" but mapping also failed: %s', 
+						$timezone_string, 
+						$deprecated_timezones[ $timezone_string ],
+						$e2->getMessage()
+					) );
+					// Now Fall through to fallback logic
+				}
+			}
+
+			// Return fallback or UTC as last resort
+			if ( $fallback instanceof DateTimeZone ) {
+				return $fallback;
+			}
+			return new DateTimeZone( 'UTC' );
+		}
+	}
+
 	public static function get_datetime_in_utc( $datetime, $datetimezone='UTC' ) {
 		if ( ! ( $datetimezone instanceof DateTimeZone ) ) {
-			$datetimezone = new DateTimeZone( $datetimezone );
+			$datetimezone = self::safe_timezone( $datetimezone );
 		}
 
 		if ( ! ( $datetime instanceof DateTimeImmutable ) ) {
@@ -548,6 +720,9 @@ function ssa_debug_log( $var, $debug_level = 1, $label = '', $file = 'debug' ) {
 		return;
 	}
 	
+	// Store backtrace early for PHP 7.0+ compatibility (before using parameters)
+	$backtrace = debug_backtrace();
+	
 	$ssa_debug_level = get_option( 'ssa_debug_level', 10 );
 	if ( $debug_level < $ssa_debug_level ) {
 		// We want to log really fatal errors (level 10) so the support team can see them when logging in after the fact
@@ -561,15 +736,28 @@ function ssa_debug_log( $var, $debug_level = 1, $label = '', $file = 'debug' ) {
 		return;
 	}
 	
+	// Validate indices before access (PHP 8.0+ compatibility)
 
-	error_log( PHP_EOL . 'The following is logged from ' . debug_backtrace()[1]['function'] . '()' . PHP_EOL, 3, $path );
-	error_log( 'in ' .debug_backtrace()[0]['file'] . ' line ' . debug_backtrace()[0]['line'] . ':' . PHP_EOL, 3, $path );
+	if ( isset( $backtrace[1]['function'] ) ) {
+		error_log( PHP_EOL . 'The following is logged from ' . $backtrace[1]['function'] . '()' . PHP_EOL, 3, $path );
+	}
+	if ( isset( $backtrace[0]['file'], $backtrace[0]['line'] ) ) {
+		error_log( 'in ' . $backtrace[0]['file'] . ' line ' . $backtrace[0]['line'] . ':' . PHP_EOL, 3, $path );
+	}
 
-	error_log( PHP_EOL . '... ' . debug_backtrace()[2]['function'] . '()' . PHP_EOL, 3, $path );
-	error_log( 'in ' .debug_backtrace()[1]['file'] . ' line ' . debug_backtrace()[1]['line'] . ':' . PHP_EOL, 3, $path );
+	if ( isset( $backtrace[2]['function'] ) ) {
+		error_log( PHP_EOL . '... ' . $backtrace[2]['function'] . '()' . PHP_EOL, 3, $path );
+	}
+	if ( isset( $backtrace[1]['file'], $backtrace[1]['line'] ) ) {
+		error_log( 'in ' . $backtrace[1]['file'] . ' line ' . $backtrace[1]['line'] . ':' . PHP_EOL, 3, $path );
+	}
 
-	error_log( PHP_EOL . '...... ' . debug_backtrace()[3]['function'] . '()' . PHP_EOL, 3, $path );
-	error_log( 'in ' .debug_backtrace()[2]['file'] . ' line ' . debug_backtrace()[2]['line'] . ':' . PHP_EOL, 3, $path );
+	if ( isset( $backtrace[3]['function'] ) ) {
+		error_log( PHP_EOL . '...... ' . $backtrace[3]['function'] . '()' . PHP_EOL, 3, $path );
+	}
+	if ( isset( $backtrace[2]['file'], $backtrace[2]['line'] ) ) {
+		error_log( 'in ' . $backtrace[2]['file'] . ' line ' . $backtrace[2]['line'] . ':' . PHP_EOL, 3, $path );
+	}
 
 	if ( ! empty( $label ) ) {
 		error_log( $log_prefix.$label.PHP_EOL, 3, $path );
@@ -890,7 +1078,7 @@ function ssa_evaluate_merge_tag ( $appointment_id, $modifier ) {
 	$settings = ssa()->settings->get();
 
 	if ( 'business_start_date' === explode( ':', $modifier )[0] ) {
-		$date_timezone    = new DateTimeZone( $settings['global']['timezone_string'] );
+		$date_timezone    = SSA_Utils::safe_timezone( $settings['global']['timezone_string'] );
 		return ssa_evaluate_datetime_merge_tag( $start_date, $modifier, $date_timezone );
 	}
 	

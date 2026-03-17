@@ -502,13 +502,16 @@ class SSA_Support_Status {
 		}
 
 		if ( 'active' === $license['license_status'] || 'valid' === $license['license_status'] ) {
+			if ( 'lifetime' === $license['license_expiration_date'] ) {
+				$notice = __( 'Your license is active. You have lifetime access.', 'simply-schedule-appointments' );
+			} else {
+				$notice = sprintf(
+					__( 'Your license is up-to-date. Next renewal is due on %s.', 'simply-schedule-appointments' ),
+					$expiration_date
+				);
+			}
 			return array(
-				'notices' => array(
-					sprintf(
-						__( 'Your license is up-to-date. Next renewal is due on %s.', 'simply-schedule-appointments' ),
-						$expiration_date
-					)
-				),
+				'notices' => array( $notice ),
 				'status'  => 'good',
 				'value'   => true,
 			);
@@ -531,9 +534,9 @@ class SSA_Support_Status {
 
 		$license = $this->plugin->license->check();
 
-		if ( ! empty( $license['license_expiration_date'] ) ) {
+		if ( ! empty( $license['license_expiration_date'] ) && 'lifetime' !== $license['license_expiration_date'] ) {
 
-			$formatted_date =	date_i18n( get_option( 'date_format' ), strtotime( $license['license_expiration_date'] ) );
+			$formatted_date = date_i18n( get_option( 'date_format' ), strtotime( $license['license_expiration_date'] ) );
 
 			return $formatted_date;
 		}

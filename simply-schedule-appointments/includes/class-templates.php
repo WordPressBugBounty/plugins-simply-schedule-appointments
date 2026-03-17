@@ -23,6 +23,23 @@ class SSA_Templates {
 	protected $plugin = null;
 
 	/**
+	 * Whether batch-mode vars caching is active.
+	 * Off by default — must be explicitly enabled by callers (e.g. ICS exporter).
+	 * Zero effect on any code path that never calls enable_batch_mode().
+	 *
+	 * @var bool
+	 */
+	protected $batch_mode_enabled = false;
+
+	/**
+	 * Vars cache used only while batch_mode_enabled is true.
+	 * Keyed by appointment ID; cleared when batch mode is disabled.
+	 *
+	 * @var array
+	 */
+	protected $batch_vars_cache = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @since  2.0.3
@@ -52,9 +69,44 @@ class SSA_Templates {
 	}
 
 	public function get_template_vars( $template, $vars = array() ) {
+		// Batch-mode caching is opt-in and disabled by default.
+		// Only active when a caller (e.g. ICS exporter) explicitly calls enable_batch_mode().
+		// All regular code paths are completely unaffected.
+		if ( $this->batch_mode_enabled && isset( $vars['appointment_id'] ) ) {
+			$cache_key = (int) $vars['appointment_id'];
+			if ( isset( $this->batch_vars_cache[ $cache_key ] ) ) {
+				return $this->batch_vars_cache[ $cache_key ];
+			}
+		}
+
 		$vars = apply_filters( 'ssa/templates/get_template_vars', $vars, $template );
 
+		if ( $this->batch_mode_enabled && isset( $cache_key ) ) {
+			$this->batch_vars_cache[ $cache_key ] = $vars;
+		}
+
 		return $vars;
+	}
+
+	/**
+	 * Enable per-appointment vars caching for batch rendering.
+	 *
+	 * Call before processing a collection of appointments (e.g. ICS feed generation)
+	 * to prevent the template-var filter chain from re-running for each Twig property
+	 * (title, description, location) on the same appointment.
+	 * Always pair with a disable_batch_mode() call afterwards.
+	 */
+	public function enable_batch_mode() {
+		$this->batch_mode_enabled = true;
+		$this->batch_vars_cache   = array();
+	}
+
+	/**
+	 * Disable batch-mode caching and clear the vars cache.
+	 */
+	public function disable_batch_mode() {
+		$this->batch_mode_enabled = false;
+		$this->batch_vars_cache   = array();
 	}
 
 	public function add_global_template_vars( $vars, $template ) {
@@ -250,7 +302,12 @@ class SSA_Templates {
 			$customer_timezone = $appointment_obj->get_date_timezone();
 			$vars['Appointment']['customer_timezone'] = $customer_timezone->getName();
 		} else {
-			$customer_timezone = new DateTimeZone( $vars['Appointment']['customer_timezone'] );
+			// Use safe timezone helper to handle PHP 8.3+ deprecated timezone names
+			$customer_timezone = SSA_Utils::safe_timezone( 
+				$vars['Appointment']['customer_timezone'],
+				$appointment_obj->get_date_timezone() // Fallback to appointment's default timezone
+			);
+			$vars['Appointment']['customer_timezone'] = $customer_timezone->getName();
 		}
 
 		$vars['Appointment']['customer_start_date'] = ssa_datetime( $vars['Appointment']['start_date'] )->setTimezone( $customer_timezone )->format( $format );
@@ -343,7 +400,7 @@ class SSA_Templates {
 		if ( empty( $vars['instructions'] ) ) {
 			$vars['instructions'] = '';
 		}
-		$vars['instructions'] .= $vars['Appointment']['AppointmentType']['instructions'];
+		$vars['instructions'] .= $vars['Appointment']['AppointmentType']['instructions'] ?? '';
 
 		// Refund policy
 		$vars['refund_policy'] = isset($vars['Appointment']['AppointmentType']['payments']) && isset($vars['Appointment']['AppointmentType']['payments']['refund_policy']) ? $vars['Appointment']['AppointmentType']['payments']['refund_policy'] : '';

@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.10.0
+Stable tag:        1.6.10.2
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,15 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.10.2 - 2026-03-11 ==
+
+= Fixes =
+
+- Improve lifetime license status message in admin support
+- PHP 8.3 Compatibility Fixes
+- Switch fetch wp users to be a post request
+- Ics subscribe to calendar request improvements
+
 == 1.6.10.0 - 2026-03-05 ==
 
 = Fixes =
@@ -295,16 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Track SSA versions and update time stamp
 
 == 1.6.9.13 - 2025-11-26 ==
-
-= Fixes =
-
-- Fix SSA Admin Shortcode Not Rendering Due to Missing Iframe Tag
-
-== 1.6.9.11 - 2025-11-25 ==
-
-= Fixes =
-
-- Fix name and email fields don't get automatically autofilled
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

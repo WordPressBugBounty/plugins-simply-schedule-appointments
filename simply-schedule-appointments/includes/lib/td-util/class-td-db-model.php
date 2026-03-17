@@ -939,6 +939,12 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$update_queries = array();
 		$sql = "CREATE TABLE " . $this->get_table_name() . " (\n";
 		foreach ($schema as $key => $field) {
+			// Skip any fields with empty or missing field names
+			if ( ! is_array( $field ) || empty( $field['field'] ) || empty( $field['mysql_type'] ) ) {
+				error_log( 'SSA: Skipping invalid schema field in table `' . $this->get_table_name() . '`: ' . var_export( $field, true ) );
+				continue;
+			}
+			
 			$new_line = $field['field'] . ' ';
 			$new_line .= $field['mysql_type'];
 			if ( !empty( $field['mysql_length'] ) ) {
@@ -973,6 +979,11 @@ abstract class TD_DB_Model extends TD_API_Model {
 		}
 		$sql .= "PRIMARY KEY  (`".$this->primary_key."`)";
 		foreach ($this->indexes as $key => $fields) {
+			// Skip any indexes with invalid keys (but allow numeric 0) or empty field arrays
+			if ( $key === '' || $key === null || empty( $fields ) || ! is_array( $fields ) ) {
+				error_log( 'SSA: Skipping invalid index in table `' . $this->get_table_name() . '`: key=' . var_export( $key, true ) );
+				continue;
+			}
 			$sql .= ",\n KEY `".$key."` (".implode( ',',$fields).")";
 		}
 
@@ -980,6 +991,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$sql .= " COMMENT='Created with schema v".$this->get_version()." (".current_time( 'mysql', true ).")'";
 		// $sql .= " ROW_FORMAT=DYNAMIC"; // not necessary if we have smaller indexes
 		$sql .= ";";
+		
 		ob_start();
 		$dbdelta_response = @dbDelta( $sql );
 		$errors = ob_get_clean();

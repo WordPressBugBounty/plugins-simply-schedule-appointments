@@ -30,6 +30,9 @@ class SSA_Availability_Schedule implements Countable, Iterator {
 	protected $count = 0;
 	protected $position = 0;
 	protected $_queried_appointments = null;
+	
+	// Dynamic property - can be set by factory
+	public $capacity_available;
 
 	const MERGE_MODE_MIN = -1;
 	const MERGE_MODE_MAX = 1;

@@ -228,7 +228,7 @@ class SSA_Settings_Global extends SSA_Settings_Schema {
 
 	public function get_datetimezone() {
 		$timezone_string = $this->get_timezone_string();
-		$datetimezone = new DateTimeZone( $timezone_string );
+		$datetimezone = SSA_Utils::safe_timezone( $timezone_string );
 		return $datetimezone;
 	}
 

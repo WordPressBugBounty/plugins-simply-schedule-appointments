@@ -57,6 +57,12 @@ class SSA_Customers {
 					),
 				),
 			),
+			array(
+				'methods'         => WP_REST_Server::CREATABLE,
+				'callback'        => array( $this, 'get_items' ),
+				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'args'            => array(),
+			),
 		) );
 	}
 
@@ -66,6 +72,14 @@ class SSA_Customers {
 
 	public function get_items( $request ) {
 		$params = $request->get_params();
+		
+		// Support both GET (legacy) and POST (to avoid 414 errors with large ID lists)
+		if ( 'POST' === $request->get_method() ) {
+			$body = $request->get_json_params();
+			if ( ! empty( $body['ids'] ) ) {
+				$params['ids'] = $body['ids'];
+			}
+		}
 
 		$data = array();
 		if ( ! empty( $params['ids'] ) ) {

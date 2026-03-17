@@ -1356,8 +1356,6 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		if ( isset( $params['format'] ) && 'ics' === $params['format'] ) {
 			$is_ics = true;
 			unset( $params['format'] );
-
-			$params['fields'] = array( 'id' );
 		}
 
 		$data = $this->query( $params );
@@ -1374,7 +1372,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		if ( $is_ics ) {
 			$appointments = array_map(
 				function( $row ) {
-					return new SSA_Appointment_Object( $row['id'] );
+					return SSA_Appointment_Object::from_data( $row );
 				},
 				$data
 			);
