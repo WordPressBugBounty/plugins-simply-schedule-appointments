@@ -119,7 +119,7 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 											} else {
 												$customer_timezone_string = 'UTC';
 											}
-											$customer_timezone = new DateTimezone( $customer_timezone_string );
+											$customer_timezone = SSA_Utils::safe_timezone( $customer_timezone_string );
 											$localized_date = $upcoming_appointment_datetime->setTimezone($customer_timezone)->format($date_format);
 											$localized_time = $upcoming_appointment_datetime->setTimezone($customer_timezone)->format($time_format. ' (T)');
 

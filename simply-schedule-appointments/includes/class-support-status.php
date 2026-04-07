@@ -147,6 +147,12 @@ class SSA_Support_Status {
 			// disable settings before import.
 			$update = $this->plugin->settings->update( $old_settings );
 
+			// Quick Connect credentials are bound to the source site's URL via the remote token service.
+			// Skip clearing only when importing back to the same site (URLs match).
+			$source_url               = isset( $decoded['settings']['google_calendar']['quick_connect_home_url'] ) ? $decoded['settings']['google_calendar']['quick_connect_home_url'] : '';
+			$should_clear_quick_connect = ! empty( $decoded['settings']['google_calendar']['quick_connect_gcal_mode'] )
+				&& get_home_url() !== $source_url;
+
 			// staff.
 			$delete = $this->plugin->staff_model->truncate();
 			$this->plugin->staff_model->create_table();
@@ -154,6 +160,10 @@ class SSA_Support_Status {
 				foreach ( $decoded['staff'] as $staff ) {
 					// Remove user IDs from export code since it sometimes assign staff members to the wrong WP users.
 					$staff['user_id'] = 0;
+					if ( $should_clear_quick_connect ) {
+						$staff['google_access_token'] = '';
+						$staff['google']              = '';
+					}
 					$include = $this->plugin->staff_model->raw_insert( $staff );
 					// if any error happens while trying to staff data, return.
 					if ( is_wp_error( $include ) ) {
@@ -327,6 +337,12 @@ class SSA_Support_Status {
 
 		// If settings data is available, update.
 		if ( isset( $decoded['settings'] ) ) {
+			if ( $should_clear_quick_connect ) {
+				$decoded['settings']['google_calendar']['access_token']                = '';
+				$decoded['settings']['google_calendar']['quick_connect_backoff']       = 0;
+				$decoded['settings']['google_calendar']['quick_connect_backoff_timestamp'] = 0;
+				$decoded['settings']['google_calendar']['quick_connect_home_url']      = get_home_url();
+			}
 			$update = $this->plugin->settings->update( $decoded['settings'] );
 		}
 
@@ -338,6 +354,12 @@ class SSA_Support_Status {
 
 		$this->plugin->upgrade->migrate_free_to_paid_customer_info();
 		$this->plugin->upgrade->migrate_paid_to_free_customer_info();
+
+		if ( ! empty( $should_clear_quick_connect ) ) {
+			$this->plugin->error_notices->add_error_notice( 'quick_connect_site_mismatch' );
+			return 'cleared_quick_connect';
+		}
+
 		// Everything was successfully imported.
 		return true;
 	}
@@ -445,12 +467,12 @@ class SSA_Support_Status {
 		}
 		
 		$import = $this->import_data( $backup );
-		
+
 		if( is_wp_error( $import ) ) {
 			return $import;
 		}
 
-		return true;
+		return $import;
 	}
 
 	/**

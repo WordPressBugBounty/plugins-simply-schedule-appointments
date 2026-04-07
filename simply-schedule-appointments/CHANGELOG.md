@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.10.4 - 2026-04-02
+
+### Fixes
+
+- Ticket: The Exported CSV file is not displaying payments correctly
+- Ticket: Unique Resource Group Selections and Display Issue
+- Fix/deprecated timezone iana compat
+
 ## SSA-VERSION-PREFIX.6.10.2 - 2026-03-11
 
 ### Fixes

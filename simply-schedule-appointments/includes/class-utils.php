@@ -198,175 +198,89 @@ class SSA_Utils {
 	}
 
 	/**
-	 * Create DateTimeZone safely, handling PHP 8.3+ deprecated timezone names.
-	 * 
+	 * Get deprecated timezone aliases for handling tzdata version differences.
+	 *
 	 * @since 5.8.8
-	 * @param string $timezone_string Timezone identifier
-	 * @param DateTimeZone|null $fallback Optional fallback timezone if creation fails
+	 * @return array Timezone alias mappings (old => new).
+	 */
+	public static function get_deprecated_timezone_map() {
+		return array(
+			// Tier 0 — already confirmed breakage in production.
+			'Europe/Kiev' => 'Europe/Kyiv',    // deprecated → canonical (tzdata ≥ 2022b / PHP ≥ 8.x)
+			'Europe/Kyiv' => 'Europe/Kiev',    // canonical → deprecated (tzdata < 2022b / PHP < 8.x)
+			'Asia/Calcutta' => 'Asia/Kolkata',
+			'Asia/Calcuta' => 'Asia/Kolkata',  // common typo variant
+
+			// Tier 1 — recent renames (tzdata 2021–2022), same version-skew risk as Kiev/Kyiv.
+			'America/Godthab'     => 'America/Nuuk',        // tzdata 2022a — Greenland capital
+			'America/Nuuk'        => 'America/Godthab',     // reverse for older tzdata
+			'Europe/Uzhgorod'     => 'Europe/Kyiv',         // tzdata 2022b — Ukraine consolidation
+			'Europe/Zaporozhye'   => 'Europe/Kyiv',         // tzdata 2022b — Ukraine consolidation
+			'Asia/Choibalsan'     => 'Asia/Ulaanbaatar',    // tzdata 2022a — Mongolia consolidation
+			'Pacific/Enderbury'   => 'Pacific/Kanton',      // tzdata 2021b
+			'Pacific/Kanton'      => 'Pacific/Enderbury',   // reverse for older tzdata
+
+			// Tier 2 — older renames, but large populations where legacy values persist in WP databases.
+			'Asia/Saigon'         => 'Asia/Ho_Chi_Minh',    // Vietnam ~100M
+			'Asia/Dacca'          => 'Asia/Dhaka',          // Bangladesh ~170M
+			'Asia/Katmandu'       => 'Asia/Kathmandu',      // Nepal ~30M
+			'Asia/Rangoon'        => 'Asia/Yangon',         // Myanmar ~54M
+			'Asia/Ujung_Pandang'  => 'Asia/Makassar',       // Indonesia ~275M
+			'Asia/Ulan_Bator'     => 'Asia/Ulaanbaatar',    // Mongolia
+			'Asia/Thimbu'         => 'Asia/Thimphu',        // Bhutan
+			'Atlantic/Faeroe'     => 'Atlantic/Faroe',      // Faroe Islands (typo-style rename)
+		);
+	}
+
+	/**
+	 * Get a safe timezone string, handling deprecated timezone names.
+	 *
+	 * Old tzdata (< 2022b / PHP < 8.x) only knows Europe/Kiev; newer tzdata uses Europe/Kyiv.
+	 * Both directions are mapped so either name works on any server.
+	 *
+	 * @since 5.8.8
+	 * @param string $timezone_string Timezone identifier.
+	 * @return string Valid timezone string or 'UTC' fallback.
+	 */
+	public static function get_safe_timezone_string( $timezone_string ) {
+		// Only remap if the timezone string would actually fail — don't rewrite valid
+		// strings like 'UTC' that have equivalents in the deprecated map.
+		try {
+			new DateTimeZone( $timezone_string );
+			return $timezone_string;
+		} catch ( Exception $e ) {
+			$map = self::get_deprecated_timezone_map();
+			if ( isset( $map[ $timezone_string ] ) ) {
+				try {
+					new DateTimeZone( $map[ $timezone_string ] );
+					return $map[ $timezone_string ];
+				} catch ( Exception $e2 ) {
+					// Fall through to UTC fallback.
+				}
+			}
+
+			error_log( 'SSA get_safe_timezone_string: unresolvable timezone "' . $timezone_string . '", falling back to UTC.' );
+			return 'UTC';
+		}
+	}
+
+	/**
+	 * Create DateTimeZone safely, handling the Europe/Kyiv ↔ Europe/Kiev naming split.
+	 *
+	 * Old tzdata (< 2022b / PHP < 8.x) only knows Europe/Kiev; newer tzdata uses Europe/Kyiv.
+	 * Both directions are mapped so either name works on any server.
+	 *
+	 * @since 5.8.8
+	 * @param string|DateTimeZone $timezone_string Timezone identifier or existing DateTimeZone.
 	 * @return DateTimeZone
 	 */
-	public static function safe_timezone( $timezone_string, $fallback = null ) {
+	public static function safe_timezone( $timezone_string ) {
 		if ( $timezone_string instanceof DateTimeZone ) {
 			return $timezone_string;
 		}
 
-		try {
-			return new DateTimeZone( $timezone_string );
-		} catch ( Exception $e ) {
-			// Map deprecated timezone names to modern equivalents (PHP 8.3+)
-			// Based on IANA timezone database backward compatibility file
-			$deprecated_timezones = array(
-				// US timezones
-				'US/Alaska'        => 'America/Anchorage',
-				'US/Aleutian'      => 'America/Adak',
-				'US/Arizona'       => 'America/Phoenix',
-				'US/Central'       => 'America/Chicago',
-				'US/Eastern'       => 'America/New_York',
-				'US/East-Indiana'  => 'America/Indiana/Indianapolis',
-				'US/Hawaii'        => 'Pacific/Honolulu',
-				'US/Indiana-Starke'=> 'America/Indiana/Knox',
-				'US/Michigan'      => 'America/Detroit',
-				'US/Mountain'      => 'America/Denver',
-				'US/Pacific'       => 'America/Los_Angeles',
-				'US/Samoa'         => 'Pacific/Pago_Pago',
-				
-				// Canada
-				'Canada/Atlantic'     => 'America/Halifax',
-				'Canada/Central'      => 'America/Winnipeg',
-				'Canada/Eastern'      => 'America/Toronto',
-				'Canada/Mountain'     => 'America/Edmonton',
-				'Canada/Newfoundland' => 'America/St_Johns',
-				'Canada/Pacific'      => 'America/Vancouver',
-				'Canada/Saskatchewan' => 'America/Regina',
-				'Canada/Yukon'        => 'America/Whitehorse',
-				
-				// Asia
-				'Asia/Calcutta'       => 'Asia/Kolkata',
-				'Asia/Katmandu'       => 'Asia/Kathmandu',
-				'Asia/Saigon'         => 'Asia/Ho_Chi_Minh',
-				'Asia/Chongqing'      => 'Asia/Shanghai',
-				'Asia/Chungking'      => 'Asia/Shanghai',
-				'Asia/Dacca'          => 'Asia/Dhaka',
-				'Asia/Harbin'         => 'Asia/Shanghai',
-				'Asia/Kashgar'        => 'Asia/Urumqi',
-				'Asia/Macao'          => 'Asia/Macau',
-				'Asia/Tel_Aviv'       => 'Asia/Jerusalem',
-				'Asia/Thimbu'         => 'Asia/Thimphu',
-				'Asia/Ujung_Pandang'  => 'Asia/Makassar',
-				'Asia/Ulan_Bator'     => 'Asia/Ulaanbaatar',
-				
-				// Europe
-				'Europe/Belfast'   => 'Europe/London',
-				'Europe/Tiraspol'  => 'Europe/Chisinau',
-				'Europe/Nicosia'   => 'Asia/Nicosia',
-				
-				// Africa
-				'Africa/Asmera'    => 'Africa/Asmara',
-				'Africa/Timbuktu'  => 'Africa/Bamako',
-				
-				// America
-				'America/Argentina/ComodRivadavia' => 'America/Argentina/Catamarca',
-				'America/Atka'                     => 'America/Adak',
-				'America/Buenos_Aires'             => 'America/Argentina/Buenos_Aires',
-				'America/Catamarca'                => 'America/Argentina/Catamarca',
-				'America/Coral_Harbour'            => 'America/Atikokan',
-				'America/Cordoba'                  => 'America/Argentina/Cordoba',
-				'America/Ensenada'                 => 'America/Tijuana',
-				'America/Fort_Wayne'               => 'America/Indiana/Indianapolis',
-				'America/Indianapolis'             => 'America/Indiana/Indianapolis',
-				'America/Jujuy'                    => 'America/Argentina/Jujuy',
-				'America/Knox_IN'                  => 'America/Indiana/Knox',
-				'America/Louisville'               => 'America/Kentucky/Louisville',
-				'America/Mendoza'                  => 'America/Argentina/Mendoza',
-				'America/Porto_Acre'               => 'America/Rio_Branco',
-				'America/Rosario'                  => 'America/Argentina/Cordoba',
-				'America/Virgin'                   => 'America/St_Thomas',
-				
-				// Australia
-				'Australia/ACT'        => 'Australia/Sydney',
-				'Australia/Canberra'   => 'Australia/Sydney',
-				'Australia/LHI'        => 'Australia/Lord_Howe',
-				'Australia/NSW'        => 'Australia/Sydney',
-				'Australia/North'      => 'Australia/Darwin',
-				'Australia/Queensland' => 'Australia/Brisbane',
-				'Australia/South'      => 'Australia/Adelaide',
-				'Australia/Tasmania'   => 'Australia/Hobart',
-				'Australia/Victoria'   => 'Australia/Melbourne',
-				'Australia/West'       => 'Australia/Perth',
-				'Australia/Yancowinna' => 'Australia/Broken_Hill',
-				
-				// Brazil
-				'Brazil/Acre'       => 'America/Rio_Branco',
-				'Brazil/DeNoronha'  => 'America/Noronha',
-				'Brazil/East'       => 'America/Sao_Paulo',
-				'Brazil/West'       => 'America/Manaus',
-				
-				// Chile
-				'Chile/Continental'  => 'America/Santiago',
-				'Chile/EasterIsland' => 'Pacific/Easter',
-				
-				// Pacific
-				'Pacific/Ponape' => 'Pacific/Pohnpei',
-				'Pacific/Samoa'  => 'Pacific/Pago_Pago',
-				'Pacific/Truk'   => 'Pacific/Chuuk',
-				'Pacific/Yap'    => 'Pacific/Chuuk',
-				
-				// Country shortcuts
-				'Egypt'     => 'Africa/Cairo',
-				'Eire'      => 'Europe/Dublin',
-				'GB'        => 'Europe/London',
-				'GB-Eire'   => 'Europe/London',
-				'Greenwich' => 'Etc/GMT',
-				'Hongkong'  => 'Asia/Hong_Kong',
-				'Iceland'   => 'Atlantic/Reykjavik',
-				'Iran'      => 'Asia/Tehran',
-				'Israel'    => 'Asia/Jerusalem',
-				'Jamaica'   => 'America/Jamaica',
-				'Japan'     => 'Asia/Tokyo',
-				'Kwajalein' => 'Pacific/Kwajalein',
-				'Libya'     => 'Africa/Tripoli',
-				'NZ'        => 'Pacific/Auckland',
-				'NZ-CHAT'   => 'Pacific/Chatham',
-				'Navajo'    => 'America/Denver',
-				'PRC'       => 'Asia/Shanghai',
-				'Poland'    => 'Europe/Warsaw',
-				'Portugal'  => 'Europe/Lisbon',
-				'ROC'       => 'Asia/Taipei',
-				'ROK'       => 'Asia/Seoul',
-				'Singapore' => 'Asia/Singapore',
-				'Turkey'    => 'Europe/Istanbul',
-				'UCT'       => 'Etc/UTC',
-				'Universal' => 'Etc/UTC',
-				'W-SU'      => 'Europe/Moscow',
-				'Zulu'      => 'Etc/UTC',
-				
-				// Mexico
-				'Mexico/BajaNorte' => 'America/Tijuana',
-				'Mexico/BajaSur'   => 'America/Mazatlan',
-				'Mexico/General'   => 'America/Mexico_City',
-			);
-
-			if ( isset( $deprecated_timezones[ $timezone_string ] ) ) {
-				try {
-					return new DateTimeZone( $deprecated_timezones[ $timezone_string ] );
-				} catch ( Exception $e2 ) {
-					// Mapped timezone also failed - this shouldn't happen with valid mappings
-					error_log( sprintf( 
-						'SSA: Deprecated timezone "%s" mapped to "%s" but mapping also failed: %s', 
-						$timezone_string, 
-						$deprecated_timezones[ $timezone_string ],
-						$e2->getMessage()
-					) );
-					// Now Fall through to fallback logic
-				}
-			}
-
-			// Return fallback or UTC as last resort
-			if ( $fallback instanceof DateTimeZone ) {
-				return $fallback;
-			}
-			return new DateTimeZone( 'UTC' );
-		}
+		$safe_string = self::get_safe_timezone_string( $timezone_string );
+		return new DateTimeZone( $safe_string );
 	}
 
 	public static function get_datetime_in_utc( $datetime, $datetimezone='UTC' ) {

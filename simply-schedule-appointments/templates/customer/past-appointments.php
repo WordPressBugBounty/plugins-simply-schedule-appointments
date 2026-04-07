@@ -26,7 +26,7 @@ $date_format = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a' ) . ' (T
 							} else {
 								$customer_timezone_string = 'UTC';
 							}
-							$customer_timezone = new DateTimezone( $customer_timezone_string );
+							$customer_timezone = SSA_Utils::safe_timezone( $customer_timezone_string );
 							$localized_string  = $past_appointment_datetime->setTimezone( $customer_timezone )->format( $date_format );
 							$localized_string  = SSA_Utils::translate_formatted_date( $localized_string );
 

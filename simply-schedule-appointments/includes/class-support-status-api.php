@@ -556,7 +556,7 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 		}
 
 		// everything was successfully imported.
-		return new WP_REST_Response( __( 'Data successfully imported!' ), 200 );
+		return new WP_REST_Response( __( 'Data successfully imported!', 'simply-schedule-appointments' ), 200 );
 	}
 
 	/**

@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.10.2
+Stable tag:        1.6.10.4
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,14 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.10.4 - 2026-04-02 ==
+
+= Fixes =
+
+- Ticket: The Exported CSV file is not displaying payments correctly
+- Ticket: Unique Resource Group Selections and Display Issue
+- Fix/deprecated timezone iana compat
+
 == 1.6.10.2 - 2026-03-11 ==
 
 = Fixes =
@@ -296,14 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Fix RTL support for tel phone field
 - Fix auto-scroll to phone field on form validation
 - Block logged out users from loading admin app single-page-app
-
-== 1.6.9.15 - 2025-12-02 ==
-
-= Fixes =
-
-- Track SSA versions and update time stamp
-
-== 1.6.9.13 - 2025-11-26 ==
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

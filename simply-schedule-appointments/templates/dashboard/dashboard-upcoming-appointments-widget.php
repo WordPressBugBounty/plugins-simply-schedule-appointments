@@ -71,7 +71,7 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 							}
 
 							// display the localized time according to business timezone.
-							$date_timezone    = new DateTimeZone( $settings['global']['timezone_string'] );
+							$date_timezone    = SSA_Utils::safe_timezone( $settings['global']['timezone_string'] );
 							$localized_string = $upcoming_appointment_datetime->setTimezone( $date_timezone )->format( $date_format );
 							$localized_string = SSA_Utils::translate_formatted_date( $localized_string );
 

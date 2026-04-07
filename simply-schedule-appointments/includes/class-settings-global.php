@@ -249,18 +249,6 @@ class SSA_Settings_Global extends SSA_Settings_Schema {
 	}
 	
 	public function maybe_map_timezone( $timezone_string ) {
-		try {
-			// check if this will throw an exception
-			new DateTimeZone( $timezone_string );
-		} catch (\Throwable $th) {
-			if(!empty(self::$timezones_map[$timezone_string])){
-				return self::$timezones_map[$timezone_string];
-			}
-		}
-		return $timezone_string;
+		return SSA_Utils::get_safe_timezone_string( $timezone_string );
 	}
-	
-	public static $timezones_map = array(
-		'Europe/Kyiv' => 'Europe/Kiev',
-	);
 }

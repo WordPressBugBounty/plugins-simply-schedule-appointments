@@ -239,6 +239,16 @@ class SSA_Error_Notices {
 				'message' => sanitize_text_field( $_GET['error'] ),
 			);
 		}
+
+		$transient_message = get_transient( 'ssa_temporary_error_notice' );
+		if ( ! empty( $transient_message ) ) {
+			delete_transient( 'ssa_temporary_error_notice' );
+			return array(
+				'id'      => 'temporary_error_notice',
+				'type'    => 'warning',
+				'message' => sanitize_text_field( $transient_message ),
+			);
+		}
 	}
 	
 	/**
@@ -540,6 +550,15 @@ class SSA_Error_Notices {
 				'link_message' 	=> 'Contact our support',
 				'callback'	=> 'check_if_quick_connect_gcal_backoff_is_reset'
 			),
+			'quick_connect_site_mismatch' => array(
+				'id'           => 'quick_connect_site_mismatch',
+				'type'         => 'warning',
+				'priority'     => 1,
+				'message'      => __( 'You will need to reauthorize Google Calendar connections because SSA Quick Connect is tied to the original site you exported from. If you have other team members, they will need to reconnect as well.', 'simply-schedule-appointments' ),
+				'link'         => '/ssa/settings/google-calendar',
+				'link_message' => __( 'Go to settings', 'simply-schedule-appointments' ),
+				'callback'     => 'check_if_quick_connect_site_mismatch_resolved',
+			),
 			'stripe_invalid_webhook_secret'	=> array(
 				'id'			=> 'stripe_invalid_webhook_secret',
 				'type'			=> 'warning',
@@ -633,6 +652,23 @@ class SSA_Error_Notices {
 		$google_calendar_settings = ssa()->google_calendar_settings->get();
 		if( $google_calendar_settings["quick_connect_backoff"] === 0 ){
 			$this->delete_error_notice( $id );
+		}
+	}
+
+	public function check_if_quick_connect_site_mismatch_resolved( $params = array() ) {
+		if ( empty( $params['id'] ) ) {
+			return;
+		}
+
+		$id = $params['id'];
+
+		if ( ! class_exists( 'SSA_Google_Calendar' ) || ! $this->plugin->settings_installed->is_enabled( 'google_calendar' ) ) {
+			return $this->delete_error_notice( $id );
+		}
+
+		$google_calendar_settings = $this->plugin->google_calendar_settings->get();
+		if ( ! empty( $google_calendar_settings['access_token'] ) ) {
+			return $this->delete_error_notice( $id );
 		}
 	}
 
@@ -795,6 +831,8 @@ class SSA_Error_Notices {
 
 		return false;
 	}
+	
+
 
 	/**
 	 * Confirms SSA can get Google calendars for staff

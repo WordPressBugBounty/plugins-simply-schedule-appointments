@@ -955,7 +955,13 @@ class SSA_Support {
 			wp_die($string);
 		}
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		$redirect_url = $this->plugin->wp_admin->url();
+
+		if ( 'cleared_quick_connect' === $restore ) {
+			$redirect_url = add_query_arg( 'error', __( 'Google Calendar was disconnected because the import came from a different site. Please reconnect.', 'simply-schedule-appointments' ), $redirect_url );
+		}
+
+		wp_redirect( $redirect_url, 302 );
 		exit;
 	}
 

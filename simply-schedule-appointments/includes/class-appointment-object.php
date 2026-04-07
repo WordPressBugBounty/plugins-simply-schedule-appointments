@@ -387,7 +387,7 @@ class SSA_Appointment_Object {
 			// TODO: Customize for admin
 		} else {
 			$settings = ssa()->settings->get();
-			$date_timezone = new DateTimeZone( $settings['global']['timezone_string'] );
+			$date_timezone = SSA_Utils::safe_timezone( $settings['global']['timezone_string'] );
 		}
 
 		return $date_timezone;

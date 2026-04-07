@@ -69,7 +69,10 @@ class SSA_Cli_Commands {
 			WP_CLI::error( $import->get_error_messages() );
 		}
 
-		// everything was successfully imported.
+		if ( 'cleared_quick_connect' === $import ) {
+			WP_CLI::warning( __( 'Google Calendar connections were removed during import because Quick Connect credentials are tied to the original site. Please reconnect Google Calendar for each team member.', 'simply-schedule-appointments' ) );
+		}
+
 		WP_CLI::success( __( 'Data successfully imported!', 'simply-schedule-appointments' ) );
 	}
 }
