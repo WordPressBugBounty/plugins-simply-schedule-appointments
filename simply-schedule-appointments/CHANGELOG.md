@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.10.6 - 2026-04-14
+
+### Fixes
+
+- Fix incorrect shortcode name in ssa_past_appointments shortcode_atts call
+
 ## SSA-VERSION-PREFIX.6.10.4 - 2026-04-02
 
 ### Fixes

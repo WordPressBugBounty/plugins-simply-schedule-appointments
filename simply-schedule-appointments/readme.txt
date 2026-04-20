@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.10.4
+Stable tag:        1.6.10.6
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.10.6 - 2026-04-14 ==
+
+= Fixes =
+
+- Fix incorrect shortcode name in ssa_past_appointments shortcode_atts call
+
 == 1.6.10.4 - 2026-04-02 ==
 
 = Fixes =
@@ -298,12 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Feature request: Add 'today' class on the current day for easier custom styling
 
 == 1.6.9.17 - 2025-12-09 ==
-
-= Fixes =
-
-- Fix RTL support for tel phone field
-- Fix auto-scroll to phone field on form validation
-- Block logged out users from loading admin app single-page-app
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

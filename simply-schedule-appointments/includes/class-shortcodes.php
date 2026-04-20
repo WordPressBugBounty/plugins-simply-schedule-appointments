@@ -791,8 +791,25 @@ class SSA_Shortcodes {
 	}
 
 	public function ssa_upcoming_appointments( $atts ) {
+		// Extract block_settings before running array_map sanitization: sanitize_text_field()
+		// returns an empty string when passed a non-scalar, which would wipe out the nested
+		// block_settings array (memberInformation, resourceTypes, etc.) used by the block render.
+		// We then sanitize block_settings with a recursive walker that only touches strings,
+		// so boolean flags like `checked => true/false` survive unchanged (map_deep +
+		// sanitize_text_field would cast them to "1"/"" and break the template comparisons).
+		$block_settings = isset( $atts['block_settings'] ) ? $atts['block_settings'] : array();
+		unset( $atts['block_settings'] );
 		$atts = array_map( 'sanitize_text_field', $atts );
-		$block_settings = isset($atts['block_settings']) ? $atts['block_settings'] : array();
+		$sanitize_block_settings = static function ( $value ) use ( &$sanitize_block_settings ) {
+			if ( is_array( $value ) ) {
+				return array_map( $sanitize_block_settings, $value );
+			}
+			if ( is_string( $value ) ) {
+				return sanitize_text_field( $value );
+			}
+			return $value;
+		};
+		$block_settings = $sanitize_block_settings( $block_settings );
 		
 		$atts = shortcode_atts(
 			array(
