@@ -1,5 +1,20 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.11.0 - 2026-04-21
+
+### Fixes
+
+- ‼️Wordfence Vulnerability - Appointment Booking Calendar <= 1.6.10.2 - Unauthenticated Arbitrary Appointment Deletion via Public Nonce
+- Fix availability cache collision across resources within a group
+- Reset skippedTime when selecting a new date in Express view
+- Defer iframe booking init until visible in parent viewport
+- Remove unauthenticated debug REST API endpoints
+- Security: patch three Patchstack-reported vulnerabilities (stored XSS in web_meeting_url, unauthenticated settings exposure, unauthenticated appointment deletion) + add regression tests
+
+### Features and Improvements
+
+- Allow appointment type and styling params in external embed
+
 ## SSA-VERSION-PREFIX.6.10.6 - 2026-04-14
 
 ### Fixes

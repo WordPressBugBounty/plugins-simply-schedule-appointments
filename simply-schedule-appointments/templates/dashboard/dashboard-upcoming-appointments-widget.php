@@ -84,7 +84,7 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 							<?php
 							// link meeting details to the admin ssa panel.
 							if ( ! empty( $upcoming_appointment['web_meeting_url'] ) && filter_var( $atts['web_meeting_url'], FILTER_VALIDATE_BOOLEAN ) ) {
-								echo ' <a target="_blank" href="' . $upcoming_appointment['web_meeting_url'] . '"> ' . wp_kses_post( $atts['web_meeting_link_label'] ) . ' </a>';
+								echo ' <a target="_blank" rel="noopener noreferrer" href="' . esc_url( $upcoming_appointment['web_meeting_url'] ) . '"> ' . wp_kses_post( $atts['web_meeting_link_label'] ) . ' </a>';
 							}
 
 							if ( ! empty( $atts['details_link_displayed'] ) ) {

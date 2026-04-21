@@ -72,8 +72,10 @@ class SSA_Embed_Booking_App_Api extends WP_REST_Controller
    */
 public function get_embed_code($request)
   {
-    $att = ssa()->shortcodes->get_ssa_booking_arg_defaults();
-    $iframe = ssa()->shortcodes->ssa_booking($att);    
+    $defaults = ssa()->shortcodes->get_ssa_booking_arg_defaults();
+    $params   = $request->get_query_params();
+    $att      = array_merge( $defaults, array_intersect_key( $params, $defaults ) );
+    $iframe   = ssa()->shortcodes->ssa_booking($att);    
     // Define the iframe source and the required scripts
     // get site domain 
     $domain = home_url();

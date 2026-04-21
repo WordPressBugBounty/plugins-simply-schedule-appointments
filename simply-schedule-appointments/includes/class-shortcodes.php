@@ -412,6 +412,9 @@ class SSA_Shortcodes {
 			'_wpnonce'                => wp_create_nonce( 'wp_rest' ),
 			'redirect_post_id'        => '',
 
+			// Defer initial availability and async queue-drain requests until the iframe becomes visible in the parent viewport.
+			'defer'                   => '',
+
 			// MemberPress Integration
 			'mepr_membership_id' 			=> ''
 		);
@@ -486,6 +489,11 @@ class SSA_Shortcodes {
 		// sanitize all atts
 		$atts = array_map( 'sanitize_text_field', $atts );
 		
+		// Support bare `defer` token: [ssa_booking defer] — treat as defer=1.
+		if ( is_array( $atts ) && in_array( 'defer', $atts, true ) ) {
+			$atts['defer'] = '1';
+		}
+
 		$atts = shortcode_atts( $this->get_ssa_booking_arg_defaults(), $atts, 'ssa_booking' );
 		$atts = apply_filters( 'ssa_booking_shortcode_atts', $atts );
 		// escape JS

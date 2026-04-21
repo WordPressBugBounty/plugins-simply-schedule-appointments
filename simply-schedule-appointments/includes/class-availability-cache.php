@@ -68,6 +68,7 @@ class SSA_Availability_Cache {
 			'appointment_id' => 0,
 			'staff_id' => 0,
 			'resource_group_id' => 0,
+			'resource_id' => 0,
 			'type' => '',
 			'subtype' => '',
 			'skip_appointment_id' => '',

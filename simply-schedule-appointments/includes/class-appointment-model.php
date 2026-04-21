@@ -47,6 +47,8 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	public function hooks() {
 		add_filter( 'ssa/appointment/before_insert', array( $this, 'cleanup_customer_information' ), 5, 1 );
 		add_filter( 'ssa/appointment/before_update', array( $this, 'cleanup_customer_information' ), 5, 1 );
+		add_filter( 'ssa/appointment/before_insert', array( $this, 'sanitize_web_meeting_url' ), 6, 1 );
+		add_filter( 'ssa/appointment/before_update', array( $this, 'sanitize_web_meeting_url' ), 6, 1 );
 		add_filter( 'ssa/appointment/before_update', array( $this, 'prevent_canceling_a_reserved_appointment' ), 1, 2 );
 
 		add_filter( 'ssa/appointment/before_insert', array( $this, 'default_appointment_status' ), 5, 1 );
@@ -213,6 +215,30 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				$info = sanitize_textarea_field($info);
 			}
 		}
+
+		return $data;
+	}
+
+	/**
+	 * Sanitize top-level web_meeting_url before persisting appointments.
+	 *
+	 * @param array $data
+	 * @return array
+	 */
+	public function sanitize_web_meeting_url( $data ) {
+		if ( empty( $data['web_meeting_url'] ) || ! is_string( $data['web_meeting_url'] ) ) {
+			return $data;
+		}
+
+		$raw_url = trim( $data['web_meeting_url'] );
+		$sanitized_url = esc_url_raw( $raw_url, array( 'http', 'https' ) );
+
+		if ( empty( $sanitized_url ) ) {
+			$data['web_meeting_url'] = '';
+			return $data;
+		}
+
+		$data['web_meeting_url'] = $sanitized_url;
 
 		return $data;
 	}
@@ -697,6 +723,18 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 	public function create_item_permissions_check( $request ) {
 		return $this->nonce_permissions_check( $request );
+	}
+
+	/**
+	 * Deletion requires admin capability or verified appointment ownership.
+	 * The site-wide public nonce is not sufficient — it is exposed to all
+	 * unauthenticated visitors and carries no ownership proof.
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return WP_Error|bool
+	 */
+	public function delete_item_permissions_check( $request ) {
+		return $this->get_item_permissions_check( $request );
 	}
 
 	/**

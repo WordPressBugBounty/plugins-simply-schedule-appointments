@@ -38,10 +38,10 @@ $date_format = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a' ) . ' (T
 							}
 
 							if ( ! empty( $past_appointment['web_meeting_url'] ) && filter_var( $atts['web_meeting_url'], FILTER_VALIDATE_BOOLEAN ) ) {
-								echo ' <a target="_blank" href="' . $past_appointment['web_meeting_url'] . '">' . 'Open Web Meeting' . '</a>';
+								echo ' <a target="_blank" rel="noopener noreferrer" href="' . esc_url( $past_appointment['web_meeting_url'] ) . '">' . 'Open Web Meeting' . '</a>';
 							}
 							if ( ! empty( $atts['details_link_displayed'] ) ) {
-								echo ' <a target="_blank" href="' . ssa()->appointment_model->get_public_edit_url( $past_appointment['id'] ) . '">' . wp_kses_post( $atts['details_link_label'] ) . '</a>';
+								echo ' <a target="_blank" rel="noopener noreferrer" href="' . esc_url( ssa()->appointment_model->get_public_edit_url( $past_appointment['id'] ) ) . '">' . wp_kses_post( $atts['details_link_label'] ) . '</a>';
 							}
 							?>
 						</span>

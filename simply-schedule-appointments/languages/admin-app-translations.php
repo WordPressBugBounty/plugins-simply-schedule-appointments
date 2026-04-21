@@ -648,6 +648,10 @@
       'embed_headline' => __( 'Embed the booking form in any website', 'simply-schedule-appointments' ),
       'embed_copy' => __( 'Copy the code below and paste it into any page to embed the booking form.', 'simply-schedule-appointments' ),
       'copied' => __( 'Embed code copied to your clipboard.', 'simply-schedule-appointments' ),
+      'appointment_type_label' => __( 'Appointment Type', 'simply-schedule-appointments' ),
+      'all_types' => __( 'All Appointment Types', 'simply-schedule-appointments' ),
+      'accent_color_label' => __( 'Accent Color', 'simply-schedule-appointments' ),
+      'background_color_label' => __( 'Background Color', 'simply-schedule-appointments' ),
     ),
     'google_calendar' => 
     array (

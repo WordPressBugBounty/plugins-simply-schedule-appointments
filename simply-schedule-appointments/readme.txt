@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.10.6
+Stable tag:        1.6.11.0
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,21 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.11.0 - 2026-04-21 ==
+
+= Fixes =
+
+- ‼️Wordfence Vulnerability - Appointment Booking Calendar <= 1.6.10.2 - Unauthenticated Arbitrary Appointment Deletion via Public Nonce
+- Fix availability cache collision across resources within a group
+- Reset skippedTime when selecting a new date in Express view
+- Defer iframe booking init until visible in parent viewport
+- Remove unauthenticated debug REST API endpoints
+- Security: patch three Patchstack-reported vulnerabilities (stored XSS in web_meeting_url, unauthenticated settings exposure, unauthenticated appointment deletion) + add regression tests
+
+= Features and Improvements =
+
+- Allow appointment type and styling params in external embed
+
 == 1.6.10.6 - 2026-04-14 ==
 
 = Fixes =
@@ -290,20 +305,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 == 1.6.9.21 - 2026-01-06 ==
 
 = Features and Improvements =
-
-- Divi five integration
-
-== 1.6.9.19 - 2025-12-23 ==
-
-= Fixes =
-
-- Ticket: SA number series (75) not getting accepted within the Phone field
-
-= Features and Improvements =
-
-- Feature request: Add 'today' class on the current day for easier custom styling
-
-== 1.6.9.17 - 2025-12-09 ==
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
