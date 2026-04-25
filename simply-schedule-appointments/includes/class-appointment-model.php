@@ -49,6 +49,8 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		add_filter( 'ssa/appointment/before_update', array( $this, 'cleanup_customer_information' ), 5, 1 );
 		add_filter( 'ssa/appointment/before_insert', array( $this, 'sanitize_web_meeting_url' ), 6, 1 );
 		add_filter( 'ssa/appointment/before_update', array( $this, 'sanitize_web_meeting_url' ), 6, 1 );
+		add_filter( 'ssa/appointment/before_insert', array( $this, 'sanitize_text_fields' ), 7, 1 );
+		add_filter( 'ssa/appointment/before_update', array( $this, 'sanitize_text_fields' ), 7, 1 );
 		add_filter( 'ssa/appointment/before_update', array( $this, 'prevent_canceling_a_reserved_appointment' ), 1, 2 );
 
 		add_filter( 'ssa/appointment/before_insert', array( $this, 'default_appointment_status' ), 5, 1 );
@@ -241,6 +243,128 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$data['web_meeting_url'] = $sanitized_url;
 
 		return $data;
+	}
+
+	/**
+	 * Sanitize free-text appointment fields that should never contain HTML.
+	 *
+	 * These fields are persisted and later rendered in ICS files, notification
+	 * emails, and calendar integrations, so HTML/JS in them is always unsafe.
+	 *
+	 * @param array $data
+	 * @return array
+	 */
+	public function sanitize_text_fields( $data ) {
+		if ( isset( $data['title'] ) && is_string( $data['title'] ) ) {
+			$data['title'] = sanitize_text_field( $data['title'] );
+		}
+		// description is a TEXT column and may legitimately contain newlines,
+		// so use the textarea variant that preserves them.
+		if ( isset( $data['description'] ) && is_string( $data['description'] ) ) {
+			$data['description'] = sanitize_textarea_field( $data['description'] );
+		}
+
+		// A few schema columns are scalar strings in practice but reach this
+		// filter straight from JSON, so a caller can slip in a nested array
+		// or object. Drop anything non-scalar on the short VARCHAR/TINYTEXT
+		// columns before it hits $wpdb->prepare with a %s format.
+		foreach ( array( 'status', 'payment_method', 'customer_timezone', 'customer_locale', 'allow_sms' ) as $field ) {
+			if ( isset( $data[ $field ] ) && ! is_scalar( $data[ $field ] ) ) {
+				unset( $data[ $field ] );
+			}
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Whether the current request has admin-level access to appointments.
+	 *
+	 * Unprivileged callers reach create_item/update_item via either the
+	 * site-wide public nonce or an appointment id_token; both grant the
+	 * ability to book/edit but must not be able to set protected fields.
+	 *
+	 * @return bool
+	 */
+	public function is_privileged_appointment_request() {
+		if ( current_user_can( 'ssa_manage_others_appointments' ) ) {
+			return true;
+		}
+		if ( current_user_can( 'ssa_manage_appointments' ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Fields an unprivileged caller is allowed to submit when creating an
+	 * appointment. Anything else in the request body is silently dropped
+	 * before it reaches the database insert.
+	 *
+	 * @return array
+	 */
+	public function get_unprivileged_create_fields() {
+		return array(
+			// schema columns the booking flow legitimately writes
+			'appointment_type_id',
+			'start_date',
+			'customer_information',
+			'customer_timezone',
+			'customer_locale',
+			'payment_method',
+			'status',
+			'allow_sms',
+			'mailchimp_list_id',
+
+			// non-schema params consumed by create_item's own control flow.
+			// customer_id is intentionally NOT listed: create_item derives it
+			// from the customer email or the logged-in user, so allowing the
+			// client to send it would let an attacker spoof ownership.
+			// rescheduled_from_appointment_id is intentionally NOT listed:
+			// update_rescheduled_to_appointment_id reassigns that appointment's
+			// payment rows to the new appointment without an ownership check,
+			// so an unprivileged caller who set it to a victim's id could
+			// transfer the victim's payments onto their own booking.
+			'post_information',
+			'fetch',
+			'mepr_membership',
+			'staff_ids',
+			'selected_resources',
+			'opt_in_notifications',
+		);
+	}
+
+	/**
+	 * Fields an unprivileged caller is allowed to submit when updating an
+	 * appointment. Matches the booking app's client-side `bookingProps`
+	 * allowlist plus the request-routing params used by update_item.
+	 *
+	 * @return array
+	 */
+	public function get_unprivileged_update_fields() {
+		return array(
+			// request routing / auth
+			'id',
+			'token',
+			'fetch',
+
+			// schema columns the booking flow legitimately writes.
+			// appointment_type_id is intentionally NOT listed on update:
+			// changing the type on an existing appointment can interact
+			// poorly with payment state (e.g. leave a pending_payment
+			// booking stuck after swapping to a free type). update_item
+			// falls back to the stored type when this is absent.
+			'customer_information',
+			'status',
+			'start_date',
+			'payment_method',
+
+			// non-schema booking-app params
+			'staff_ids',
+			'selected_resources',
+			'rescheduling_note',
+		);
 	}
 
 	public function default_appointment_status( $data ) {
@@ -847,6 +971,14 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	
 	public function create_item( $request ) {
 		$params = $request->get_params();
+
+		// Block mass assignment: unprivileged callers (booking flow, public nonce)
+		// must not be able to set protected fields like payment_received, title,
+		// google_calendar_*, web_meeting_*, etc.
+		if ( ! $this->is_privileged_appointment_request() ) {
+			$params = array_intersect_key( $params, array_flip( $this->get_unprivileged_create_fields() ) );
+		}
+
 		$params = shortcode_atts(
 			array_merge(
 				$this->get_field_defaults(),
@@ -1014,10 +1146,17 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	}
 
 	public function update_item( $request ) {
-		
+
 		$item_id = $request['id'];
 		$params  = $request->get_params();
-		
+
+		// Block mass assignment: unprivileged callers (id_token / customer edit)
+		// must not be able to set protected fields like payment_received, title,
+		// google_calendar_*, web_meeting_*, etc.
+		if ( ! $this->is_privileged_appointment_request() ) {
+			$params = array_intersect_key( $params, array_flip( $this->get_unprivileged_update_fields() ) );
+		}
+
 		if ( ! empty( $params['appointment_type_id'] ) ) {
 			$appointment_type = new SSA_Appointment_Type_Object( $params['appointment_type_id'] );
 		} else {

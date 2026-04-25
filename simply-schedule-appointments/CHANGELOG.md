@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.11.2 - 2026-04-24
+
+### Fixes
+
+- Security improvements to block mass assignment
+
 ## SSA-VERSION-PREFIX.6.11.0 - 2026-04-21
 
 ### Fixes

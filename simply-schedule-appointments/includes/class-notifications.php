@@ -468,6 +468,16 @@ class SSA_Notifications {
 			return false;
 		}
 
+		// Async actions can be queued with a delay, and the row may be gone
+		// by the time cron fires (test teardown, group cleanup, reschedule).
+		// Skip the notification rather than fataling inside template rendering.
+		// db_get_field avoids the notice cascade that a full get() would trip
+		// when walking an empty row's relationships.
+		$existing_id = $this->plugin->appointment_model->db_get_field( 'id', $payload['appointment']['id'] );
+		if ( empty( $existing_id ) ) {
+			return false;
+		}
+
 		$settings = $this->plugin->settings->get();
 		$notifications = $this->plugin->notifications_settings->get_notifications();
 		sleep(1); // Throttle emails for shared hosts and prevent race condition with Google Meet web meeting urls
