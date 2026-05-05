@@ -415,6 +415,9 @@ class SSA_Shortcodes {
 			// Defer initial availability and async queue-drain requests until the iframe becomes visible in the parent viewport.
 			'defer'                   => '',
 
+			// Hide the appointment title and duration in the iframe header (left column). Right-column timezone selector remains visible.
+			'hide_header'             => '',
+
 			// MemberPress Integration
 			'mepr_membership_id' 			=> ''
 		);

@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.11.3 - 2026-04-28
+
+### Features and Improvements
+
+- Add hide_header toggle to embed snippet
+
 ## SSA-VERSION-PREFIX.6.11.2 - 2026-04-24
 
 ### Fixes

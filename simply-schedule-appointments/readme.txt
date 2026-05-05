@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.11.2
+Stable tag:        1.6.11.3
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,12 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.11.3 - 2026-04-28 ==
+
+= Features and Improvements =
+
+- Add hide_header toggle to embed snippet
+
 == 1.6.11.2 - 2026-04-24 ==
 
 = Fixes =
@@ -297,12 +303,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Vulnerability - Unauthenticated SQL Injection via 'append_where_sql' Parameter
 
 == 1.6.9.27 - 2026-02-10 ==
-
-= Fixes =
-
-- Implement permission checks for Memberpress API endpoints
-
-== 1.6.9.25 - 2026-02-03 ==
 
 = Fixes =
 

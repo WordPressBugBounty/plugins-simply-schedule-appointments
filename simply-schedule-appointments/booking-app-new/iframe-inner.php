@@ -453,6 +453,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     var ssa_availability_edge_cache = <?php echo json_encode( ssa_cache_get( 'booking_app_availability_edge_cache' ) ); ?>;
     var ssa_availability_query_args = <?php echo json_encode( SSA_Availability_Query::get_default_args() ); ?>;
     var ssa_defer_init = <?php echo ! empty( $_GET['defer'] ) ? 'true' : 'false'; ?>;
+    var ssa_hide_header = <?php echo ! empty( $_GET['hide_header'] ) ? 'true' : 'false'; ?>;
   </script>
 
   <?php if ( $ssa->settings_installed->is_activated( 'stripe' ) ): ?>

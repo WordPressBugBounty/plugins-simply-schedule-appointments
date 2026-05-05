@@ -652,6 +652,7 @@
       'all_types' => __( 'All Appointment Types', 'simply-schedule-appointments' ),
       'accent_color_label' => __( 'Accent Color', 'simply-schedule-appointments' ),
       'background_color_label' => __( 'Background Color', 'simply-schedule-appointments' ),
+      'hide_header_label' => __( 'Hide Appointment Title and Duration', 'simply-schedule-appointments' ),
     ),
     'google_calendar' => 
     array (
