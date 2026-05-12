@@ -73,7 +73,7 @@ class SSA_Notifications_Api extends WP_REST_Controller {
 
 		return false;
 	}
-	
+
 	public function preview( $request ) {
 		$params = $request->get_params();
 		$params = shortcode_atts( array(

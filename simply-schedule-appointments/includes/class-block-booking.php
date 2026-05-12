@@ -92,6 +92,12 @@ class SSA_Block_Booking {
 
 		wp_localize_script( 'ssa-booking-block-js', 'ssaAppointmentTypeLabels', $ssa_appointment_label_key_values );
 
+		wp_localize_script( 'ssa-booking-block-js', 'ssaBlockBookingStrings', array(
+			'performance'        => __( 'Performance', 'simply-schedule-appointments' ),
+			'defer_loading'      => __( 'Defer loading', 'simply-schedule-appointments' ),
+			'defer_loading_help' => __( 'Improves page load performance by deferring initialization until visible.', 'simply-schedule-appointments' ),
+		) );
+
 		/* Booking flow */
 		if ( ssa_should_render_booking_flow() ) {
 			$booking_flow_options = array(
@@ -275,6 +281,10 @@ class SSA_Block_Booking {
 					'type' => 'string',
 					'default' => '',
 				),
+				'defer' => array (
+					'type' => 'boolean',
+					'default' => false,
+				),
 			),
 
 			'render_callback' => array( $this, 'render' ),
@@ -352,6 +362,10 @@ class SSA_Block_Booking {
 			$settings['padding_unit'] = $settings['padding_unit'] === 'percent'	? '%' : $settings['padding_unit'];
 
 			$attrs['padding'] = $settings['padding'] . $settings['padding_unit'];
+		}
+
+		if ( ! empty( $settings['defer'] ) ) {
+			$attrs['defer'] = 1;
 		}
 
 		/* Appointment types view */

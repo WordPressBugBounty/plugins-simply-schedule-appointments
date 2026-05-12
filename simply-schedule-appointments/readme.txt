@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.11.3
+Stable tag:        1.6.11.5
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -237,6 +237,16 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 
 === Changelog ===
 
+== 1.6.11.5 - 2026-05-05 ==
+
+= Fixes =
+
+- Detect and resync out-of-sync appointment reminders
+
+= Features and Improvements =
+
+- Add "Defer loading" toggle to booking integrations
+
 == 1.6.11.3 - 2026-04-28 ==
 
 = Features and Improvements =
@@ -294,17 +304,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Vulnerability - Insecure Direct Object Reference to Authenticated (Staff+) Sensitive Information Exposure
 - Add Authorization to Settings REST API Endpoint
 - Unauthenticated SQL Injection in Simply Schedule Appointments Plugin
-
-== 1.6.9.29 - 2026-02-24 ==
-
-= Fixes =
-
-- Fixed admin app displaying incomplete number of grouped appointments
-- Vulnerability - Unauthenticated SQL Injection via 'append_where_sql' Parameter
-
-== 1.6.9.27 - 2026-02-10 ==
-
-= Fixes =
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

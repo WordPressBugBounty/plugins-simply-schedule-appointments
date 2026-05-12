@@ -57,6 +57,21 @@ FLBuilder::register_module('SSABookingModule', array(
                     ),
                 )
 			),
+			'performance' => array( // Section
+				'title'  => __( 'Performance', 'simply-schedule-appointments' ),
+				'fields' => array(
+					'defer' => array(
+						'type'    => 'select',
+						'label'   => __( 'Defer loading', 'simply-schedule-appointments' ),
+						'default' => '',
+						'options' => array(
+							''    => __( 'No', 'simply-schedule-appointments' ),
+							'yes' => __( 'Yes', 'simply-schedule-appointments' ),
+						),
+						'help'    => __( 'Improves page load performance by deferring initialization until visible.', 'simply-schedule-appointments' ),
+					),
+				),
+			),
 			'style'       => array( // Section
                 'title'         => __('Styles', 'simply-schedule-appointments'), // Section Title
                 'fields'        => array( // Section Fields

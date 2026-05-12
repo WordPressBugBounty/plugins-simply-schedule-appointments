@@ -1,5 +1,15 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.11.5 - 2026-05-05
+
+### Fixes
+
+- Detect and resync out-of-sync appointment reminders
+
+### Features and Improvements
+
+- Add "Defer loading" toggle to booking integrations
+
 ## SSA-VERSION-PREFIX.6.11.3 - 2026-04-28
 
 ### Features and Improvements

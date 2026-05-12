@@ -55,6 +55,9 @@ class SSA_Notifications {
 		add_action( 'ssa_fire_appointment_customer_information_edited_notifications', array( $this, 'maybe_fire_notification'), 10, 2 );
 		add_action( 'ssa_fire_appointment_canceled_notifications', array( $this, 'maybe_fire_notification'), 10, 2 );
 		add_action( 'ssa/async/send_notifications', array( $this, 'fire_notification' ), 10, 2 );
+
+		add_action( 'ssa/settings/notifications/updated', array( $this, 'schedule_reminder_drift_fix' ), 10, 2 );
+		add_action( 'ssa/notifications/fix_reminder_drift', array( $this, 'run_reminder_drift_fix' ), 10, 2 );
 	}
 
 	public function maybe_save_optin_notifications_settings( $appointment_id, $data ) {
@@ -134,47 +137,34 @@ class SSA_Notifications {
 
 		$appointment_object = new SSA_Appointment_Object( $appointment_id );
 		foreach ($notifications as $key => $notification) {
-			if ( ! empty( $notification['appointment_types'] ) && is_array( $notification['appointment_types'] ) && ! in_array( $appointment_object->appointment_type_id, $notification['appointment_types'] ) ) {
-				continue;
-			}
-
 			if ( $notification['trigger'] !== $hook ) {
 				continue;
 			}
 
-			if ( isset( $notification['active'] ) && empty( $notification['active'] ) ) {
-				continue; // if it isn't set yet, then the settings may have been stored before the active toggle existed. They default on, so if 'active' isn't set, we'll assume it should be on.
-			}
-
-			if ( 'sms' === $notification['type'] && ! empty( $notification['sms_to'] ) ) {
-				if ( ! $this->plugin->settings_installed->is_enabled( 'sms' ) ) {
-					continue;
-				}
+			if ( ! $this->notification_applies_to_appointment( $notification, $appointment_object ) ) {
+				continue;
 			}
 
 			$meta = array();
-			$date_queued_datetime = ssa_datetime();
-			if ( $notification['trigger'] === 'appointment_start_date' ) {
-				$date_queued_datetime = $appointment_object->start_date_datetime;
-			}
-
-			// Add 3 seconds to notification date_queued to allow the web_meeting_url to return
-			if ( $notification['trigger'] === 'appointment_booked' ) {
-				$date_queued_datetime = $date_queued_datetime->add( new DateInterval( 'PT5S' ) );
-
-			}
-
-			if ( ! empty( $notification['duration'] ) ) {
-				$interval_string = 'PT'.absint( $notification['duration'] ).'M';
-				if ( $notification['when'] === 'after' ) {
-					$date_queued_datetime = $date_queued_datetime->add( new DateInterval( $interval_string ) );
-				} else {
-					$date_queued_datetime = $date_queued_datetime->sub( new DateInterval( $interval_string ) );
+			if ( 'appointment_start_date' === $notification['trigger'] ) {
+				$date_queued_datetime = $this->compute_start_date_queue_datetime( $notification, $appointment_object );
+				if ( null === $date_queued_datetime ) {
+					continue; // Don't schedule reminders if they would be sent before the appointment was actually booked
 				}
-			}
-
-			if ( $notification['trigger'] === 'appointment_start_date' && $date_queued_datetime <= ssa_datetime() ) {
-				continue; // Don't schedule reminders if they would be sent before the appointment was actually booked
+			} else {
+				$date_queued_datetime = ssa_datetime();
+				// Add 5 seconds to notification date_queued to allow the web_meeting_url to return
+				if ( 'appointment_booked' === $notification['trigger'] ) {
+					$date_queued_datetime = $date_queued_datetime->add( new DateInterval( 'PT5S' ) );
+				}
+				if ( ! empty( $notification['duration'] ) ) {
+					$interval_string = 'PT' . absint( $notification['duration'] ) . 'M';
+					if ( 'after' === $notification['when'] ) {
+						$date_queued_datetime = $date_queued_datetime->add( new DateInterval( $interval_string ) );
+					} else {
+						$date_queued_datetime = $date_queued_datetime->sub( new DateInterval( $interval_string ) );
+					}
+				}
 			}
 			$date_queued_string = $date_queued_datetime->format( 'Y-m-d H:i:s' );
 			$meta['date_queued'] = $date_queued_string;
@@ -208,6 +198,477 @@ class SSA_Notifications {
 			do_action( 'ssa/notification/scheduled', $appointment_id, $action_noun, $action_verb, $notification_date, $notification_time, $duration, $recipient_type,$data_after, $data_before);
 		}
 
+	}
+
+	/**
+	 * Shared eligibility filters for a notification against a given appointment.
+	 * Excludes the trigger match — callers compare trigger against different values.
+	 *
+	 * @param array $notification
+	 * @param SSA_Appointment_Object $appointment_object
+	 * @return bool
+	 */
+	protected function notification_applies_to_appointment( $notification, $appointment_object ) {
+		if ( ! empty( $notification['appointment_types'] ) && is_array( $notification['appointment_types'] )
+			&& ! in_array( $appointment_object->appointment_type_id, $notification['appointment_types'] ) ) {
+			return false;
+		}
+		if ( isset( $notification['active'] ) && empty( $notification['active'] ) ) {
+			return false;
+		}
+		if ( 'sms' === $notification['type'] && ! empty( $notification['sms_to'] ) ) {
+			if ( ! $this->plugin->settings_installed->is_enabled( 'sms' ) ) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Resolve the queue datetime for a start_date-triggered notification.
+	 *
+	 * @param array $notification
+	 * @param SSA_Appointment_Object $appointment_object
+	 * @return DateTimeImmutable|null Null if the computed time is already past.
+	 */
+	protected function compute_start_date_queue_datetime( $notification, $appointment_object ) {
+		$date_queued_datetime = $appointment_object->start_date_datetime;
+		if ( ! empty( $notification['duration'] ) ) {
+			$interval = new DateInterval( 'PT' . absint( $notification['duration'] ) . 'M' );
+			$when     = isset( $notification['when'] ) ? $notification['when'] : 'before';
+			$date_queued_datetime = ( 'after' === $when )
+				? $date_queued_datetime->add( $interval )
+				: $date_queued_datetime->sub( $interval );
+		}
+		if ( $date_queued_datetime <= ssa_datetime() ) {
+			return null;
+		}
+		return $date_queued_datetime;
+	}
+
+	/**
+	 * Compute the start_date notifications that SHOULD currently be queued for an appointment.
+	 *
+	 * Pure read — no side effects. Shares filter logic with queue_notifications() via
+	 * notification_applies_to_appointment() and compute_start_date_queue_datetime().
+	 *
+	 * @param int $appointment_id
+	 * @return array<int, array{notification_id:int, date_queued:string}>
+	 */
+	public function get_expected_start_date_notifications( $appointment_id ) {
+		if ( ! $this->plugin->settings_installed->is_enabled( 'notifications' ) ) {
+			return array();
+		}
+
+		$notifications = $this->plugin->notifications_settings->get_notifications();
+		if ( empty( $notifications ) ) {
+			return array();
+		}
+
+		try {
+			$appointment_object = new SSA_Appointment_Object( $appointment_id );
+			$appointment_object->get();
+		} catch ( Exception $e ) {
+			return array();
+		}
+
+		$expected = array();
+
+		foreach ( $notifications as $notification ) {
+			if ( empty( $notification['id'] ) || empty( $notification['trigger'] ) ) {
+				continue;
+			}
+			if ( 'appointment_start_date' !== $notification['trigger'] ) {
+				continue;
+			}
+			if ( ! $this->notification_applies_to_appointment( $notification, $appointment_object ) ) {
+				continue;
+			}
+
+			$date_queued_datetime = $this->compute_start_date_queue_datetime( $notification, $appointment_object );
+			if ( null === $date_queued_datetime ) {
+				continue;
+			}
+
+			$expected[] = array(
+				'notification_id' => (int) $notification['id'],
+				'date_queued'     => $date_queued_datetime->format( 'Y-m-d H:i:s' ),
+			);
+		}
+
+		return $expected;
+	}
+
+	/**
+	 * Bulk-load pending start_date async actions for many appointments in one query.
+	 * The async_action_model's query() only supports single object_id; this bypasses
+	 * it so we avoid N+1 queries when scanning/resyncing. The pending filter mirrors
+	 * what async_action_model->query() does for `'date_processed' => '0000-00-00 00:00:00'`.
+	 *
+	 * @param int[] $appointment_ids
+	 * @return array<int, array[]> map of appointment_id => pending rows (payload already decoded)
+	 */
+	protected function bulk_query_pending_start_date_actions( array $appointment_ids ) {
+		if ( empty( $appointment_ids ) ) {
+			return array();
+		}
+
+		global $wpdb;
+		$table = $this->plugin->async_action_model->get_table_name();
+		$ids   = implode( ',', array_map( 'intval', $appointment_ids ) );
+
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$table}
+			 WHERE object_type = %s
+			   AND action      = %s
+			   AND object_id IN ({$ids})
+			   AND ( date_processed = %s OR date_processed IS NULL )",
+			'appointment',
+			'ssa_fire_appointment_start_date_notifications',
+			'0000-00-00 00:00:00'
+		), ARRAY_A );
+
+		$grouped = array();
+		foreach ( (array) $rows as $row ) {
+			if ( isset( $row['payload'] ) && is_string( $row['payload'] ) ) {
+				$decoded = json_decode( $row['payload'], true );
+				if ( is_array( $decoded ) ) {
+					$row['payload'] = $decoded;
+				}
+			}
+			$oid = (int) $row['object_id'];
+			$grouped[ $oid ][] = $row;
+		}
+		return $grouped;
+	}
+
+	/**
+	 * Compare expected start_date notifications against what's currently pending in the async queue.
+	 *
+	 * @param int        $appointment_id
+	 * @param array|null $pending Optional pre-loaded async_action rows for this appointment.
+	 *                            When null, falls back to a per-appointment query.
+	 * @return array{
+	 *   expected: array,
+	 *   missing:  int[]  // notification_ids that should be queued but aren't
+	 *   stale:    int[]  // notification_ids queued with wrong date_queued (e.g. duration changed)
+	 *   orphans:  int[]  // notification_ids queued but no longer match any active config
+	 * }
+	 */
+	public function compute_appointment_reminder_diff( $appointment_id, $pending = null ) {
+		$expected = $this->get_expected_start_date_notifications( $appointment_id );
+
+		if ( null === $pending ) {
+			$pending = $this->plugin->async_action_model->query( array(
+				'object_id'      => $appointment_id,
+				'object_type'    => 'appointment',
+				'action'         => array( 'ssa_fire_appointment_start_date_notifications' ),
+				'date_processed' => '0000-00-00 00:00:00',
+			) );
+		}
+
+		$expected_by_id = array();
+		foreach ( $expected as $e ) {
+			$expected_by_id[ $e['notification_id'] ] = $e['date_queued'];
+		}
+
+		$actual_by_id = array();
+		foreach ( $pending as $row ) {
+			$nid = isset( $row['payload']['notification']['id'] ) ? (int) $row['payload']['notification']['id'] : 0;
+			if ( empty( $nid ) ) {
+				continue;
+			}
+			$actual_by_id[ $nid ] = $row['date_queued'];
+		}
+
+		$missing = array();
+		$stale   = array();
+		foreach ( $expected_by_id as $nid => $date_queued ) {
+			if ( ! isset( $actual_by_id[ $nid ] ) ) {
+				$missing[] = $nid;
+			} elseif ( $actual_by_id[ $nid ] !== $date_queued ) {
+				$stale[] = $nid;
+			}
+		}
+
+		$orphans = array();
+		foreach ( $actual_by_id as $nid => $_ ) {
+			if ( ! isset( $expected_by_id[ $nid ] ) ) {
+				$orphans[] = $nid;
+			}
+		}
+
+		return array(
+			'expected' => $expected,
+			'missing'  => $missing,
+			'stale'    => $stale,
+			'orphans'  => $orphans,
+		);
+	}
+
+	/**
+	 * Wipe pending start_date async actions for one appointment and re-queue fresh via the
+	 * plugin's own queue_start_date_notifications(). If no drift is detected, skips untouched.
+	 *
+	 * @param int        $appointment_id
+	 * @param array|null $pending Optional pre-loaded async_action rows for this appointment.
+	 *                            When null, falls back to a per-appointment query.
+	 */
+	public function resync_reminder_for_appointment( $appointment_id, $pending = null ) {
+		$result = array(
+			'appointment_id' => (int) $appointment_id,
+			'deleted'        => 0,
+			'queued'         => 0,
+			'skipped'        => false,
+		);
+
+		if ( null === $pending ) {
+			$pending = $this->plugin->async_action_model->query( array(
+				'object_id'      => $appointment_id,
+				'object_type'    => 'appointment',
+				'action'         => array( 'ssa_fire_appointment_start_date_notifications' ),
+				'date_processed' => '0000-00-00 00:00:00',
+			) );
+		}
+
+		$diff = $this->compute_appointment_reminder_diff( $appointment_id, $pending );
+		if ( empty( $diff['missing'] ) && empty( $diff['stale'] ) && empty( $diff['orphans'] ) ) {
+			$result['skipped'] = true;
+			return $result;
+		}
+
+		$to_delete_ids = array();
+		foreach ( $pending as $row ) {
+			$to_delete_ids[] = $row['id'];
+		}
+
+		$result['deleted'] = count( $to_delete_ids );
+		$result['queued']  = count( $diff['expected'] );
+
+		if ( ! empty( $to_delete_ids ) ) {
+			$this->plugin->async_action_model->bulk_delete( array( 'id' => $to_delete_ids ) );
+		}
+
+		if ( ! empty( $diff['expected'] ) ) {
+			$this->queue_start_date_notifications( (int) $appointment_id, array(), array(), null );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Scan a batch of future booked appointments and resync any whose pending start_date
+	 * reminders drifted from current settings. Fires 30 minutes after a notification
+	 * settings change — see schedule_reminder_drift_fix().
+	 *
+	 * Self-chains: when a full batch comes back we queue a +10-min follow-up at the next
+	 * offset, so sites with >100 drifted appointments still get fully resolved without
+	 * any single run hogging the WP-Cron slot. Chain exits naturally when a batch returns
+	 * fewer appointments than the batch size.
+	 *
+	 * Tradeoffs / known limitations:
+	 *   - Past appointments are never scanned. Stale pending rows there are no-ops:
+	 *     maybe_fire_notification's status/time guards prevent bad sends at fire time.
+	 *   - start_date_min is anchored at the first run of the chain and passed through each
+	 *     continuation so offset pagination stays stable as appointments pass their start
+	 *     during the chain's lifetime. Otherwise the window would shift forward each batch
+	 *     and rows at the edge would be skipped.
+	 *   - New bookings or cancellations mid-chain can still cause a small window of
+	 *     re-processing or skipping on the next batch boundary (offset shifts by 1 per
+	 *     insert/delete within the already-processed range). Reprocessing is a cheap
+	 *     no-op; skipping is benign (runtime guards still prevent bad sends).
+	 *   - If a settings change lands while a chain is mid-flight, schedule_reminder_drift_fix()
+	 *     sees the continuation pending and raises a restart flag instead of queueing a new
+	 *     run. At the end of the current batch we detect the flag and restart from offset 0
+	 *     with a fresh start_date_min so the new settings get applied to every appointment.
+	 *   - Cancelled appointments are excluded — stale pending rows self-clean when their
+	 *     date_queued passes.
+	 *
+	 * @param int    $offset         Starting offset for this batch. Chain continuations pass the next offset.
+	 * @param string $start_date_min GMT datetime anchor. Empty → anchor at now (first run / restart).
+	 */
+	public function run_reminder_drift_fix( $offset = 0, $start_date_min = '' ) {
+		if ( ! $this->plugin->settings_installed->is_enabled( 'notifications' ) ) {
+			return;
+		}
+
+		$batch_size = 100;
+		$offset     = absint( $offset );
+
+		if ( empty( $start_date_min ) ) {
+			$start_date_min = gmdate( 'Y-m-d H:i:s' );
+		}
+
+		$appointments = $this->plugin->appointment_model->query( array(
+			'status'         => array( 'booked' ),
+			'start_date_min' => $start_date_min,
+			'number'         => $batch_size,
+			'offset'         => $offset,
+			'orderby'        => 'start_date',
+			'order'          => 'ASC',
+		) );
+
+		if ( empty( $appointments ) ) {
+			return;
+		}
+
+		$appointment_ids = array();
+		foreach ( $appointments as $row ) {
+			if ( empty( $row['id'] ) ) {
+				continue;
+			}
+			$appointment_ids[] = (int) $row['id'];
+			// Prime SSA_Appointment_Object's static cache so the diff loop skips a per-appointment DB read.
+			SSA_Appointment_Object::from_data( $row );
+		}
+
+		if ( empty( $appointment_ids ) ) {
+			return;
+		}
+
+		$pending_by_appt = $this->bulk_query_pending_start_date_actions( $appointment_ids );
+
+		$changed       = 0;
+		$deleted_total = 0;
+		$queued_total  = 0;
+
+		foreach ( $appointment_ids as $appointment_id ) {
+			$pending = isset( $pending_by_appt[ $appointment_id ] ) ? $pending_by_appt[ $appointment_id ] : array();
+			$row     = $this->resync_reminder_for_appointment( $appointment_id, $pending );
+			if ( empty( $row['skipped'] ) ) {
+				$changed++;
+				$deleted_total += (int) $row['deleted'];
+				$queued_total  += (int) $row['queued'];
+			}
+		}
+
+		if ( $changed > 0 ) {
+			ssa_debug_log( 'reminder drift fix committed: ' . wp_json_encode( array(
+				'scanned'        => count( $appointment_ids ),
+				'offset'         => $offset,
+				'start_date_min' => $start_date_min,
+				'changed'        => $changed,
+				'deleted_total'  => $deleted_total,
+				'queued_total'   => $queued_total,
+			) ), 10 );
+		}
+
+		// If a settings change landed while this run was in flight, restart the chain from
+		// offset 0 so appointments already scanned under the old settings get a fresh pass.
+		// Empty start_date_min arg → the restart run re-anchors at its own "now".
+		$restart = (bool) get_transient( 'ssa_notifications_drift_restart' );
+		if ( $restart ) {
+			delete_transient( 'ssa_notifications_drift_restart' );
+			try {
+				ssa_schedule_single_action(
+					strtotime( '+10 minutes' ),
+					'ssa/notifications/fix_reminder_drift',
+					array( 0, '' )
+				);
+			} catch ( Exception $e ) {
+				// noop
+			}
+			return;
+		}
+
+		if ( count( $appointments ) >= $batch_size ) {
+			try {
+				ssa_schedule_single_action(
+					strtotime( '+10 minutes' ),
+					'ssa/notifications/fix_reminder_drift',
+					array( $offset + $batch_size, $start_date_min )
+				);
+			} catch ( Exception $e ) {
+				// noop
+			}
+		}
+	}
+
+	/**
+	 * Debounce-schedule a single-shot drift fix 30 minutes after notification settings change.
+	 * Fires on ssa/settings/notifications/updated (which covers both save and delete since
+	 * deleting a notification is really update_section('notifications', ...) with it removed).
+	 *
+	 * If an earlier save already queued a fix (or a chain continuation is mid-flight) we
+	 * leave it in place — rapid sequential edits collapse into one scheduled run instead
+	 * of piling up. In that case we also raise a restart flag so run_reminder_drift_fix()
+	 * will reset the chain to offset 0 after its current batch, ensuring appointments
+	 * already scanned under stale settings get a fresh pass.
+	 */
+	public function schedule_reminder_drift_fix( $new_section = null, $old_section = null ) {
+		if ( ! $this->plugin->settings_installed->is_enabled( 'notifications' ) ) {
+			return;
+		}
+
+		// Only schedule if something about the start_date-trigger subset actually changed.
+		// Edits to appointment_booked / appointment_canceled notifications can't cause
+		// start_date drift; content-only edits (title/subject/message) don't affect what
+		// gets queued either.
+		if ( is_array( $new_section ) && is_array( $old_section ) ) {
+			$new_subset = $this->project_start_date_drift_fields( isset( $new_section['notifications'] ) ? $new_section['notifications'] : array() );
+			$old_subset = $this->project_start_date_drift_fields( isset( $old_section['notifications'] ) ? $old_section['notifications'] : array() );
+			if ( $new_subset === $old_subset ) {
+				return;
+			}
+		}
+
+		$hook = 'ssa/notifications/fix_reminder_drift';
+
+		try {
+			if ( ssa_has_scheduled_action( $hook ) ) {
+				set_transient( 'ssa_notifications_drift_restart', 1, DAY_IN_SECONDS );
+				return;
+			}
+			ssa_schedule_single_action( strtotime( '+30 minutes' ), $hook );
+		} catch ( Exception $e ) {
+			// noop
+		}
+	}
+
+	/**
+	 * Project a notifications array onto the fields that can actually cause start_date drift,
+	 * keyed by notification id and sorted so the result is stable for equality comparison.
+	 *
+	 * Changes to any field NOT in this projection (title, subject, message, sent_to, replyTo,
+	 * etc.) will not produce a different result from compute_appointment_reminder_diff(), so
+	 * there's no reason to schedule a fix run for them.
+	 *
+	 * @param array $notifications
+	 * @return array
+	 */
+	protected function project_start_date_drift_fields( $notifications ) {
+		if ( ! is_array( $notifications ) ) {
+			return array();
+		}
+		$projected = array();
+		foreach ( $notifications as $notification ) {
+			if ( ! is_array( $notification ) ) {
+				continue;
+			}
+			if ( empty( $notification['trigger'] ) || 'appointment_start_date' !== $notification['trigger'] ) {
+				continue;
+			}
+			$appointment_types = array();
+			if ( isset( $notification['appointment_types'] ) && is_array( $notification['appointment_types'] ) ) {
+				$appointment_types = array_map( 'intval', $notification['appointment_types'] );
+				sort( $appointment_types );
+			}
+			$sms_to = array();
+			if ( isset( $notification['sms_to'] ) && is_array( $notification['sms_to'] ) ) {
+				$sms_to = $notification['sms_to'];
+				sort( $sms_to );
+			}
+			$projected[ (int) ( isset( $notification['id'] ) ? $notification['id'] : 0 ) ] = array(
+				'active'            => ! isset( $notification['active'] ) || ! empty( $notification['active'] ),
+				'duration'          => isset( $notification['duration'] ) ? (int) $notification['duration'] : 0,
+				'when'              => isset( $notification['when'] ) ? (string) $notification['when'] : 'before',
+				'type'              => isset( $notification['type'] ) ? (string) $notification['type'] : '',
+				'appointment_types' => $appointment_types,
+				'sms_to'            => $sms_to,
+			);
+		}
+		ksort( $projected );
+		return $projected;
 	}
 
 	public function fail_async_action( $async_action, $error_code = 500, $error_message = '', $context = array() ) {

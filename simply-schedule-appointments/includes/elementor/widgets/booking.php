@@ -474,6 +474,28 @@ class SSA_Elementor_Booking_Widget extends \Elementor\Widget_Base {
 		}
 
 		$this->start_controls_section(
+			'section_performance',
+			[
+				'label' => __( 'Performance', 'simply-schedule-appointments' ),
+			]
+		);
+
+		$this->add_control(
+			'defer',
+			[
+				'label' => __( 'Defer loading', 'simply-schedule-appointments' ),
+				'description' => __( 'Improves page load performance by deferring initialization until visible.', 'simply-schedule-appointments' ),
+				'type' => \Elementor\Controls_Manager::SWITCHER,
+				'label_on' => __( 'Yes', 'simply-schedule-appointments' ),
+				'label_off' => __( 'No', 'simply-schedule-appointments' ),
+				'return_value' => 'yes',
+				'default' => '',
+			]
+		);
+
+		$this->end_controls_section();
+
+		$this->start_controls_section(
 			'section_style',
 			[
 				'label' => __( 'Styles', 'elementor' ),
@@ -685,6 +707,10 @@ class SSA_Elementor_Booking_Widget extends \Elementor\Widget_Base {
 		}
 		if( $settings['padding'] && $settings['padding'] !== '' ) {
 			$attrs['padding'] = $settings['padding']['size'] . $settings['padding']['unit'];
+		}
+
+		if ( ! empty( $settings['defer'] ) && $settings['defer'] === 'yes' ) {
+			$attrs['defer'] = 1;
 		}
 		?>
 		<div class="elementor-ssa-booking-wrapper">

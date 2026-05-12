@@ -32,6 +32,10 @@ if( $settings->padding && $settings->padding !== '' ) {
 	$attrs['padding'] = $settings->padding . $settings->padding_unit;
 }
 
+if ( isset( $settings->defer ) && $settings->defer === 'yes' ) {
+	$attrs['defer'] = 1;
+}
+
 ?>
 
 <div class="fl-module-ssa-booking-wrapper">

@@ -349,6 +349,18 @@ registerBlockType("ssa/booking", {
 							props.setAttributes({ padding_unit: value });
 						},
 					})
+				),
+				el(
+					PanelBody,
+					{ title: ssaBlockBookingStrings.performance, initialOpen: false },
+					el(CheckboxControl, {
+						label: ssaBlockBookingStrings.defer_loading,
+						help: ssaBlockBookingStrings.defer_loading_help,
+						checked: !!props.attributes.defer,
+						onChange: function (value) {
+							props.setAttributes({ defer: !!value });
+						},
+					})
 				)
 			),
 		];
