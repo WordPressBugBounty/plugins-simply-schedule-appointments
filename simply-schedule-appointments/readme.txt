@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.11.5
+Stable tag:        1.6.11.7
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -222,6 +222,10 @@ Yes of course! The majority of our customers are not developers — setup is rea
 
 See our guide on [how to get started](https://simplyscheduleappointments.com/guides/after-the-setup-wizard/?utm_source=website&utm_medium=promo-link&utm_campaign=wordpress-org&utm_content=after-the-setup-wizard).
 
+= Where do I report security bugs found in this plugin? =
+
+Please report security bugs found in the source code of the Simply Schedule Appointments plugin through the [Patchstack Vulnerability Disclosure Program](https://patchstack.com/database/vdp/9e5fb8e3-c7bc-4c3a-9b5f-58af20e9c260). The Patchstack team will assist you with verification, CVE assignment, and notify the developers of this plugin.
+
 == Screenshots ==
 
 1. The Appointments Dashboard When You First Open the Plugin - Initialize the Setup Wizard.
@@ -236,6 +240,13 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 10. Final Confirmation on the Booking Form.
 
 === Changelog ===
+
+== 1.6.11.7 - 2026-05-12 ==
+
+= Fixes =
+
+- Cover both signed in and signed out usage in Cypress tests
+- Cap async endpoint delay to prevent DoS (CVE-2026-7493)
 
 == 1.6.11.5 - 2026-05-05 ==
 
@@ -298,12 +309,6 @@ See our guide on [how to get started](https://simplyscheduleappointments.com/gui
 - Ics subscribe to calendar request improvements
 
 == 1.6.10.0 - 2026-03-05 ==
-
-= Fixes =
-
-- Vulnerability - Insecure Direct Object Reference to Authenticated (Staff+) Sensitive Information Exposure
-- Add Authorization to Settings REST API Endpoint
-- Unauthenticated SQL Injection in Simply Schedule Appointments Plugin
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

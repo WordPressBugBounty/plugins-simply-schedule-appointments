@@ -50,11 +50,47 @@ class SSA_Async_Action_Model extends TD_Async_Action_Model {
 			add_action( 'init', array( $this, 'schedule_cron' ) );
 		}
 		add_action( 'ssa_cron_process_async_actions', array( $this, 'execute_cron_process_async_actions' ) );
-		
+
 		add_action( 'init', array( $this, 'schedule_async_action_cleanup' ) );
 		add_action( 'ssa/async_actions/cleanup', array( $this, 'cleanup_async_actions' ) );
+
+		add_action( 'ssa/appointment/booked', array( $this, 'mint_async_delay_token' ), 10, 1 );
 	}
-	
+
+	/**
+	 * Mint a one-shot, short-lived token that authorises a single /async?delay=N
+	 * request for this appointment.
+	 *
+	 * The /async endpoint sleeps for the requested delay so notifications/webhooks
+	 * queued at +5s have time to mature before the queue is drained. Without a
+	 * gate, the unauthenticated endpoint amplifies any anonymous request into a
+	 * worker hold (CVE-2026-7493). Tying the sleep to a freshly-completed booking
+	 * forces an attacker to complete a real booking per attempt and limits
+	 * lifetime to 30s.
+	 */
+	public function mint_async_delay_token( $appointment_id ) {
+		if ( empty( $appointment_id ) ) {
+			return;
+		}
+		set_transient( 'ssa_async_delay_' . absint( $appointment_id ), 1, 30 );
+	}
+
+	/**
+	 * Verify and consume the one-shot delay token for $appointment_id.
+	 * Returns true exactly once per minted token.
+	 */
+	protected function consume_async_delay_token( $appointment_id ) {
+		if ( empty( $appointment_id ) ) {
+			return false;
+		}
+		$key = 'ssa_async_delay_' . absint( $appointment_id );
+		if ( false === get_transient( $key ) ) {
+			return false;
+		}
+		delete_transient( $key );
+		return true;
+	}
+
 	/**
 	 * Filter the where conditions for the query
 	 *
@@ -167,10 +203,17 @@ class SSA_Async_Action_Model extends TD_Async_Action_Model {
 	public function process_endpoint( $request ) {
 		define( 'SSA_DOING_ASYNC', true );
 		$params = $request->get_params();
-		
-		if ( ! empty( $params[ 'delay' ] ) ) {
-			$delay = (int) sanitize_text_field( $params['delay'] );
-			sleep( $delay );
+
+		if ( ! empty( $params['delay'] ) ) {
+			// Cap [0, 10] as defence-in-depth; legitimate caller passes 7. Even
+			// with a valid token the sleep is bounded so a worker can't be held
+			// arbitrarily long.
+			$delay          = min( 10, max( 0, (int) $params['delay'] ) );
+			$appointment_id = ! empty( $params['object_id'] ) ? absint( $params['object_id'] ) : 0;
+
+			if ( $delay > 0 && $this->consume_async_delay_token( $appointment_id ) ) {
+				sleep( $delay );
+			}
 		}
 
 		$params = shortcode_atts(

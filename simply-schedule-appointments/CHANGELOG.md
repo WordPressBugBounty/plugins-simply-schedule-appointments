@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.11.7 - 2026-05-12
+
+### Fixes
+
+- Cover both signed in and signed out usage in Cypress tests
+- Cap async endpoint delay to prevent DoS (CVE-2026-7493)
+
 ## SSA-VERSION-PREFIX.6.11.5 - 2026-05-05
 
 ### Fixes
