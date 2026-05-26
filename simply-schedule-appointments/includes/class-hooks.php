@@ -198,7 +198,7 @@ class SSA_Hooks {
 			return; // we don't want to send a customer_information_edited hook if anything besides customer information changed (eg. Google Calendar ID)
 		}
 
-		if ( SSA_Appointment_Model::is_a_canceled_status( $data_after['status'] ) && SSA_Appointment_Model::is_a_booked_status( $data_before['status'] ) ) {
+		if ( ! empty( $data_after['status'] ) && SSA_Appointment_Model::is_a_canceled_status( $data_after['status'] ) && SSA_Appointment_Model::is_a_booked_status( $data_before['status'] ) ) {
 			return; // we don't want to send a customer_information_edited hook when a canceled one will be sent instead (this should be redundant, but just in case)
 		}
 		

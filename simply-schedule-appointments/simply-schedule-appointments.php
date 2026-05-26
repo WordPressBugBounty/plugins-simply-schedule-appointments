@@ -3,7 +3,7 @@
  * Plugin Name: Simply Schedule Appointments
  * Plugin URI:  https://simplyscheduleappointments.com
  * Description: Easy appointment scheduling
- * Version:     1.6.11.7
+ * Version:     1.6.11.9
  * Requires PHP: 7.4
  * Author:      NSquared
  * Author URI:  https://nsquared.io/
@@ -15,7 +15,7 @@
  * @link    https://simplyscheduleappointments.com
  *
  * @package Simply_Schedule_Appointments
- * @version 1.6.11.7
+ * @version 1.6.11.9
  *
  * Built using generator-plugin-wp (https://github.com/WebDevStudios/generator-plugin-wp)
  */
@@ -153,6 +153,7 @@ final class Simply_Schedule_Appointments {
 	public $resource_model;
 	public $resources_settings;
 	public $resources;
+	public $rest_middleware;
 	public $revision_meta_model;
 	public $revision_model;
 	public $scheduling_max_per_day;
@@ -206,7 +207,7 @@ final class Simply_Schedule_Appointments {
 	 * @var    string
 	 * @since  0.0.0
 	 */
-	const VERSION = '1.6.11.7';
+	const VERSION = '1.6.11.9';
 
 	/**
 	 * URL of plugin directory.
@@ -298,6 +299,7 @@ final class Simply_Schedule_Appointments {
 		$classes = array(
 			'settings'                               => 'SSA_Settings',
 			'bootstrap'                              => 'SSA_Bootstrap',
+			'rest_middleware'                        => 'SSA_REST_Middleware',
 			'missing'                                => 'SSA_Missing',
 			'upgrade'                                => 'SSA_Upgrade',
 			'utils'                                  => 'SSA_Utils',

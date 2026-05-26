@@ -1027,53 +1027,31 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$where = '';
 		$schema = $this->get_schema();
 
-		// we allow append_where_sql to be set in the backend, but not in the request parameters
 		if ( ! empty( $args['append_where_sql'] ) ) {
-			// confirm not coming from request params or body
-			// also check file_get_contents('php://input');
-			$input_raw = file_get_contents('php://input');
-			$input_json = json_decode($input_raw, true) ?? [];
-			$found_in_payload = (
-				isset($_REQUEST['append_where_sql']) || 
-				isset($_FILES['append_where_sql']) ||
-				isset($input_json['append_where_sql'])
-			);
-			
-			// only append the where sql if it's not coming from the request params or body, to prevent potential sql injection
-			if( ! $found_in_payload ) {
-				if( ! is_array( $args['append_where_sql'] ) ) {
-					$args['append_where_sql'] = array( $args['append_where_sql'] );
-				}
-	
-				foreach ($args['append_where_sql'] as $where_sql) {
-					$where .= $where_sql;
-				}
+			if ( ! is_array( $args['append_where_sql'] ) ) {
+				$args['append_where_sql'] = array( $args['append_where_sql'] );
+			}
+
+			foreach ( $args['append_where_sql'] as $where_sql ) {
+				$where .= $where_sql;
 			}
 		}
 
-		if( ! empty( $args['id'] ) ) {
-
-			if( is_array( $args['id'] ) ) {
-				$ids = implode( ',', array_map('intval', $args['id'] ) );
-			} else {
-				$ids = intval( $args['id'] );
+		if ( ! empty( $args['id'] ) ) {
+			$ids = is_array( $args['id'] ) ? array_map( 'intval', $args['id'] ) : array( intval( $args['id'] ) );
+			if ( ! empty( $ids ) ) {
+				$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+				$where       .= $wpdb->prepare( " AND `{$this->primary_key}` IN( {$placeholders} ) ", $ids );
 			}
-			$where .= " AND `".$this->primary_key."` IN( $ids ) ";
-
 		}
 
-		if ( !empty( $schema['author_id'] ) ) {		
-			// rows for specific user actions	
-			if( ! empty( $args['author_id'] ) ) {
-
-				if( is_array( $args['author_id'] ) ) {
-					$author_ids = implode( ',', array_map('intval', $args['author_id'] ) );
-				} else {
-					$author_ids = intval( $args['author_id'] );
+		if ( ! empty( $schema['author_id'] ) ) {
+			if ( ! empty( $args['author_id'] ) ) {
+				$author_ids = is_array( $args['author_id'] ) ? array_map( 'intval', $args['author_id'] ) : array( intval( $args['author_id'] ) );
+				if ( ! empty( $author_ids ) ) {
+					$placeholders = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
+					$where       .= $wpdb->prepare( " AND `author_id` IN( {$placeholders} ) ", $author_ids );
 				}
-
-				$where .= " AND `author_id` IN( $author_ids ) ";
-
 			}
 		}
 
@@ -1124,11 +1102,14 @@ abstract class TD_DB_Model extends TD_API_Model {
 
 				if( !is_array( $args['date_created'] ) ) {
 
-					$year  = gmdate( 'Y', strtotime( $args['date_created'] ) );
-					$month = gmdate( 'm', strtotime( $args['date_created'] ) );
-					$day   = gmdate( 'd', strtotime( $args['date_created'] ) );
+					$year  = (int) gmdate( 'Y', strtotime( $args['date_created'] ) );
+					$month = (int) gmdate( 'm', strtotime( $args['date_created'] ) );
+					$day   = (int) gmdate( 'd', strtotime( $args['date_created'] ) );
 
-					$where .= " AND $year = YEAR ( date_created ) AND $month = MONTH ( date_created ) AND $day = DAY ( date_created )";
+					$where .= $wpdb->prepare(
+						" AND %d = YEAR( date_created ) AND %d = MONTH( date_created ) AND %d = DAY( date_created )",
+						$year, $month, $day
+					);
 				}
 
 			} else {

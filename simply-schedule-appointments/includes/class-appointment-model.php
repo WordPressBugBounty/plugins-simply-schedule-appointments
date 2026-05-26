@@ -205,6 +205,42 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 	}
 
+	/**
+	 * Customer-scoped status policy. A holder of an id_token / public nonce
+	 * may only use the status field to cancel — three flows are accepted:
+	 *
+	 *   - Echo of the current status (the booking app PUTs the full row on
+	 *     every save, e.g. when rescheduling or editing customer info).
+	 *   - active   → canceled   (normal self-cancel)
+	 *   - reserved → abandoned  (FormConfirm.editAppointment direct, and
+	 *                            the post-rewrite shape of reserved→canceled)
+	 *
+	 * Anything else returns false so gate_customer_status_transition() strips
+	 * the status field. In particular this denies canceled→booked, which
+	 * would let a token holder re-acquire a slot they had just released
+	 * (CVE-2026-6723).
+	 *
+	 * Pure function — no side effects, no DB reads. Single source of truth
+	 * for the customer status policy.
+	 *
+	 * @param string|null $from Current status (null if the row vanished).
+	 * @param string      $to   Requested new status.
+	 * @return bool
+	 */
+	public static function customer_can_transition( $from, $to ) {
+		if ( $from === $to ) {
+			return true;
+		}
+		if ( self::is_a_canceled_status( $to ) ) {
+			return ! self::is_a_canceled_status( $from )
+				&& ! self::is_an_abandoned_status( $from );
+		}
+		if ( self::is_an_abandoned_status( $to ) ) {
+			return self::is_a_reserved_status( $from );
+		}
+		return false;
+	}
+
 	public function cleanup_customer_information( $data ) {
 		if ( empty( $data['customer_information'] ) || ! is_array( $data['customer_information'] ) ) {
 			return $data;
@@ -845,8 +881,68 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		return $where;
 	}
 
+	/**
+	 * Re-register only the bulk route with a stricter permission callback.
+	 * The base td-api-model wires /appointments/bulk to
+	 * create_item_permissions_check, which accepts the site-wide public nonce
+	 * exposed in every booking page. Bulk writes can target arbitrary existing
+	 * appointments, so this model overrides that single route in place rather
+	 * than changing the shared base library for every other model.
+	 */
+	public function register_routes() {
+		parent::register_routes();
+
+		$namespace = $this->api_namespace . '/v' . $this->api_version;
+		$base      = $this->get_api_base();
+		register_rest_route( $namespace, '/' . $base . '/bulk', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'update_items' ),
+				'permission_callback' => array( $this, 'update_items_permissions_check' ),
+				'args'                => array(),
+			),
+		), true );
+	}
+
 	public function create_item_permissions_check( $request ) {
 		return $this->nonce_permissions_check( $request );
+	}
+
+	/**
+	 * Authorize bulk appointment updates. The base bulk route would otherwise
+	 * use create_item_permissions_check (which accepts the site-wide public
+	 * nonce exposed in every booking page); register_routes() above rewires
+	 * the route here. Require a capability that actually covers every
+	 * appointment the request tries to modify.
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return bool
+	 */
+	public function update_items_permissions_check( $request ) {
+		if ( current_user_can( 'ssa_manage_others_appointments' ) ) {
+			return true;
+		}
+
+		if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
+			return false;
+		}
+
+		$params = $request->get_params();
+		if ( empty( $params['items'] ) || ! is_array( $params['items'] ) ) {
+			return false;
+		}
+
+		$user_id = get_current_user_id();
+		foreach ( $params['items'] as $item ) {
+			if ( empty( $item['id'] ) ) {
+				return false;
+			}
+			if ( ! $this->plugin->staff_appointment_model->user_has_appointment_id( $user_id, (int) $item['id'] ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
@@ -874,7 +970,6 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		return false;
 	}
-
 
 	public function group_cancel( $request ) {
 		$params = $request->get_params();
@@ -1150,11 +1245,30 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$item_id = $request['id'];
 		$params  = $request->get_params();
 
-		// Block mass assignment: unprivileged callers (id_token / customer edit)
-		// must not be able to set protected fields like payment_received, title,
-		// google_calendar_*, web_meeting_*, etc.
+		// Customer-scoped restrictions apply to every non-privileged path that
+		// reaches update_item — id_token edits, logged-in customer dashboard
+		// edits (customer_id == current user), and any third-party-granted
+		// access. Drop fields outside the allowlist (mass-assignment defence),
+		// then reject disallowed status transitions so a customer can
+		// self-cancel but cannot re-acquire a slot they just released.
 		if ( ! $this->is_privileged_appointment_request() ) {
 			$params = array_intersect_key( $params, array_flip( $this->get_unprivileged_update_fields() ) );
+
+			if ( isset( $params['status'] ) ) {
+				$current = $this->get( $item_id );
+				$from    = isset( $current['status'] ) ? $current['status'] : null;
+				if ( ! self::customer_can_transition( $from, $params['status'] ) ) {
+					ssa_debug_log( sprintf( 'Rejected customer-scoped status transition on appointment %d: %s -> %s', $item_id, (string) $from, (string) $params['status'] ), 10 );
+					ssa_debug_log( ssa_get_stack_trace(), 10 );
+					return array(
+						'error' => array(
+							'code'    => 'status_change_not_allowed',
+							'message' => __( 'This status change is not allowed for the current appointment state.', 'simply-schedule-appointments' ),
+							'data'    => array(),
+						),
+					);
+				}
+			}
 		}
 
 		if ( ! empty( $params['appointment_type_id'] ) ) {
@@ -2107,36 +2221,357 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return new WP_REST_Response( __( 'Nothing to delete.', 'simply-schedule-appointments' ), 404 );
 		}
 
-		// first, let's get a list of all appointments that will be deleted.
-		$sql  = 'SELECT * FROM ' . $this->get_table_name() . ' WHERE ' . implode( ' OR ', $conditions );
+		// Cap each invocation to one batch so the in-memory $list, the CSV backup,
+		// and the cascade work all stay within a single PHP request's memory and
+		// timeout budget. On large datasets the caller re-triggers this endpoint
+		// until it gets the "No appointments found to be deleted" 404, which is
+		// the natural drain signal. Per-chunk transactions below mean each batch
+		// commits durably and re-runs are safe.
+		$purge_batch_size = 5000;
+
+		// ORDER BY id keeps batching deterministic across MySQL versions; without it
+		// the optimiser is free to return rows in any order, which makes "drain via
+		// repeated calls" rely on de-facto InnoDB clustered-index ordering.
+		$sql  = 'SELECT * FROM ' . $this->get_table_name() . ' WHERE ' . implode( ' OR ', $conditions ) . ' ORDER BY id ASC LIMIT ' . (int) $purge_batch_size;
 		$list = $wpdb->get_results( $sql, ARRAY_A );
 
 		if ( empty( $list ) ) {
 			return new WP_REST_Response( __( 'No appointments found to be deleted.', 'simply-schedule-appointments' ), 404 );
 		}
 
-		// before we delete the appointments, we need to generate a .csv file containing a backup.
-		$csv = $this->generate_appointments_backup( $list );
+		// Backup behaviour is opt-in (default true to preserve the legacy contract for
+		// any external caller that omits the param). When false we skip CSV generation
+		// entirely — no PHP CPU spent on the export, no disk I/O, no orphan files
+		// in uploads/ssa/csv/.
+		//
+		// drain_id scopes one CSV file across every batch of a single purge. Batch 1
+		// creates the file; batches 2..N append rows to it. The frontend generates
+		// drain_id once per drain and passes it on every request, so the returned
+		// file_url stays stable across the whole drain. Without drain_id we fall
+		// back to the legacy per-call timestamp filename to keep older callers
+		// working — but for our admin UI drain_id is always present.
+		$generate_backup = ! ( isset( $params['generate_backup'] ) && 'false' === $params['generate_backup'] );
+		$drain_id        = isset( $params['drain_id'] ) ? sanitize_key( $params['drain_id'] ) : '';
+		$csv             = null;
 
-		// if something went wrong, bail.
-		if ( is_wp_error( $csv ) ) {
-			return new WP_REST_Response( $csv->get_error_message(), 500 );
+		if ( $generate_backup ) {
+			$csv = $this->generate_appointments_backup( $list, $drain_id );
+
+			// CSV generation failure on any batch aborts that batch — the user expected
+			// a backup and we can't deliver it, so don't drop the rows. Earlier batches
+			// stay committed (per-chunk transactions); the user can re-run the purge.
+			if ( is_wp_error( $csv ) ) {
+				return new WP_REST_Response( $csv->get_error_message(), 500 );
+			}
 		}
 
-		$sql = 'DELETE FROM ' . $this->get_table_name() . ' WHERE ' . implode( ' OR ', $conditions );
+		// Cascade-clean rows in dependent tables before dropping the appointments.
+		// This tool bypasses the normal delete() path, so the ssa/appointment/after_delete
+		// hook never fires and orphans (notably pending wp_ssa_async_actions rows) are
+		// left behind. When those scheduled actions later fire, SSA_Appointment_Object::get()
+		// throws "Appointment ID not found" and kills the cron batch.
+		//
+		// Per-chunk transaction (cascade + appointment delete for the same 1000 ids)
+		// rather than one transaction around the whole purge: keeps lock duration,
+		// undo-log size, and binlog event size bounded on large datasets while still
+		// guaranteeing each appointment and its dependents commit or roll back as a
+		// unit. A mid-purge crash leaves earlier chunks committed and later chunks
+		// untouched — re-running the same purge is safe (the conditions are
+		// idempotent and the orphan sweep mops up anything in between).
+		$appointment_ids   = array_values( array_unique( array_map( 'intval', wp_list_pluck( $list, 'id' ) ) ) );
+		$appointments_table = $this->get_table_name();
 
-		$sql = $wpdb->prepare(
-			$sql,
-			$date_modified_max->format( 'Y-m-d' )
-		);
+		foreach ( array_chunk( $appointment_ids, 1000 ) as $chunk ) {
+			$wpdb->query( 'START TRANSACTION' );
 
-		$results = $wpdb->query( $sql );
+			if ( ! $this->purge_appointment_dependencies( $chunk ) ) {
+				$wpdb->query( 'ROLLBACK' );
+				return new WP_REST_Response( __( 'Something went wrong while deleting the appointments. Please try again.', 'simply-schedule-appointments' ), 500 );
+			}
 
-		if ( false === $results ) {
-			return new WP_REST_Response( __( 'Something went wrong while deleting the appointments. Please try again.', 'simply-schedule-appointments' ), 500 );
+			$placeholders = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+
+			if ( false === $wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$appointments_table} WHERE id IN ({$placeholders})",
+				$chunk
+			) ) ) {
+				$wpdb->query( 'ROLLBACK' );
+				return new WP_REST_Response( __( 'Something went wrong while deleting the appointments. Please try again.', 'simply-schedule-appointments' ), 500 );
+			}
+
+			$wpdb->query( 'COMMIT' );
 		}
 
+		// Sweep orphan dependent rows left over from purges run before the cascade-clean
+		// fix. The per-chunk cascade above only handles the ids being purged in this
+		// call; any meta/staff/resource rows whose appointment row was already gone
+		// before this run would otherwise sit in the database forever. The sweep is
+		// scoped to once per drain via $drain_id (see purge_orphan_dependencies for
+		// the transient gate) so a multi-batch drain doesn't re-run the sweep on
+		// every HTTP call.
+		$this->purge_orphan_dependencies( $drain_id );
+
+		// When backup was opted out we still return a 200 with an empty body so the
+		// frontend's drain loop sees a successful batch and continues until the 404.
+		// The Vue download link is gated on file_url being present, so a null body
+		// renders cleanly as "no CSV available".
 		return new WP_REST_Response( $csv, 200 );
+	}
+
+	/**
+	 * Delete rows in tables that reference one chunk of appointment ids. Mirrors the
+	 * cleanup that runs through the ssa/appointment/after_delete hook on a normal
+	 * single delete (notifications, staff/resource relations, appointment meta), plus
+	 * revisions and revision_meta — once the parent appointment is gone, the audit
+	 * trail points at nothing and the revisions UI hides it.
+	 *
+	 * Operates on a single chunk by design: the caller wraps each chunk in its own
+	 * transaction so lock duration and undo-log size stay bounded on large purges.
+	 * Stops at the first query failure so the caller can ROLLBACK cleanly.
+	 *
+	 * @since 6.7.13
+	 *
+	 * @param int[] $appointment_ids Already-int-cast chunk of appointment ids.
+	 * @return bool True if every cascade query succeeded, false if any returned an
+	 *              error (caller is expected to ROLLBACK in that case).
+	 */
+	protected function purge_appointment_dependencies( $appointment_ids ) {
+		if ( empty( $appointment_ids ) ) {
+			return true;
+		}
+
+		global $wpdb;
+
+		$async_actions_table     = $this->plugin->async_action_model->get_table_name();
+		$appointment_meta_table  = $this->plugin->appointment_meta_model->get_table_name();
+		$staff_appointment_table = $this->plugin->staff_appointment_model->get_table_name();
+		$revision_table          = $this->plugin->revision_model->get_table_name();
+		$revision_meta_table     = $this->plugin->revision_meta_model->get_table_name();
+
+		$resource_appointment_table = null;
+		if ( ! empty( $this->plugin->resource_appointment_model ) ) {
+			$resource_appointment_table = $this->plugin->resource_appointment_model->get_table_name();
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $appointment_ids ), '%d' ) );
+
+		// Pending notifications, webhooks, calendar sync, etc. (anything queued via
+		// ssa_queue_action with object_type = 'appointment'). This is the row that
+		// causes the fatal in execute_cron_process_async_actions if left orphaned.
+		if ( false === $wpdb->query( $wpdb->prepare(
+			"DELETE FROM {$async_actions_table} WHERE object_type = 'appointment' AND object_id IN ({$placeholders})",
+			$appointment_ids
+		) ) ) {
+			return false;
+		}
+
+		if ( false === $wpdb->query( $wpdb->prepare(
+			"DELETE FROM {$appointment_meta_table} WHERE appointment_id IN ({$placeholders})",
+			$appointment_ids
+		) ) ) {
+			return false;
+		}
+
+		if ( false === $wpdb->query( $wpdb->prepare(
+			"DELETE FROM {$staff_appointment_table} WHERE appointment_id IN ({$placeholders})",
+			$appointment_ids
+		) ) ) {
+			return false;
+		}
+
+		if ( $resource_appointment_table ) {
+			if ( false === $wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$resource_appointment_table} WHERE appointment_id IN ({$placeholders})",
+				$appointment_ids
+			) ) ) {
+				return false;
+			}
+		}
+
+		// Revisions reference the appointment via appointment_id; revision_meta
+		// references the revision via revision_id. Resolve revision ids first so
+		// we can drop the meta rows before the parent revisions disappear.
+		$revision_ids = $wpdb->get_col( $wpdb->prepare(
+			"SELECT id FROM {$revision_table} WHERE appointment_id IN ({$placeholders})",
+			$appointment_ids
+		) );
+
+		if ( ! empty( $revision_ids ) ) {
+			$revision_ids          = array_map( 'intval', $revision_ids );
+			$revision_placeholders = implode( ',', array_fill( 0, count( $revision_ids ), '%d' ) );
+
+			if ( false === $wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$revision_meta_table} WHERE revision_id IN ({$revision_placeholders})",
+				$revision_ids
+			) ) ) {
+				return false;
+			}
+
+			if ( false === $wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$revision_table} WHERE appointment_id IN ({$placeholders})",
+				$appointment_ids
+			) ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Remove rows in dependent tables whose appointment_id no longer points at a
+	 * row in the appointments table. Catches the orphans left behind by purges run
+	 * before purge_appointment_dependencies() existed: meta entries, staff/resource
+	 * relations, revisions, and pending async actions whose appointment was
+	 * raw-DELETE'd, and which have no other cleanup path.
+	 *
+	 * Bounded: each table is swept in chunks of 5000 ids by primary key, capped at
+	 * 10 iterations (50K rows per table per call). The cap is deliberately tight
+	 * because purge_appointments() invokes this on every call and the in-batch
+	 * cascade already prevents new orphans — the sweep only has work to do for
+	 * pre-existing orphans left over by purges from before the cascade-clean fix
+	 * shipped, and those drain across successive calls.
+	 *
+	 * Async actions are scoped by object_type='appointment' so non-appointment
+	 * queued actions (notifications/webhooks/zoom for other object types, e.g.
+	 * customers) are left alone. Removing them up-front means cron firings never
+	 * try to load an appointment that no longer exists — that would otherwise
+	 * fatal in webhook/zoom handlers (notifications already had a try/catch).
+	 * The fail_async_action try/catches added in class-webhooks.php and
+	 * class-zoom.php remain as belt-and-braces for any orphans the sweep hasn't
+	 * yet reached.
+	 *
+	 * Revisions are handled separately because (a) they default appointment_id to 0
+	 * for non-appointment audit rows (e.g. appointment_type changes) which would be
+	 * misread as orphans, and (b) revision_meta has to be cascade-deleted via the
+	 * revision id rather than the appointment id.
+	 *
+	 * Scoped to once per drain when $drain_id is provided: a multi-batch purge can
+	 * issue dozens of HTTP calls, and re-running the full sweep on each call wastes
+	 * up to 4-5 anti-join SELECTs per table per call after orphans are drained. The
+	 * transient marker auto-expires so an abandoned drain doesn't leave the sweep
+	 * disabled forever; legacy callers without a $drain_id keep the every-call
+	 * behaviour (sweep still bounded by chunk_size * max_iterations).
+	 *
+	 * @since 6.7.13
+	 *
+	 * @param string $drain_id Optional drain id from purge_appointments(); when set,
+	 *                         the sweep runs at most once per drain.
+	 * @return void
+	 */
+	protected function purge_orphan_dependencies( $drain_id = '' ) {
+		if ( '' !== $drain_id ) {
+			$transient_key = 'ssa_orphan_swept_' . $drain_id;
+			if ( get_transient( $transient_key ) ) {
+				return;
+			}
+			// 6 hours covers any realistic drain duration. Set before the work runs
+			// so concurrent batches in the same drain don't double-sweep; the work
+			// itself is idempotent so a missed sweep on this call just means the
+			// next drain picks it up.
+			set_transient( $transient_key, 1, 6 * HOUR_IN_SECONDS );
+		}
+
+		global $wpdb;
+
+		$appointments_table = $this->get_table_name();
+
+		$tables = array(
+			$this->plugin->appointment_meta_model->get_table_name(),
+			$this->plugin->staff_appointment_model->get_table_name(),
+		);
+		if ( ! empty( $this->plugin->resource_appointment_model ) ) {
+			$tables[] = $this->plugin->resource_appointment_model->get_table_name();
+		}
+
+		$chunk_size     = 5000;
+		$max_iterations = 10;
+
+		foreach ( $tables as $table ) {
+			for ( $i = 0; $i < $max_iterations; $i++ ) {
+				$orphan_ids = $wpdb->get_col( $wpdb->prepare(
+					"SELECT t.id FROM {$table} t
+					 LEFT JOIN {$appointments_table} a ON a.id = t.appointment_id
+					 WHERE a.id IS NULL
+					 LIMIT %d",
+					$chunk_size
+				) );
+
+				if ( empty( $orphan_ids ) ) {
+					break;
+				}
+
+				$orphan_ids   = array_map( 'intval', $orphan_ids );
+				$placeholders = implode( ',', array_fill( 0, count( $orphan_ids ), '%d' ) );
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM {$table} WHERE id IN ({$placeholders})",
+					$orphan_ids
+				) );
+			}
+		}
+
+		// Async actions sweep — same chunked/bounded shape as above. NOT EXISTS
+		// over LEFT JOIN here because async_actions.object_id is not necessarily
+		// indexed for the join direction; the optimizer handles NOT EXISTS with
+		// the (object_type, object_id) filter more predictably across MySQL
+		// versions when the column has no dedicated index. The object_type filter
+		// scopes to appointment-typed actions only, so customer/order/etc.
+		// queued actions are not touched.
+		$async_actions_table = $this->plugin->async_action_model->get_table_name();
+
+		for ( $i = 0; $i < $max_iterations; $i++ ) {
+			$orphan_ids = $wpdb->get_col( $wpdb->prepare(
+				"SELECT a.id FROM {$async_actions_table} a
+				 WHERE a.object_type = 'appointment'
+				   AND NOT EXISTS (SELECT 1 FROM {$appointments_table} p WHERE p.id = a.object_id)
+				 LIMIT %d",
+				$chunk_size
+			) );
+
+			if ( empty( $orphan_ids ) ) {
+				break;
+			}
+
+			$orphan_ids   = array_map( 'intval', $orphan_ids );
+			$placeholders = implode( ',', array_fill( 0, count( $orphan_ids ), '%d' ) );
+
+			$wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$async_actions_table} WHERE id IN ({$placeholders})",
+				$orphan_ids
+			) );
+		}
+
+		$revision_table      = $this->plugin->revision_model->get_table_name();
+		$revision_meta_table = $this->plugin->revision_meta_model->get_table_name();
+
+		// appointment_id != 0 filter keeps appointment_type/staff/payment revisions in place.
+		for ( $i = 0; $i < $max_iterations; $i++ ) {
+			$orphan_revision_ids = $wpdb->get_col( $wpdb->prepare(
+				"SELECT t.id FROM {$revision_table} t
+				 LEFT JOIN {$appointments_table} a ON a.id = t.appointment_id
+				 WHERE t.appointment_id != 0 AND a.id IS NULL
+				 LIMIT %d",
+				$chunk_size
+			) );
+
+			if ( empty( $orphan_revision_ids ) ) {
+				break;
+			}
+
+			$orphan_revision_ids = array_map( 'intval', $orphan_revision_ids );
+			$placeholders        = implode( ',', array_fill( 0, count( $orphan_revision_ids ), '%d' ) );
+
+			$wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$revision_meta_table} WHERE revision_id IN ({$placeholders})",
+				$orphan_revision_ids
+			) );
+
+			$wpdb->query( $wpdb->prepare(
+				"DELETE FROM {$revision_table} WHERE id IN ({$placeholders})",
+				$orphan_revision_ids
+			) );
+		}
 	}
 
 	/**
@@ -2147,10 +2582,40 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	 * @param array $list An array of appointments.
 	 * @return array|WP_Error
 	 */
-	public function generate_appointments_backup( $list ) {
-		$csv = $this->plugin->csv_exporter->get_csv( $list );
+	/**
+	 * Generate (or append to) a CSV backup of appointments scheduled for deletion.
+	 *
+	 * When called with a $drain_id, the filename is derived from it so every batch
+	 * of a multi-call drain writes into the same file: the first batch creates the
+	 * file with a header, subsequent batches append rows. This avoids the
+	 * pre-fix behaviour of each batch writing its own dated CSV and orphaning the
+	 * previous one in uploads/ssa/csv/.
+	 *
+	 * Without a $drain_id, falls back to the legacy timestamp-named single-call
+	 * CSV so external callers that haven't been updated keep working.
+	 *
+	 * @since 4.8.9
+	 * @since 6.7.13 Added $drain_id parameter for multi-batch append.
+	 *
+	 * @param array  $list     Appointment rows.
+	 * @param string $drain_id Optional drain id from the caller. Sanitized via sanitize_key().
+	 * @return array|WP_Error  ['file_path' => ..., 'file_url' => ...] on success.
+	 */
+	public function generate_appointments_backup( $list, $drain_id = '' ) {
+		if ( '' === $drain_id ) {
+			return $this->plugin->csv_exporter->get_csv( $list );
+		}
 
-		return $csv;
+		$filename = 'deleted-appointments-' . $drain_id;
+
+		// Route to append_csv() once the file already exists for this drain.
+		// First batch goes through get_csv() so the header row is written.
+		$file_path = SSA_Filesystem::get_uploads_dir_path() . '/csv/' . sanitize_title( $filename ) . '.csv';
+		if ( file_exists( $file_path ) ) {
+			return $this->plugin->csv_exporter->append_csv( $list, $filename );
+		}
+
+		return $this->plugin->csv_exporter->get_csv( $list, $filename );
 	}
 
 	public function get_label_id( $id ){

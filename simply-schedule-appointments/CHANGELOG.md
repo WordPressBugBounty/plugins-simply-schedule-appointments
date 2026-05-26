@@ -1,5 +1,14 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.11.9 - 2026-05-19
+
+### Fixes
+
+- 💰Bug/Ticket: Database size issues and fatal error in async
+- Prevent token-authenticated modification of admin-controlled appointment fields (CVE-2026-6723)
+- fix(security): strip append_where_sql from REST requests
+- WordFence Vulnerability Appointment Booking Calendar <= 1.6.11.0 - Missing Authorization to Unauthenticated Arbitrary Modification via Bulk Appointments REST API Endpoint
+
 ## SSA-VERSION-PREFIX.6.11.7 - 2026-05-12
 
 ### Fixes

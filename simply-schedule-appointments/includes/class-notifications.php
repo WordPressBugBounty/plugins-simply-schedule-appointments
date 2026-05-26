@@ -870,9 +870,23 @@ class SSA_Notifications {
 
 		$appointment_id = $payload['appointment']['id'];
 
-		// Refresh appointmnent data
-		$appointment_object = new SSA_Appointment_Object( $appointment_id );
-		$payload['appointment'] = $appointment_object->get_data( 0 );
+		// Refresh appointment data. If the appointment was deleted between when
+		// this action was queued and when the cron picked it up (e.g. via the
+		// Purge Past Appointments tool), SSA_Appointment_Object::get() throws
+		// "Appointment ID not found". Catching it here so a single orphaned
+		// async action doesn't terminate the rest of the batch.
+		try {
+			$appointment_object = new SSA_Appointment_Object( $appointment_id );
+			$payload['appointment'] = $appointment_object->get_data( 0 );
+		} catch ( Exception $e ) {
+			$this->fail_async_action(
+				$async_action,
+				404,
+				'Could not load appointment for notification: ' . $e->getMessage(),
+				array( 'appointment_id' => $appointment_id )
+			);
+			return;
+		}
 
 
 		foreach ( $notifications as $notification_key => $notification ) {
