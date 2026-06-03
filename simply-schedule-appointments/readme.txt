@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.11.9
+Stable tag:        1.6.11.11
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,12 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 === Changelog ===
 
+== 1.6.11.11 - 2026-05-26 ==
+
+= Fixes =
+
+- fix: dedicated reorder endpoint for appointment types to avoid oversized save requests
+
 == 1.6.11.9 - 2026-05-19 ==
 
 = Fixes =
@@ -303,12 +309,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 == 1.6.10.4 - 2026-04-02 ==
 
 = Fixes =
-
-- Ticket: The Exported CSV file is not displaying payments correctly
-- Ticket: Unique Resource Group Selections and Display Issue
-- Fix/deprecated timezone iana compat
-
-== 1.6.10.2 - 2026-03-11 ==
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

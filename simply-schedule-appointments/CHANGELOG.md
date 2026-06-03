@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.11.11 - 2026-05-26
+
+### Fixes
+
+- fix: dedicated reorder endpoint for appointment types to avoid oversized save requests
+
 ## SSA-VERSION-PREFIX.6.11.9 - 2026-05-19
 
 ### Fixes

@@ -902,6 +902,60 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 				),
 			),
 		) );
+
+		register_rest_route( $namespace, '/' . $base . '/reorder', array(
+			array(
+				'methods'             => WP_REST_Server::EDITABLE,
+				'callback'            => array( $this, 'reorder_items' ),
+				'permission_callback' => array( $this, 'create_item_permissions_check' ),
+				'args'                => array(),
+			),
+		) );
+	}
+
+	/**
+	 * Update only display_order from a lightweight { id, display_order } payload.
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return WP_REST_Response
+	 */
+	public function reorder_items( $request ) {
+		$params = $request->get_params();
+		$items  = isset( $params['items'] ) ? $params['items'] : array();
+
+		if ( empty( $items ) || ! is_array( $items ) ) {
+			return new WP_REST_Response( array(
+				'response_code' => 400,
+				'error'         => 'Please specify data: { items: [{ id: 1, display_order: 0 }, ...] }',
+				'data'          => '',
+			), 400 );
+		}
+
+		$updated = array();
+		foreach ( $items as $item ) {
+			if ( ! is_array( $item ) || empty( $item['id'] ) ) {
+				continue;
+			}
+
+			$id    = absint( $item['id'] );
+			$order = isset( $item['display_order'] ) ? (int) $item['display_order'] : 0;
+			if ( ! $id ) {
+				continue;
+			}
+
+			$this->raw_update( $id, array( 'display_order' => $order ) );
+			$updated[] = array( 'id' => $id, 'display_order' => $order );
+		}
+
+		if ( ! empty( $updated ) ) {
+			$this->invalidate_appointment_type_cache();
+		}
+
+		return new WP_REST_Response( array(
+			'response_code' => 200,
+			'error'         => '',
+			'data'          => $updated,
+		), 200 );
 	}
 
 	public function get_items_permissions_check( $request ) {
