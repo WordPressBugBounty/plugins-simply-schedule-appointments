@@ -71,13 +71,15 @@ class SSA_Templates_Api extends WP_REST_Controller {
 	}
 
 	/**
-	 * Check if a given request has access to get items
+	 * Gate `/templates/validate` on the SSA admin floor. The endpoint compiles
+	 * arbitrary Twig from the request body; only callers who actually edit
+	 * notification templates (i.e. SSA admin UI users) need it.
 	 *
 	 * @param WP_REST_Request $request Full data about the request.
-	 * @return WP_Error|bool
+	 * @return bool
 	 */
 	public function get_items_permissions_check( $request ) {
-		return TD_API_Model::nonce_permissions_check( $request );
+		return current_user_can( 'ssa_manage_appointments' );
 	}
 
 	/**

@@ -963,14 +963,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			return true;
 		}
 		
-		$granted = $this->nonce_permissions_check( $request );
-		if ( $granted ) {
-			return $granted;
-		}
-
-		// TODO: implement ssa_nonce check as a fallback
-
-		return false;
+		return $this->public_booking_permissions_check( $request );
 	}
 
 	/**

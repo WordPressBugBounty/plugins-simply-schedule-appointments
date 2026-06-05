@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.11.11
+Stable tag:        1.6.12.0
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,21 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 === Changelog ===
 
+== 1.6.12.0 - 2026-06-04 ==
+
+= Fixes =
+
+- Remove public-nonce fallback and tighten notices/templates REST auth
+
+== 1.6.11.13 - 2026-06-02 ==
+
+= Fixes =
+
+- test(security): drain async queue to close a Time-Of-Check to Time-Of-Use race against notification cron
+- fix(notifications): stop drift resync from wiping still-applicable reminders
+- Throttle deprecated id-token verifies; use hash_equals on token compares
+- Fix token-comparison auth bypass in get_items_permissions_check
+
 == 1.6.11.11 - 2026-05-26 ==
 
 = Fixes =
@@ -294,21 +309,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 - Reset skippedTime when selecting a new date in Express view
 - Defer iframe booking init until visible in parent viewport
 - Remove unauthenticated debug REST API endpoints
-- Security: patch three Patchstack-reported vulnerabilities (stored XSS in web_meeting_url, unauthenticated settings exposure, unauthenticated appointment deletion) + add regression tests
-
-= Features and Improvements =
-
-- Allow appointment type and styling params in external embed
-
-== 1.6.10.6 - 2026-04-14 ==
-
-= Fixes =
-
-- Fix incorrect shortcode name in ssa_past_appointments shortcode_atts call
-
-== 1.6.10.4 - 2026-04-02 ==
-
-= Fixes =
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

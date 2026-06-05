@@ -364,20 +364,38 @@ abstract class TD_API_Model extends TD_Model {
 		}
 
 		$nonce = $request->get_headers()['x_wp_nonce']['0'];
-		$is_valid = wp_verify_nonce( $nonce, 'wp_rest' );
 
-		if ( $is_valid ) {
-			return $is_valid;
+		return (bool) wp_verify_nonce( $nonce, 'wp_rest' );
+	}
+
+	/**
+	 * Permission gate for routes that are intentionally reachable by anonymous
+	 * booking-page visitors AND enforce their own per-request authorization
+	 * downstream (id_token / appointment_token ownership, mass-assignment
+	 * blocking, field-level redaction). Accepts a session-bound wp_rest nonce
+	 * OR the static public_nonce.
+	 *
+	 * The static public_nonce branch exists so full-page-cached booking pages
+	 * still complete a booking after the embedded X-WP-Nonce has aged past the
+	 * wp_nonce_tick window (the historical reason public_nonce was introduced).
+	 * It is safe ONLY here, because on these routes the static token is not the
+	 * security boundary — the downstream check is. Never wire this gate to an
+	 * admin or otherwise sensitive route; those use nonce_permissions_check.
+	 *
+	 * See project CLAUDE.md ("Permission gates default to strict").
+	 */
+	public static function public_booking_permissions_check( $request ) {
+		if ( self::nonce_permissions_check( $request ) ) {
+			return true;
 		}
 
 		if ( empty( $request->get_headers()['x_public_nonce']['0'] ) ) {
 			return false;
 		}
 
-		$nonce = $request->get_headers()['x_public_nonce']['0'];
-		$is_valid = self::verify_nonce( $nonce, 'wp_rest' );
+		$public_nonce = $request->get_headers()['x_public_nonce']['0'];
 
-		return $is_valid;
+		return (bool) self::verify_nonce( $public_nonce, 'wp_rest' );
 	}
 
 	/**
@@ -469,8 +487,21 @@ abstract class TD_API_Model extends TD_Model {
 		);
 	}
 
+	/**
+	 * Static, site-wide "you came from a booking page" token. This is NOT an
+	 * authentication primitive — every visitor receives the same value, so it
+	 * cannot differentiate authorized from unauthorized callers. The ONLY
+	 * legitimate consumer is public_booking_permissions_check, which is wired
+	 * exclusively to routes safe for any unauthenticated booking-page visitor
+	 * (and which enforce per-request authorization downstream). Never honor it
+	 * from nonce_permissions_check or any other gate. The historical bug
+	 * (#1910, #1925, #1926) was using it as a fallback inside the shared
+	 * nonce_permissions_check, which non-public routes also inherited.
+	 *
+	 * See project CLAUDE.md ("Permission gates default to strict").
+	 */
 	public static function create_nonce( $action = -1, $user_id = false ) {
-		if ( $user_id !== false ) {		
+		if ( $user_id !== false ) {
 			if ( empty( $user_id ) ) {
 				$user_id = get_current_user_id();
 			}
@@ -481,15 +512,12 @@ abstract class TD_API_Model extends TD_Model {
 
 	public static function verify_nonce( $nonce, $action = -1, $user_id = false ) {
 		$nonce = (string) $nonce;
-		
+
 		if ( empty( $nonce ) ) {
 			return false;
 		}
 
 		$expected = self::create_nonce( $action, $user_id );
-
-		$token = wp_get_session_token();
-		$i     = wp_nonce_tick();
 
 		if ( hash_equals( $expected, $nonce ) ) {
 			return 1;

@@ -200,7 +200,7 @@ class SSA_Settings_Api extends WP_REST_Controller {
 	 * @return WP_Error|bool
 	 */
 	public function get_items_permissions_check( $request ) {
-		return TD_API_Model::nonce_permissions_check( $request );
+		return TD_API_Model::public_booking_permissions_check( $request );
 	}
 
 	/**

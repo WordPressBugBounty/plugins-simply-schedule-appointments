@@ -905,7 +905,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	}
 
 	public function create_item_permissions_check( $request ) {
-		return $this->nonce_permissions_check( $request );
+		return $this->public_booking_permissions_check( $request );
 	}
 
 	/**
@@ -1704,7 +1704,8 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		$params = $request->get_params();
 
-		if ( ! empty( $params['token'] ) && $params['token'] == $settings['global']['public_read_access_token'] ) {
+		$expected_token = isset( $settings['global']['public_read_access_token'] ) ? (string) $settings['global']['public_read_access_token'] : '';
+		if ( ! empty( $params['token'] ) && is_string( $params['token'] ) && '' !== $expected_token && hash_equals( $expected_token, $params['token'] ) ) {
 			return true;
 		}
 

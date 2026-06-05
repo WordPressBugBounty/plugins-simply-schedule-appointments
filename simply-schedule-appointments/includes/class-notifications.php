@@ -113,8 +113,8 @@ class SSA_Notifications {
 		$this->queue_notifications( 'appointment_booked', 'ssa_fire_appointment_rescheduled_notifications', $appointment_id, $data, $data_before, $response );
 	}
 	
-	public function queue_start_date_notifications( $appointment_id, $data, $data_before = array(), $response = null ) {
-		$this->queue_notifications( 'appointment_start_date', 'ssa_fire_appointment_start_date_notifications', $appointment_id, $data, $data_before, $response );
+	public function queue_start_date_notifications( $appointment_id, $data, $data_before = array(), $response = null, $notification_ids_filter = null ) {
+		$this->queue_notifications( 'appointment_start_date', 'ssa_fire_appointment_start_date_notifications', $appointment_id, $data, $data_before, $response, $notification_ids_filter );
 	}
 
 	public function queue_customer_information_edited_notifications( $appointment_id, $data, $data_before = array(), $response = null ) {
@@ -125,7 +125,7 @@ class SSA_Notifications {
 		$this->queue_notifications( 'appointment_canceled', 'ssa_fire_appointment_canceled_notifications', $appointment_id, $data, $data_before, $response );
 	}
 
-	public function queue_notifications( $hook, $action_to_fire, $appointment_id, $data, $data_before = array(), $response = null ) {
+	public function queue_notifications( $hook, $action_to_fire, $appointment_id, $data, $data_before = array(), $response = null, $notification_ids_filter = null ) {
 		if ( ! $this->plugin->settings_installed->is_enabled( 'notifications' ) ) {
 			return false;
 		}
@@ -135,9 +135,23 @@ class SSA_Notifications {
 			return;
 		}
 
+		// When provided (resync flow), restrict queueing to the given notification ids so
+		// already-correct pending rows aren't duplicated. Booking/reschedule pass null.
+		$filter_lookup = null;
+		if ( is_array( $notification_ids_filter ) ) {
+			$filter_lookup = array();
+			foreach ( $notification_ids_filter as $fid ) {
+				$filter_lookup[ (int) $fid ] = true;
+			}
+		}
+
 		$appointment_object = new SSA_Appointment_Object( $appointment_id );
 		foreach ($notifications as $key => $notification) {
 			if ( $notification['trigger'] !== $hook ) {
+				continue;
+			}
+
+			if ( null !== $filter_lookup && ! isset( $filter_lookup[ (int) $notification['id'] ] ) ) {
 				continue;
 			}
 
@@ -195,7 +209,8 @@ class SSA_Notifications {
 				return;
 			}
 			$recipient_type = ssa_get_recipient_type_for_recipients_array( $recipients );
-			do_action( 'ssa/notification/scheduled', $appointment_id, $action_noun, $action_verb, $notification_date, $notification_time, $duration, $recipient_type,$data_after, $data_before);
+			$notification_title = isset( $notification['title'] ) ? (string) $notification['title'] : '';
+			do_action( 'ssa/notification/scheduled', $appointment_id, $action_noun, $action_verb, $notification_date, $notification_time, $duration, $recipient_type, $data_after, $data_before, $notification_title );
 		}
 
 	}
@@ -318,7 +333,7 @@ class SSA_Notifications {
 		$ids   = implode( ',', array_map( 'intval', $appointment_ids ) );
 
 		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM {$table}
+			"SELECT id, object_id, date_queued, payload FROM {$table}
 			 WHERE object_type = %s
 			   AND action      = %s
 			   AND object_id IN ({$ids})
@@ -345,14 +360,21 @@ class SSA_Notifications {
 	/**
 	 * Compare expected start_date notifications against what's currently pending in the async queue.
 	 *
+	 * Key distinction: a pending row is an ORPHAN only if its notification config no longer
+	 * applies (deactivated, removed, type-mismatch, sms-disabled). A row whose config still
+	 * applies but whose computed queue time is now in the past is NOT an orphan — it's a
+	 * pending fire that cron will pick up. Only timing-mismatches against a still-future
+	 * expected time count as STALE.
+	 *
 	 * @param int        $appointment_id
 	 * @param array|null $pending Optional pre-loaded async_action rows for this appointment.
 	 *                            When null, falls back to a per-appointment query.
 	 * @return array{
 	 *   expected: array,
-	 *   missing:  int[]  // notification_ids that should be queued but aren't
-	 *   stale:    int[]  // notification_ids queued with wrong date_queued (e.g. duration changed)
-	 *   orphans:  int[]  // notification_ids queued but no longer match any active config
+	 *   missing:  int[],                 // notification_ids that should be queued but aren't
+	 *   stale:    int[],                 // notification_ids queued with wrong date_queued
+	 *   orphans:  int[],                 // notification_ids queued whose config no longer applies
+	 *   row_id_by_notification_id: array<int,int>,  // pending row id keyed by notification id
 	 * }
 	 */
 	public function compute_appointment_reminder_diff( $appointment_id, $pending = null ) {
@@ -372,38 +394,83 @@ class SSA_Notifications {
 			$expected_by_id[ $e['notification_id'] ] = $e['date_queued'];
 		}
 
-		$actual_by_id = array();
+		// Set of notification ids whose config still applies to this appointment, regardless
+		// of whether their freshly-computed queue time is past or future. Used to distinguish
+		// "no longer applies" (true orphan) from "applies but timing past" (cron will fire it).
+		$applicable_ids = $this->get_applicable_start_date_notification_ids( $appointment_id );
+
+		$actual_by_id              = array();
+		$row_id_by_notification_id = array();
 		foreach ( $pending as $row ) {
 			$nid = isset( $row['payload']['notification']['id'] ) ? (int) $row['payload']['notification']['id'] : 0;
 			if ( empty( $nid ) ) {
 				continue;
 			}
-			$actual_by_id[ $nid ] = $row['date_queued'];
+			$actual_by_id[ $nid ]              = $row['date_queued'];
+			$row_id_by_notification_id[ $nid ] = (int) $row['id'];
 		}
 
 		$missing = array();
 		$stale   = array();
 		foreach ( $expected_by_id as $nid => $date_queued ) {
 			if ( ! isset( $actual_by_id[ $nid ] ) ) {
-				$missing[] = $nid;
+				$missing[] = (int) $nid;
 			} elseif ( $actual_by_id[ $nid ] !== $date_queued ) {
-				$stale[] = $nid;
+				$stale[] = (int) $nid;
 			}
 		}
 
 		$orphans = array();
 		foreach ( $actual_by_id as $nid => $_ ) {
-			if ( ! isset( $expected_by_id[ $nid ] ) ) {
-				$orphans[] = $nid;
+			if ( ! isset( $applicable_ids[ $nid ] ) ) {
+				$orphans[] = (int) $nid;
 			}
 		}
 
 		return array(
-			'expected' => $expected,
-			'missing'  => $missing,
-			'stale'    => $stale,
-			'orphans'  => $orphans,
+			'expected'                  => $expected,
+			'missing'                   => $missing,
+			'stale'                     => $stale,
+			'orphans'                   => $orphans,
+			'row_id_by_notification_id' => $row_id_by_notification_id,
 		);
+	}
+
+	/**
+	 * Notification ids whose config currently applies to this appointment — regardless of
+	 * whether their fresh queue time is past or future. Returned as a set: [id => true].
+	 *
+	 * @param int $appointment_id
+	 * @return array<int,true>
+	 */
+	protected function get_applicable_start_date_notification_ids( $appointment_id ) {
+		$applicable = array();
+		if ( ! $this->plugin->settings_installed->is_enabled( 'notifications' ) ) {
+			return $applicable;
+		}
+		$notifications = $this->plugin->notifications_settings->get_notifications();
+		if ( empty( $notifications ) ) {
+			return $applicable;
+		}
+		try {
+			$appt = new SSA_Appointment_Object( $appointment_id );
+			$appt->get();
+		} catch ( Exception $e ) {
+			return $applicable;
+		}
+		foreach ( $notifications as $n ) {
+			if ( empty( $n['id'] ) || empty( $n['trigger'] ) ) {
+				continue;
+			}
+			if ( 'appointment_start_date' !== $n['trigger'] ) {
+				continue;
+			}
+			if ( ! $this->notification_applies_to_appointment( $n, $appt ) ) {
+				continue;
+			}
+			$applicable[ (int) $n['id'] ] = true;
+		}
+		return $applicable;
 	}
 
 	/**
@@ -437,32 +504,102 @@ class SSA_Notifications {
 			return $result;
 		}
 
+		// Targeted delete: only rows whose notification id appears in stale (timing wrong) or
+		// orphans (config gone). Pending rows for still-applicable notifs with matching timing
+		// are LEFT ALONE — cron fires them on their own schedule.
 		$to_delete_ids = array();
-		foreach ( $pending as $row ) {
-			$to_delete_ids[] = $row['id'];
+		$row_by_nid    = $diff['row_id_by_notification_id'];
+		foreach ( array_merge( $diff['stale'], $diff['orphans'] ) as $nid ) {
+			if ( isset( $row_by_nid[ $nid ] ) ) {
+				$to_delete_ids[] = (int) $row_by_nid[ $nid ];
+			}
 		}
+		$to_delete_ids = array_values( array_unique( $to_delete_ids ) );
+
+		// Targeted re-queue: only missing + stale notification ids. Already-correct rows stay.
+		$to_queue_nids = array_values( array_unique( array_merge( $diff['missing'], $diff['stale'] ) ) );
 
 		$result['deleted'] = count( $to_delete_ids );
-		$result['queued']  = count( $diff['expected'] );
+		$result['queued']  = count( $to_queue_nids );
 
 		if ( ! empty( $to_delete_ids ) ) {
+			$this->log_drift_cancellations( $appointment_id, $pending, $to_delete_ids, $diff['orphans'] );
 			$this->plugin->async_action_model->bulk_delete( array( 'id' => $to_delete_ids ) );
 		}
 
-		if ( ! empty( $diff['expected'] ) ) {
-			$this->queue_start_date_notifications( (int) $appointment_id, array(), array(), null );
+		if ( ! empty( $to_queue_nids ) ) {
+			$this->queue_start_date_notifications( (int) $appointment_id, array(), array(), null, $to_queue_nids );
 		}
 
 		return $result;
 	}
 
 	/**
+	 * Emit a `notification_canceled` revision per row the drift resync is about to delete,
+	 * so the appointment's history shows what changed and why. Re-queued notifs already get a
+	 * `notification_scheduled` revision through queue_notifications → ssa/notification/scheduled.
+	 *
+	 * @param int   $appointment_id
+	 * @param array $pending           Pending async_action rows under consideration.
+	 * @param int[] $to_delete_row_ids Row ids targeted for deletion (orphan + stale).
+	 * @param int[] $orphan_nids       Notification ids classified as orphans (vs. stale).
+	 */
+	protected function log_drift_cancellations( $appointment_id, $pending, $to_delete_row_ids, $orphan_nids ) {
+		if ( empty( $to_delete_row_ids ) ) {
+			return;
+		}
+		$delete_set = array_flip( array_map( 'intval', $to_delete_row_ids ) );
+		$orphan_set = array_flip( array_map( 'intval', $orphan_nids ) );
+
+		$notif_by_id = array();
+		foreach ( $this->plugin->notifications_settings->get_notifications() as $n ) {
+			if ( ! empty( $n['id'] ) ) {
+				$notif_by_id[ (int) $n['id'] ] = $n;
+			}
+		}
+
+		// insert_revision_appointment reads data_after['status']; load the appointment once
+		// so the revision rows carry the current status and we avoid undefined-key warnings.
+		$appt_data = array( 'status' => '' );
+		try {
+			$appt = new SSA_Appointment_Object( (int) $appointment_id );
+			$appt_data = $appt->get_data( 0 );
+		} catch ( Exception $e ) {
+			// Appointment vanished; status='' is fine, the revision still inserts.
+		}
+
+		foreach ( $pending as $row ) {
+			if ( ! isset( $delete_set[ (int) $row['id'] ] ) ) {
+				continue;
+			}
+			$nid = isset( $row['payload']['notification']['id'] ) ? (int) $row['payload']['notification']['id'] : 0;
+			if ( empty( $nid ) ) {
+				continue;
+			}
+			$notif      = isset( $notif_by_id[ $nid ] ) ? $notif_by_id[ $nid ] : array();
+			$recipients = ! empty( $notif['sent_to'] ) ? $notif['sent_to'] : ( ! empty( $notif['sms_to'] ) ? $notif['sms_to'] : array() );
+			$reason     = isset( $orphan_set[ $nid ] )
+				? esc_html__( 'Notification configuration no longer applies to this appointment.', 'simply-schedule-appointments' )
+				: esc_html__( 'Notification settings changed — reminder rescheduled to a new time.', 'simply-schedule-appointments' );
+
+			$this->plugin->revision_model->insert_revision_on_notification_canceled( (int) $appointment_id, array(
+				'data_after'                      => $appt_data,
+				'data_before'                     => array(),
+				'recipient_type'                  => is_array( $recipients ) ? ssa_get_recipient_type_for_recipients_array( $recipients ) : '',
+				'notification_type'               => isset( $notif['type'] ) ? $notif['type'] : '',
+				'notification_title'              => isset( $notif['title'] ) ? $notif['title'] : '',
+				'notification_cancelation_reason' => $reason,
+			) );
+		}
+	}
+
+	/**
 	 * Scan a batch of future booked appointments and resync any whose pending start_date
-	 * reminders drifted from current settings. Fires 30 minutes after a notification
+	 * reminders drifted from current settings. Fires 5 minutes after a notification
 	 * settings change — see schedule_reminder_drift_fix().
 	 *
-	 * Self-chains: when a full batch comes back we queue a +10-min follow-up at the next
-	 * offset, so sites with >100 drifted appointments still get fully resolved without
+	 * Self-chains: when a full batch comes back we queue a +2-min follow-up at the next
+	 * offset, so sites with >50 drifted appointments still get fully resolved without
 	 * any single run hogging the WP-Cron slot. Chain exits naturally when a batch returns
 	 * fewer appointments than the batch size.
 	 *
@@ -492,7 +629,7 @@ class SSA_Notifications {
 			return;
 		}
 
-		$batch_size = 100;
+		$batch_size = 50;
 		$offset     = absint( $offset );
 
 		if ( empty( $start_date_min ) ) {
@@ -561,7 +698,7 @@ class SSA_Notifications {
 			delete_transient( 'ssa_notifications_drift_restart' );
 			try {
 				ssa_schedule_single_action(
-					strtotime( '+10 minutes' ),
+					strtotime( '+2 minutes' ),
 					'ssa/notifications/fix_reminder_drift',
 					array( 0, '' )
 				);
@@ -574,7 +711,7 @@ class SSA_Notifications {
 		if ( count( $appointments ) >= $batch_size ) {
 			try {
 				ssa_schedule_single_action(
-					strtotime( '+10 minutes' ),
+					strtotime( '+2 minutes' ),
 					'ssa/notifications/fix_reminder_drift',
 					array( $offset + $batch_size, $start_date_min )
 				);
@@ -585,7 +722,7 @@ class SSA_Notifications {
 	}
 
 	/**
-	 * Debounce-schedule a single-shot drift fix 30 minutes after notification settings change.
+	 * Debounce-schedule a single-shot drift fix 5 minutes after notification settings change.
 	 * Fires on ssa/settings/notifications/updated (which covers both save and delete since
 	 * deleting a notification is really update_section('notifications', ...) with it removed).
 	 *
@@ -619,7 +756,7 @@ class SSA_Notifications {
 				set_transient( 'ssa_notifications_drift_restart', 1, DAY_IN_SECONDS );
 				return;
 			}
-			ssa_schedule_single_action( strtotime( '+30 minutes' ), $hook );
+			ssa_schedule_single_action( strtotime( '+5 minutes' ), $hook );
 		} catch ( Exception $e ) {
 			// noop
 		}
@@ -1053,7 +1190,7 @@ class SSA_Notifications {
 				$data_after = $payload['appointment'];
 				$data_before = $payload['data_before'];
 				$notification_type = $notification['type'];
-				do_action( 'ssa/notification/sent', $appointment_id, $response, $action_noun, $action_verb, $recipient_type, $notification_type, $data_after, $data_before);
+				do_action( 'ssa/notification/sent', $appointment_id, $response, $action_noun, $action_verb, $recipient_type, $notification_type, $data_after, $data_before, isset( $notification['title'] ) ? (string) $notification['title'] : '' );
 				return $response;
 
 
@@ -1106,7 +1243,7 @@ class SSA_Notifications {
 			$data_after = $payload['appointment'];
 			$data_before = $payload['data_before'];
 			$notification_type = $notification['type'];
-			do_action( 'ssa/notification/sent', $appointment_id, $response, $action_noun, $action_verb, $recipient_type, $notification_type, $data_after, $data_before);
+			do_action( 'ssa/notification/sent', $appointment_id, $response, $action_noun, $action_verb, $recipient_type, $notification_type, $data_after, $data_before, isset( $notification['title'] ) ? (string) $notification['title'] : '' );
 			}
 		}
 

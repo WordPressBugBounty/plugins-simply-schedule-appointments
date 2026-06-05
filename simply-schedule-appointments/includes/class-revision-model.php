@@ -66,8 +66,8 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		add_action( 'ssa/revisions/cleanup', array( $this, 'cleanup_revisions' ), 10, 0 );
 
 		// Notifications
-		add_action( 'ssa/notification/scheduled', array( $this, 'insert_revision_on_notification_scheduled' ), 10, 9 );
-		add_action( 'ssa/notification/sent', array( $this, 'insert_revision_on_notification_sent' ), 10, 8 );
+		add_action( 'ssa/notification/scheduled', array( $this, 'insert_revision_on_notification_scheduled' ), 10, 10 );
+		add_action( 'ssa/notification/sent', array( $this, 'insert_revision_on_notification_sent' ), 10, 9 );
 
 		//Appointment Types revisions
 		add_action( 'ssa/appointment_type/after_insert', array( $this, 'insert_revision_created_appointment_type' ), 1000, 3 );
@@ -968,8 +968,11 @@ class SSA_Revision_Model extends SSA_Db_Model {
 								}
 								return $summary_vars[ $placeholder ];
 						} else {
-								// Placeholder does not correspond to a valid variable name
-								return $matches[0]; // return the original placeholder
+								// Placeholder isn't in summary_vars — true for old revisions written before a
+								// template was extended with a new var (e.g. notification_title on `reminder`).
+								// Returning the literal placeholder would surface "{{ notification_title }}" in
+								// the UI; empty string keeps the surrounding text readable.
+								return '';
 						}
 				}, $action_summary );
 		}
@@ -1000,15 +1003,15 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			case 'no_show_reverted':
 				return 'No show Status reverted by {{ user }}';
 			case 'notification_scheduled':
-				return 'The notification was scheduled to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}.';
+				return 'The "{{ notification_title }}" notification was scheduled to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}.';
 			case 'notification_with_duration':
-				return 'The notification was scheduled to be sent on {{ notification_date }} at {{ notification_time }} to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}.';
+				return 'The "{{ notification_title }}" notification was scheduled to be sent on {{ notification_date }} at {{ notification_time }} to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}.';
 			case 'reminder':
-				return 'The notification was scheduled to be sent on {{ notification_date }} at {{ notification_time }} to remind the {{ recipient_type }} about the appointment.';
+				return 'The "{{ notification_title }}" notification was scheduled to be sent on {{ notification_date }} at {{ notification_time }} to remind the {{ recipient_type }} about the appointment.';
 			case 'notification_sent':
-				return 'The notification was sent by {{ notification_type }} to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}.';
+				return 'The "{{ notification_title }}" notification was sent by {{ notification_type }} to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}.';
 			case 'notification_not_sent':
-				return "The notification by {{ notification_type }},  to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}, could not be sent";
+				return 'The "{{ notification_title }}" notification by {{ notification_type }}, to inform the {{ recipient_type }} that an {{ action_noun }} has been {{ action_verb }}, could not be sent';
 			case 'publish':
 				return 'Appointment Type created by {{ user }}';
 			case 'delete':
@@ -1066,9 +1069,9 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			case 'has_max_capacity_changed':
 				return '{{ user }} switched the maximum capacity option ';
 			case 'reminder_sent':
-				return 'The notification was sent by {{ notification_type }} to remind the {{ recipient_type }} about the appointment';
+				return 'The "{{ notification_title }}" notification was sent by {{ notification_type }} to remind the {{ recipient_type }} about the appointment';
 			case 'reminder_not_sent':
-				return 'The notification by {{ notification_type }} to remind the {{ recipient_type }} about the appointment could not be sent';
+				return 'The "{{ notification_title }}" notification by {{ notification_type }} to remind the {{ recipient_type }} about the appointment could not be sent';
 			case 'opt_out_notification':
 				return 'The user has not opted to receive notifications';
 			case 'notification_canceled':
@@ -1103,7 +1106,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		return $output;
 	}
 
-	public function insert_revision_on_notification_sent( $appointment_id, $response, $action_noun, $action_verb, $recipient_type,$notification_type,$data_after, $data_before) {
+	public function insert_revision_on_notification_sent( $appointment_id, $response, $action_noun, $action_verb, $recipient_type, $notification_type, $data_after, $data_before, $notification_title = '' ) {
 		if ($response === true || (is_array($response) && !in_array(false, $response))){
 			$res = 'success';
 			if($action_noun == 'appointment_start'){
@@ -1123,15 +1126,16 @@ class SSA_Revision_Model extends SSA_Db_Model {
 	}
 		// Insert revision for notification sent
 		$params = array(
-			'result'            => $res,
-			'action'            => $action,
-			'appointment_id'    => $appointment_id,
-			'data_after'        => $data_after,
-			'data_before'       => $data_before,
-			'action_noun'       => $action_noun,
-			'action_verb'       => $action_verb,
-			'recipient_type'    => $recipient_type,
-			'notification_type' => $notification_type
+			'result'             => $res,
+			'action'             => $action,
+			'appointment_id'     => $appointment_id,
+			'data_after'         => $data_after,
+			'data_before'        => $data_before,
+			'action_noun'        => $action_noun,
+			'action_verb'        => $action_verb,
+			'recipient_type'     => $recipient_type,
+			'notification_type'  => $notification_type,
+			'notification_title' => $notification_title,
 		);
 
 		$this->insert_revision_appointment( $params );
@@ -1165,7 +1169,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		$this->insert_revision_appointment( $params );
 	}
 
-	public function insert_revision_on_notification_scheduled( $appointment_id, $action_noun, $action_verb, $notification_date, $notification_time, $duration, $recipient_type, $data_after, $data_before) {
+	public function insert_revision_on_notification_scheduled( $appointment_id, $action_noun, $action_verb, $notification_date, $notification_time, $duration, $recipient_type, $data_after, $data_before, $notification_title = '' ) {
 		if($duration > 0){
 			if($action_noun == 'appointment_start'){
 				$action = 'reminder';
@@ -1191,6 +1195,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			'recipient_type'    => $recipient_type,
 			'notification_date'       => $notification_date,
 			'notification_time'       => $notification_time,
+			'notification_title'      => $notification_title,
 		);
 
 		$this->insert_revision_appointment( $params );

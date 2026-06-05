@@ -302,47 +302,39 @@ class SSA_Notices_Api extends WP_REST_Controller {
 	}
 
 	/**
-	 * Check if a given request has access to get items
+	 * Plugin admin notices and dismissed/pinned state are admin UI surface, not
+	 * public-facing data, and reads/writes affect site-wide options. Gate every
+	 * notices route on the SSA admin floor (`ssa_manage_appointments`).
 	 *
 	 * @param WP_REST_Request $request Full data about the request.
-	 * @return WP_Error|bool
+	 * @return bool
 	 */
 	public function get_items_permissions_check( $request ) {
-		return TD_API_Model::nonce_permissions_check( $request );
+		return current_user_can( 'ssa_manage_appointments' );
 	}
 
 	/**
-	 * Check if a given request has access to get a specific item
-	 *
 	 * @param WP_REST_Request $request Full data about the request.
-	 * @return WP_Error|bool
+	 * @return bool
 	 */
 	public function get_item_permissions_check( $request ) {
-		return TD_API_Model::nonce_permissions_check( $request );
+		return current_user_can( 'ssa_manage_appointments' );
 	}
 
 	/**
-	 * Check if a given request has access to update a specific item
-	 *
 	 * @param WP_REST_Request $request Full data about the request.
-	 * @return WP_Error|bool
+	 * @return bool
 	 */
 	public function update_item_permissions_check( $request ) {
-		if ( is_user_logged_in() ) {
-			return true;
-		}
+		return current_user_can( 'ssa_manage_appointments' );
 	}
 
 	/**
-	 * Check if a given request has access to delete a specific item
-	 *
 	 * @param WP_REST_Request $request Full data about the request.
-	 * @return WP_Error|bool
+	 * @return bool
 	 */
 	public function delete_item_permissions_check( $request ) {
-		if ( is_user_logged_in() ) {
-			return true;
-		}
+		return current_user_can( 'ssa_manage_appointments' );
 	}
 
 	/**

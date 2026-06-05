@@ -140,21 +140,24 @@ class SSA_Appointment_Meta_Model extends SSA_Db_Model {
 		return $where;
 	}
 
+	/**
+	 * No REST routes are registered for this model — rest_api_init() above is a
+	 * no-op and the inherited register_routes() call is commented out. All
+	 * appointment-meta mutations go through the parent Appointment model, which
+	 * carries its own gate. These permission methods exist only to satisfy the
+	 * inherited shape and are never invoked at runtime; keep them on the strict
+	 * gate so that if someone uncomments register_routes() they get a deliberate
+	 * admin-floor failure rather than a silent public-write surface.
+	 */
 	public function create_item_permissions_check( $request ) {
 		return $this->nonce_permissions_check( $request );
 	}
 
-	/**
-	 * Check if a given request has access to update a specific item
-	 *
-	 * @param WP_REST_Request $request Full data about the request.
-	 * @return WP_Error|bool
-	 */
 	public function update_item_permissions_check( $request ) {
 		if ( true === $this->get_item_permissions_check( $request ) ) {
 			return true;
 		}
-		
+
 		return false;
 	}
 

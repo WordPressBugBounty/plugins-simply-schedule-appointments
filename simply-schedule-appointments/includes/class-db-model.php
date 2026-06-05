@@ -288,21 +288,37 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 		}
 
 		$correct_token = $this->get_id_token( $input );
-		if ( ! empty( $correct_token ) && $correct_token == $token_to_verify ) {
+		if ( ! empty( $correct_token ) && hash_equals( (string) $correct_token, (string) $token_to_verify ) ) {
 			return true;
 		}
-		
-		// TODO remove when all users are guaranteed to have updated - after 2026-09-30
+
+		// TODO remove this whole branch (including the throttle below) on 2026-09-30.
 		$target_timestamp = strtotime( '2026-09-30 00:00:00' );
 		$current_timestamp = current_time( 'timestamp' );
 
 		if ( $current_timestamp < $target_timestamp ) {
-			$deprecated_correct_token = $this->deprecated_get_id_token( $input );
-			if ( ! empty( $deprecated_correct_token ) && $deprecated_correct_token == $token_to_verify ) {
-				return true;
+			// The deprecated salt is in public source, so brute-force against
+			// date_created is the only remaining barrier. Cap attempts per appointment
+			// id well below what the attack needs; legitimate one-shot email-link clicks
+			// never accumulate failures.
+			$id = $this->extract_id_from_input( $input );
+			if ( ! empty( $id ) ) {
+				$throttle_key = 'ssa_dep_tok_fail_' . $id;
+				$fails        = (int) get_transient( $throttle_key );
+				if ( $fails >= 5 ) {
+					return false;
+				}
+
+				$deprecated_correct_token = $this->deprecated_get_id_token( $input );
+				if ( ! empty( $deprecated_correct_token ) && hash_equals( (string) $deprecated_correct_token, (string) $token_to_verify ) ) {
+					delete_transient( $throttle_key );
+					return true;
+				}
+
+				set_transient( $throttle_key, $fails + 1, 15 * MINUTE_IN_SECONDS );
 			}
 		}
-		
+
 		return false;
 	}
 
@@ -348,7 +364,7 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 			return false;
 		}
 
-		if ( sanitize_text_field( $params['token'] ) === $correct_token ) {
+		if ( hash_equals( (string) $correct_token, (string) sanitize_text_field( $params['token'] ) ) ) {
 			return true;
 		}
 

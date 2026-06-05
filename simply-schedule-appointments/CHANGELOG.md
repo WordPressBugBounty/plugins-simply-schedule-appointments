@@ -1,5 +1,20 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.0 - 2026-06-04
+
+### Fixes
+
+- Remove public-nonce fallback and tighten notices/templates REST auth
+
+## SSA-VERSION-PREFIX.6.11.13 - 2026-06-02
+
+### Fixes
+
+- test(security): drain async queue to close a Time-Of-Check to Time-Of-Use race against notification cron
+- fix(notifications): stop drift resync from wiping still-applicable reminders
+- Throttle deprecated id-token verifies; use hash_equals on token compares
+- Fix token-comparison auth bypass in get_items_permissions_check
+
 ## SSA-VERSION-PREFIX.6.11.11 - 2026-05-26
 
 ### Fixes
