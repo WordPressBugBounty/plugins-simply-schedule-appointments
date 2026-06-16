@@ -96,7 +96,7 @@ class SSA_CSV_Exporter {
 			return new WP_Error( 'ssa_export_csv_file_not_writable', __( 'Cannot append: failed to open .csv for writing.', 'simply-schedule-appointments' ) );
 		}
 		foreach ( $appointments as $appointment ) {
-			fputcsv( $handle, $appointment );
+			fputcsv( $handle, $this->escape_row( $appointment ) );
 		}
 		@fclose( $handle );
 		// @codingStandardsIgnoreEnd
@@ -164,12 +164,43 @@ class SSA_CSV_Exporter {
 	protected function create( $appointments ) {
 		// @codingStandardsIgnoreStart
 		$handle = @fopen( $this->file_path, 'w' );
-		fputcsv( $handle, array_keys( $appointments[0] ) );
+		fputcsv( $handle, $this->escape_row( array_keys( $appointments[0] ) ) );
 		foreach ( $appointments as $appointment ) {
-			fputcsv( $handle, $appointment );
+			fputcsv( $handle, $this->escape_row( $appointment ) );
 		}
 		@fclose( $handle );
 		// @codingStandardsIgnoreEnd
+	}
+
+	/**
+	 * Neutralize CSV formula injection on a single row.
+	 *
+	 * @param array $row Row of cell values.
+	 *
+	 * @return array
+	 */
+	protected function escape_row( $row ) {
+		return array_map( array( $this, 'escape_cell' ), (array) $row );
+	}
+
+	/**
+	 * Prefix a leading formula trigger (= + - @ TAB CR) with a single quote so
+	 * spreadsheet apps treat the cell as text instead of a formula.
+	 *
+	 * @param mixed $value Cell value.
+	 *
+	 * @return mixed
+	 */
+	protected function escape_cell( $value ) {
+		if ( ! is_string( $value ) || '' === $value ) {
+			return $value;
+		}
+
+		if ( in_array( $value[0], array( '=', '+', '-', '@', "\t", "\r" ), true ) ) {
+			return "'" . $value;
+		}
+
+		return $value;
 	}
 
 }

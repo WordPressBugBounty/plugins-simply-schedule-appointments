@@ -90,10 +90,14 @@ class SSA_Divi {
 		// Check active theme
 		$theme = wp_get_theme();
 		$theme_name = $theme->get( 'Name' );
-		$theme_version = $theme->get( 'Version' );
-		
+		$template   = $theme->get_template();
+
+		// Use the parent theme's version when a child theme is active.
+		$version_source = ( $template && $template !== $theme->get_stylesheet() ) ? wp_get_theme( $template ) : $theme;
+		$theme_version  = $version_source->exists() ? $version_source->get( 'Version' ) : $theme->get( 'Version' );
+
 		// Check if the active theme is Divi and version 5+
-		if ( ( $theme_name === 'Divi' || $theme->get_template() === 'Divi' ) && version_compare( $theme_version, '5.0', '>=' ) ) {
+		if ( ( $theme_name === 'Divi' || $template === 'Divi' ) && version_compare( $theme_version, '5.0', '>=' ) ) {
 			return true;
 		}
 		

@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.2 - 2026-06-09
+
+### Fixes
+
+- Fix IDOR in MemberPress user appointment REST endpoints
+- fix: neutralize CSV formula injection in appointment backup exporter
+- Fix SSA module missing from Divi 5 picker with a child theme active
+
 ## SSA-VERSION-PREFIX.6.12.0 - 2026-06-04
 
 ### Fixes

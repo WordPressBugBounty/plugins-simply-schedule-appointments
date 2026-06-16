@@ -89,6 +89,68 @@
             "install-path": "../league/period"
         },
         {
+            "name": "stripe/stripe-php",
+            "version": "v16.6.0",
+            "version_normalized": "16.6.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/stripe/stripe-php.git",
+                "reference": "d6de0a536f00b5c5c74f36b8f4d0d93b035499ff"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/stripe/stripe-php/zipball/d6de0a536f00b5c5c74f36b8f4d0d93b035499ff",
+                "reference": "d6de0a536f00b5c5c74f36b8f4d0d93b035499ff",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "php": ">=5.6.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "3.5.0",
+                "phpstan/phpstan": "^1.2",
+                "phpunit/phpunit": "^5.7 || ^9.0"
+            },
+            "time": "2025-02-24T22:35:29+00:00",
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "2.0-dev"
+                }
+            },
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Stripe\\": "lib/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Stripe and contributors",
+                    "homepage": "https://github.com/stripe/stripe-php/contributors"
+                }
+            ],
+            "description": "Stripe PHP Library",
+            "homepage": "https://stripe.com/",
+            "keywords": [
+                "api",
+                "payment processing",
+                "stripe"
+            ],
+            "support": {
+                "issues": "https://github.com/stripe/stripe-php/issues",
+                "source": "https://github.com/stripe/stripe-php/tree/v16.6.0"
+            },
+            "install-path": "../stripe/stripe-php"
+        },
+        {
             "name": "symfony/deprecation-contracts",
             "version": "v2.5.4",
             "version_normalized": "2.5.4.0",
@@ -160,17 +222,17 @@
         },
         {
             "name": "symfony/polyfill-ctype",
-            "version": "v1.37.0",
-            "version_normalized": "1.37.0.0",
+            "version": "v1.33.0",
+            "version_normalized": "1.33.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-ctype.git",
-                "reference": "141046a8f9477948ff284fa65be2095baafb94f2"
+                "reference": "a3cc8b044a6ea513310cbd48ef7333b384945638"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-ctype/zipball/141046a8f9477948ff284fa65be2095baafb94f2",
-                "reference": "141046a8f9477948ff284fa65be2095baafb94f2",
+                "url": "https://api.github.com/repos/symfony/polyfill-ctype/zipball/a3cc8b044a6ea513310cbd48ef7333b384945638",
+                "reference": "a3cc8b044a6ea513310cbd48ef7333b384945638",
                 "shasum": ""
             },
             "require": {
@@ -182,7 +244,7 @@
             "suggest": {
                 "ext-ctype": "For best performance"
             },
-            "time": "2026-04-10T16:19:22+00:00",
+            "time": "2024-09-09T11:45:10+00:00",
             "type": "library",
             "extra": {
                 "thanks": {
@@ -222,7 +284,7 @@
                 "portable"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-ctype/tree/v1.37.0"
+                "source": "https://github.com/symfony/polyfill-ctype/tree/v1.33.0"
             },
             "funding": [
                 {
@@ -246,17 +308,17 @@
         },
         {
             "name": "symfony/polyfill-mbstring",
-            "version": "v1.38.1",
-            "version_normalized": "1.38.1.0",
+            "version": "v1.33.0",
+            "version_normalized": "1.33.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-mbstring.git",
-                "reference": "14c5439eec4ccff081ac14eca2dc57feb2a66d92"
+                "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/14c5439eec4ccff081ac14eca2dc57feb2a66d92",
-                "reference": "14c5439eec4ccff081ac14eca2dc57feb2a66d92",
+                "url": "https://api.github.com/repos/symfony/polyfill-mbstring/zipball/6d857f4d76bd4b343eac26d6b539585d2bc56493",
+                "reference": "6d857f4d76bd4b343eac26d6b539585d2bc56493",
                 "shasum": ""
             },
             "require": {
@@ -269,7 +331,7 @@
             "suggest": {
                 "ext-mbstring": "For best performance"
             },
-            "time": "2026-05-26T12:51:13+00:00",
+            "time": "2024-12-23T08:48:59+00:00",
             "type": "library",
             "extra": {
                 "thanks": {
@@ -310,7 +372,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.38.1"
+                "source": "https://github.com/symfony/polyfill-mbstring/tree/v1.33.0"
             },
             "funding": [
                 {
@@ -334,23 +396,23 @@
         },
         {
             "name": "symfony/polyfill-php80",
-            "version": "v1.37.0",
-            "version_normalized": "1.37.0.0",
+            "version": "v1.33.0",
+            "version_normalized": "1.33.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php80.git",
-                "reference": "dfb55726c3a76ea3b6459fcfda1ec2d80a682411"
+                "reference": "0cc9dd0f17f61d8131e7df6b84bd344899fe2608"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/dfb55726c3a76ea3b6459fcfda1ec2d80a682411",
-                "reference": "dfb55726c3a76ea3b6459fcfda1ec2d80a682411",
+                "url": "https://api.github.com/repos/symfony/polyfill-php80/zipball/0cc9dd0f17f61d8131e7df6b84bd344899fe2608",
+                "reference": "0cc9dd0f17f61d8131e7df6b84bd344899fe2608",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.2"
             },
-            "time": "2026-04-10T16:19:22+00:00",
+            "time": "2025-01-02T08:10:11+00:00",
             "type": "library",
             "extra": {
                 "thanks": {
@@ -397,7 +459,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php80/tree/v1.37.0"
+                "source": "https://github.com/symfony/polyfill-php80/tree/v1.33.0"
             },
             "funding": [
                 {
@@ -421,23 +483,23 @@
         },
         {
             "name": "symfony/polyfill-php81",
-            "version": "v1.38.1",
-            "version_normalized": "1.38.1.0",
+            "version": "v1.33.0",
+            "version_normalized": "1.33.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php81.git",
-                "reference": "6bfb9c766cacffbc8e118cb87217d08ed84e5cd7"
+                "reference": "4a4cfc2d253c21a5ad0e53071df248ed48c6ce5c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php81/zipball/6bfb9c766cacffbc8e118cb87217d08ed84e5cd7",
-                "reference": "6bfb9c766cacffbc8e118cb87217d08ed84e5cd7",
+                "url": "https://api.github.com/repos/symfony/polyfill-php81/zipball/4a4cfc2d253c21a5ad0e53071df248ed48c6ce5c",
+                "reference": "4a4cfc2d253c21a5ad0e53071df248ed48c6ce5c",
                 "shasum": ""
             },
             "require": {
                 "php": ">=7.2"
             },
-            "time": "2026-05-26T12:45:58+00:00",
+            "time": "2024-09-09T11:45:10+00:00",
             "type": "library",
             "extra": {
                 "thanks": {
@@ -480,7 +542,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php81/tree/v1.38.1"
+                "source": "https://github.com/symfony/polyfill-php81/tree/v1.33.0"
             },
             "funding": [
                 {
@@ -504,8 +566,8 @@
         },
         {
             "name": "twig/twig",
-            "version": "3.11.x-dev",
-            "version_normalized": "3.11.9999999.9999999-dev",
+            "version": "v3.11.3",
+            "version_normalized": "3.11.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/twigphp/Twig.git",
@@ -531,7 +593,7 @@
             },
             "time": "2024-11-07T12:34:41+00:00",
             "type": "library",
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "files": [
                     "src/Resources/core.php",
@@ -586,6 +648,63 @@
             "install-path": "../twig/twig"
         },
         {
+            "name": "twilio/sdk",
+            "version": "5.42.2",
+            "version_normalized": "5.42.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/twilio/twilio-php.git",
+                "reference": "0cfcb871b18a9c427dd9e8f0ed7458d43009b48a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/twilio/twilio-php/zipball/0cfcb871b18a9c427dd9e8f0ed7458d43009b48a",
+                "reference": "0cfcb871b18a9c427dd9e8f0ed7458d43009b48a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.5.0"
+            },
+            "require-dev": {
+                "apigen/apigen": "^4.1",
+                "guzzlehttp/guzzle": "^6.3",
+                "phpunit/phpunit": ">=4.5"
+            },
+            "suggest": {
+                "guzzlehttp/guzzle": "An HTTP client to execute the API requests"
+            },
+            "time": "2020-02-05T19:55:13+00:00",
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "Twilio\\": "src/Twilio/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Twilio API Team",
+                    "email": "api@twilio.com"
+                }
+            ],
+            "description": "A PHP wrapper for Twilio's API",
+            "homepage": "http://github.com/twilio/twilio-php",
+            "keywords": [
+                "api",
+                "sms",
+                "twilio"
+            ],
+            "support": {
+                "issues": "https://github.com/twilio/twilio-php/issues",
+                "source": "https://github.com/twilio/twilio-php/tree/5.42.2"
+            },
+            "install-path": "../twilio/sdk"
+        },
+        {
             "name": "woocommerce/action-scheduler",
             "version": "3.9.3",
             "version_normalized": "3.9.3.0",
@@ -632,6 +751,6 @@
             "install-path": "../woocommerce/action-scheduler"
         }
     ],
-    "dev": true,
+    "dev": false,
     "dev-package-names": []
 }
