@@ -1110,6 +1110,12 @@ class SSA_Notifications {
 				$subject = '';
 			} else {
 				$subject = wp_strip_all_tags( $this->get_rendered_template_string_for_appointment( $appointment_object, $notification['subject'], $notification_vars ), true );
+				// Email subjects are plain-text MIME headers and don't decode HTML
+				// entities. The kses-final render pipeline leaves customer_information
+				// values in their entity-encoded form (e.g. "Smith &amp; Jones"), so
+				// decode here for legibility. Safe after wp_strip_all_tags because no
+				// HTML markup remains to be reanimated.
+				$subject = html_entity_decode( $subject );
 			}
 			$message = $this->get_rendered_template_string_for_appointment( $appointment_object, $notification['message'], $notification_vars );
 
@@ -1167,6 +1173,13 @@ class SSA_Notifications {
 					continue;
 				}
 
+				// SMS is plain-text. Strip any HTML the kses pipeline allowed
+				// through and decode entities so customer_information values
+				// like "Smith & Jones" don't arrive as "Smith &amp; Jones".
+				// Safe in this order because wp_strip_all_tags removes any
+				// markup before html_entity_decode runs.
+				$sms_message = html_entity_decode( wp_strip_all_tags( $message ) );
+
 				$response = array();
 				foreach ($recipients['sms_to'] as $key => $to_number) {
 					$sms_args = apply_filters( 'ssa/notifications/sms/args', array(
@@ -1175,7 +1188,7 @@ class SSA_Notifications {
 						'notification_vars' => $notification_vars,
 						'appointment_object' => $appointment_object,
 						'subject' => $subject,
-						'message' => $message,
+						'message' => $sms_message,
 					) );
 
 					if ( empty( $sms_args['to_number'] ) ) {
@@ -1275,7 +1288,10 @@ class SSA_Notifications {
 			array( ' ' ),
 			$template_string
 		);
-		$template_string = htmlspecialchars_decode( $template_string );
+		// wp_kses_post (inside render_template_string) must remain the last
+		// sanitizing transformation — a decode after it can resurrect encoded
+		// payloads. make_clickable composes safely with kses output: its URL
+		// regex matches "&amp;" in full and esc_url re-encodes it as "&#038;".
 		$template_string = make_clickable( $template_string );
 
 		return $template_string;
@@ -1287,7 +1303,7 @@ class SSA_Notifications {
 				'example_appointment_type_id' => $appointment_type_object->id,
 			) );
 		}
-		
+
 		$template_string = $this->plugin->templates->cleanup_variables_in_string( $template_string );
 		$template_string = $this->prepare_notification_template( $template_string );
 		$template_string = $this->plugin->templates->render_template_string( $template_string, $notification_vars );
@@ -1296,7 +1312,10 @@ class SSA_Notifications {
 			array( ' ' ),
 			$template_string
 		);
-		$template_string = htmlspecialchars_decode( $template_string );
+		// wp_kses_post (inside render_template_string) must remain the last
+		// sanitizing transformation — a decode after it can resurrect encoded
+		// payloads. make_clickable composes safely with kses output: its URL
+		// regex matches "&amp;" in full and esc_url re-encodes it as "&#038;".
 		$template_string = make_clickable( $template_string );
 
 		return $template_string;

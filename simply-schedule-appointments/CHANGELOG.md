@@ -1,5 +1,14 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.4 - 2026-06-16
+
+### Fixes
+
+- Restore webhook price fields in SSA appointment payloads
+- Security: stored XSS via nested customer_information array (Patchstack)
+- Defend Google Calendar token expiry against host clock drift
+- Fix Zoom OAuth open redirect: use wp_safe_redirect
+
 ## SSA-VERSION-PREFIX.6.12.2 - 2026-06-09
 
 ### Fixes

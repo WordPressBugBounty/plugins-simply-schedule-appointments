@@ -852,6 +852,8 @@ class SSA_Appointment_Object {
 			'date_created' => '',
 			'date_modified' => '',
 			'public_edit_url' => '',
+			'price_full' => '',
+			'payment_received' => '',
 			'payment_method' => '',
 			'web_meeting_url' => '',
 			'web_meeting_password' => '',
@@ -872,6 +874,17 @@ class SSA_Appointment_Object {
 		if ( empty( $payload['appointment']['appointment_type_title'] ) && !empty( $payload['appointment']['appointment_type_id'] ) ) {
 			$appointment_type_object = $this->get_appointment_type();
 			$payload['appointment']['appointment_type_title'] = $appointment_type_object->title;
+		}
+
+		// price_full is not a column on modern installs (dropped in #652) but a
+		// residual DECIMAL(9,2) column still exists on pre-Mar-2023 DBs, where
+		// SELECT * leaks a stale "0.00". Treat 0/""/null all as "no price set"
+		// and backfill from the appointment type's configured price.
+		if ( empty( (float) $payload['appointment']['price_full'] ) && ! empty( $payload['appointment']['appointment_type_id'] ) ) {
+			$appointment_type_object = $this->get_appointment_type();
+			if ( ! empty( $appointment_type_object->payments['price'] ) ) {
+				$payload['appointment']['price_full'] = (float) $appointment_type_object->payments['price'];
+			}
 		}
 
 		$settings_global = ssa()->settings->get()['global'];

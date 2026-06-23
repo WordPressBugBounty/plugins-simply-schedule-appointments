@@ -246,11 +246,19 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return $data;
 		}
 
-		foreach ( $data['customer_information'] as &$info ) {
-			if ( is_string( $info ) ) {
-				$info = trim( $info );
-				// sanitize
-				$info = sanitize_textarea_field($info);
+		foreach ( $data['customer_information'] as $key => $value ) {
+			if ( is_string( $value ) ) {
+				$data['customer_information'][ $key ] = sanitize_textarea_field( $value );
+			} elseif ( is_array( $value ) ) {
+				// Checkbox fields are the only legitimate source of nested input;
+				// accept exactly a one-level array of strings.
+				$sanitized = array();
+				foreach ( $value as $element ) {
+					if ( is_string( $element ) ) {
+						$sanitized[] = sanitize_text_field( $element );
+					}
+				}
+				$data['customer_information'][ $key ] = $sanitized;
 			}
 		}
 

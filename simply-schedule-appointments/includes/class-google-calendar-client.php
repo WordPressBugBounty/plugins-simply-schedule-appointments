@@ -201,9 +201,10 @@
 			ssa_debug_log( print_r( $response, true ), 10); // phpcs:ignore
 			throw new Exception( 'Failed to validate Google Calendar access token' );
 		}
-		
+
 		return true;
 	}
+
 	/**
 	 * use in place of ->calendarList->listCalendarList( $options = array() ) {}
 	 * this method will return all calendars, not just the first page
@@ -489,7 +490,15 @@
 		
 		// if less than 300 seconds remaining, refresh the token anyways
 		$created = 0;
-		if ( isset( $token['created'] ) ) {
+		if ( isset( $token['ssa_fetched_at'] ) ) {
+			// Local stamp recorded when the token entered the plugin (see refresh and
+			// quick-connect paths). Preferred over `created` and the id_token's `iat`
+			// claim because it uses the same local clock as the `time()` comparison
+			// below — comparing a remote-clock-derived timestamp against the local
+			// clock can falsely declare a fresh token expired on a host whose system
+			// clock has drifted.
+			$created = $token['ssa_fetched_at'];
+		} elseif ( isset( $token['created'] ) ) {
 			$created = $token['created'];
 		} elseif ( isset( $token['id_token'] ) ) {
 			// check the ID token for "iat"
@@ -551,7 +560,7 @@
 				ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
 				return false;
 			}
-			
+
 			$data = json_decode(wp_remote_retrieve_body($response), true);
 			
 			if( empty( $data['refresh_token'] ) ) {
@@ -581,6 +590,8 @@
 			ssa_debug_log( 'Failed to refresh access token for staff id ' . (string) $this->staff_id . print_r($response, true), 10); // phpcs:ignore
 			throw new Exception( 'Failed to refresh access token' );
 		}
+		// Local mint stamp for clock-drift-tolerant expiry — see is_access_token_expired().
+		$response['ssa_fetched_at'] = time();
 		return $response;
 	}
 	
@@ -682,9 +693,16 @@
 			if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
 				throw new \Throwable( $response );
 			}
-			
+
 			$data = json_decode(wp_remote_retrieve_body($response), true);
-			
+
+			if ( empty( $data ) || ! is_array( $data ) || empty( $data['access_token'] ) ) {
+				ssa_debug_log( 'Failed to exchange auth code for staff id ' . (string) $this->staff_id . print_r( $response, true ), 10 ); // phpcs:ignore
+				return false;
+			}
+
+			// Local mint stamp for clock-drift-tolerant expiry — see is_access_token_expired().
+			$data['ssa_fetched_at'] = time();
 			$this->access_token = $data;
 
 			return true;
