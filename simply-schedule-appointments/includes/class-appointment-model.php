@@ -1524,7 +1524,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'group_cancel' ),
-					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'permission_callback' => array( $this, 'group_cancel_permissions_check' ),
 					'args'                => array(
 						'context' => array(
 							'default' => 'view',
@@ -1541,7 +1541,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'group_delete' ),
-					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'permission_callback' => array( $this, 'group_delete_permissions_check' ),
 					'args'                => array(
 						'context' => array(
 							'default' => 'view',
@@ -1558,7 +1558,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				array(
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'purge_appointments' ),
-					'permission_callback' => array( $this, 'get_items_permissions_check' ),
+					'permission_callback' => array( $this, 'purge_appointments_permissions_check' ),
 				),
 			)
 		);
@@ -1730,6 +1730,45 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 
 		return false;
+	}
+
+	/**
+	 * Strict permission check for the site-wide purge endpoint.
+	 *
+	 * purge_appointments() deletes across the whole appointments table based on
+	 * request scope params (purge_past_appointments, etc.) and never restricts to
+	 * a single appointment, so it must require a real manager capability — never a
+	 * per-appointment id_token, the global token, or the public_read_access_token,
+	 * each of which proves far narrower (or no) ownership.
+	 */
+	public function purge_appointments_permissions_check( $request ) {
+		return current_user_can( 'ssa_manage_others_appointments' );
+	}
+
+	/**
+	 * Permission check for the group-cancel endpoint.
+	 *
+	 * Unlike purge, this is scoped to one group: group_cancel() only touches rows
+	 * whose group_id matches the route id, and a group's group_id defaults to its
+	 * lead appointment's own id (see create_item). So it is gated like a single
+	 * appointment via get_item_permissions_check — a manager capability, or
+	 * verified ownership of the group through the lead appointment (staff
+	 * assignment, customer account, or that appointment's id_token). That gate
+	 * does not accept the global token or public_read_access_token, so the weak
+	 * site-wide signals stay out while legitimate staff and owner group management
+	 * keeps working. Kept separate from group_delete so the two can diverge.
+	 */
+	public function group_cancel_permissions_check( $request ) {
+		return $this->get_item_permissions_check( $request );
+	}
+
+	/**
+	 * Permission check for the group-delete endpoint. Same group-scoped gate as
+	 * group_cancel_permissions_check (see there for why) — kept separate so the
+	 * two can diverge. Deletes every appointment in the group named by the route id.
+	 */
+	public function group_delete_permissions_check( $request ) {
+		return $this->get_item_permissions_check( $request );
 	}
 
 	public function get_item_permissions_check( $request ) {

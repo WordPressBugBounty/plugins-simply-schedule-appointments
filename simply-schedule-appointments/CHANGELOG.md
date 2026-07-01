@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.6 - 2026-06-23
+
+### Fixes
+
+- PatchStack [Security][Broken Access Control] Simply Schedule Appointments plugin <= 1.6.12.0 is vulnerable to Broken Access Control
+
 ## SSA-VERSION-PREFIX.6.12.4 - 2026-06-16
 
 ### Fixes

@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.12.4
+Stable tag:        1.6.12.6
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -239,75 +239,60 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 9. Schedule an Appointment using the built-in Booking Form.
 10. Final Confirmation on the Booking Form.
 
-=== Changelog ===
+== Changelog ==
 
-== 1.6.12.4 - 2026-06-16 ==
+= 1.6.12.6 - 2026-06-23 =
 
-= Fixes =
+- PatchStack [Security][Broken Access Control] Simply Schedule Appointments plugin <= 1.6.12.0 is vulnerable to Broken Access Control
+
+= 1.6.12.4 - 2026-06-16 =
 
 - Restore webhook price fields in SSA appointment payloads
 - Security: stored XSS via nested customer_information array (Patchstack)
 - Defend Google Calendar token expiry against host clock drift
 - Fix Zoom OAuth open redirect: use wp_safe_redirect
 
-== 1.6.12.2 - 2026-06-09 ==
-
-= Fixes =
+= 1.6.12.2 - 2026-06-09 =
 
 - Fix IDOR in MemberPress user appointment REST endpoints
 - fix: neutralize CSV formula injection in appointment backup exporter
 - Fix SSA module missing from Divi 5 picker with a child theme active
 
-== 1.6.12.0 - 2026-06-04 ==
-
-= Fixes =
+= 1.6.12.0 - 2026-06-04 =
 
 - Remove public-nonce fallback and tighten notices/templates REST auth
 
-== 1.6.11.13 - 2026-06-02 ==
-
-= Fixes =
+= 1.6.11.13 - 2026-06-02 =
 
 - test(security): drain async queue to close a Time-Of-Check to Time-Of-Use race against notification cron
 - fix(notifications): stop drift resync from wiping still-applicable reminders
 - Throttle deprecated id-token verifies; use hash_equals on token compares
 - Fix token-comparison auth bypass in get_items_permissions_check
 
-== 1.6.11.11 - 2026-05-26 ==
-
-= Fixes =
+= 1.6.11.11 - 2026-05-26 =
 
 - fix: dedicated reorder endpoint for appointment types to avoid oversized save requests
 
-== 1.6.11.9 - 2026-05-19 ==
-
-= Fixes =
+= 1.6.11.9 - 2026-05-19 =
 
 - 💰Bug/Ticket: Database size issues and fatal error in async
 - Prevent token-authenticated modification of admin-controlled appointment fields (CVE-2026-6723)
 - fix(security): strip append_where_sql from REST requests
 - WordFence Vulnerability Appointment Booking Calendar <= 1.6.11.0 - Missing Authorization to Unauthenticated Arbitrary Modification via Bulk Appointments REST API Endpoint
 
-== 1.6.11.7 - 2026-05-12 ==
-
-= Fixes =
+= 1.6.11.7 - 2026-05-12 =
 
 - Cover both signed in and signed out usage in Cypress tests
 - Cap async endpoint delay to prevent DoS (CVE-2026-7493)
 
-== 1.6.11.5 - 2026-05-05 ==
-
-= Fixes =
+= 1.6.11.5 - 2026-05-05 =
 
 - Detect and resync out-of-sync appointment reminders
-
-= Features and Improvements =
-
 - Add "Defer loading" toggle to booking integrations
 
-== 1.6.11.3 - 2026-04-28 ==
+= 1.6.11.3 - 2026-04-28 =
 
-= Features and Improvements =
+- Add hide_header toggle to embed snippet
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
