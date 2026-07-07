@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.8 - 2026-06-30
+
+### Fixes
+
+- Fix purge appointments 500 on Basic/Plus/Pro editions (missing dependency models)
+- Require a non-zero "First Available within" duration (default 1 hour)
+
 ## SSA-VERSION-PREFIX.6.12.6 - 2026-06-23
 
 ### Fixes

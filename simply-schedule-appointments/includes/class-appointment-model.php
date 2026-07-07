@@ -1644,7 +1644,16 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
 				$params['customer_id'] = get_current_user_id();
 			} else {
-				$params['append_where_sql'] = $wpdb->prepare( ' AND id IN (SELECT appointment_id FROM ' . ssa()->staff_appointment_model->get_table_name() . ' WHERE staff_id = %d)', $this->plugin->staff_model->get_staff_id_for_user_id( get_current_user_id() ) );
+				// Staff-role user: scope to appointments they're assigned to as staff. The
+				// staff_appointments table is stripped from non-Business builds, yet the core
+				// team_member role still installs and lands here — fall back to their own
+				// appointments rather than building a "FROM  WHERE" subquery that would 500.
+				$staff_appointment_table = $this->get_dependency_table_name( $this->plugin->staff_appointment_model );
+				if ( '' !== $staff_appointment_table ) {
+					$params['append_where_sql'] = $wpdb->prepare( ' AND id IN (SELECT appointment_id FROM ' . $staff_appointment_table . ' WHERE staff_id = %d)', $this->plugin->staff_model->get_staff_id_for_user_id( get_current_user_id() ) );
+				} else {
+					$params['customer_id'] = get_current_user_id();
+				}
 			}
 		}
 
@@ -2390,37 +2399,36 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		global $wpdb;
 
-		$async_actions_table     = $this->plugin->async_action_model->get_table_name();
-		$appointment_meta_table  = $this->plugin->appointment_meta_model->get_table_name();
-		$staff_appointment_table = $this->plugin->staff_appointment_model->get_table_name();
-		$revision_table          = $this->plugin->revision_model->get_table_name();
-		$revision_meta_table     = $this->plugin->revision_meta_model->get_table_name();
-
-		$resource_appointment_table = null;
-		if ( ! empty( $this->plugin->resource_appointment_model ) ) {
-			$resource_appointment_table = $this->plugin->resource_appointment_model->get_table_name();
-		}
+		// Models for features the current edition doesn't bundle resolve to an
+		// SSA_Missing stub whose get_table_name() is empty. Skip those tables so a
+		// stripped feature never produces a "DELETE FROM  WHERE ..." with no table.
+		$async_actions_table        = $this->get_dependency_table_name( $this->plugin->async_action_model );
+		$appointment_meta_table     = $this->get_dependency_table_name( $this->plugin->appointment_meta_model );
+		$staff_appointment_table    = $this->get_dependency_table_name( $this->plugin->staff_appointment_model );
+		$revision_table             = $this->get_dependency_table_name( $this->plugin->revision_model );
+		$revision_meta_table        = $this->get_dependency_table_name( $this->plugin->revision_meta_model );
+		$resource_appointment_table = $this->get_dependency_table_name( $this->plugin->resource_appointment_model );
 
 		$placeholders = implode( ',', array_fill( 0, count( $appointment_ids ), '%d' ) );
 
 		// Pending notifications, webhooks, calendar sync, etc. (anything queued via
 		// ssa_queue_action with object_type = 'appointment'). This is the row that
 		// causes the fatal in execute_cron_process_async_actions if left orphaned.
-		if ( false === $wpdb->query( $wpdb->prepare(
+		if ( $async_actions_table && false === $wpdb->query( $wpdb->prepare(
 			"DELETE FROM {$async_actions_table} WHERE object_type = 'appointment' AND object_id IN ({$placeholders})",
 			$appointment_ids
 		) ) ) {
 			return false;
 		}
 
-		if ( false === $wpdb->query( $wpdb->prepare(
+		if ( $appointment_meta_table && false === $wpdb->query( $wpdb->prepare(
 			"DELETE FROM {$appointment_meta_table} WHERE appointment_id IN ({$placeholders})",
 			$appointment_ids
 		) ) ) {
 			return false;
 		}
 
-		if ( false === $wpdb->query( $wpdb->prepare(
+		if ( $staff_appointment_table && false === $wpdb->query( $wpdb->prepare(
 			"DELETE FROM {$staff_appointment_table} WHERE appointment_id IN ({$placeholders})",
 			$appointment_ids
 		) ) ) {
@@ -2439,31 +2447,54 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		// Revisions reference the appointment via appointment_id; revision_meta
 		// references the revision via revision_id. Resolve revision ids first so
 		// we can drop the meta rows before the parent revisions disappear.
-		$revision_ids = $wpdb->get_col( $wpdb->prepare(
-			"SELECT id FROM {$revision_table} WHERE appointment_id IN ({$placeholders})",
-			$appointment_ids
-		) );
-
-		if ( ! empty( $revision_ids ) ) {
-			$revision_ids          = array_map( 'intval', $revision_ids );
-			$revision_placeholders = implode( ',', array_fill( 0, count( $revision_ids ), '%d' ) );
-
-			if ( false === $wpdb->query( $wpdb->prepare(
-				"DELETE FROM {$revision_meta_table} WHERE revision_id IN ({$revision_placeholders})",
-				$revision_ids
-			) ) ) {
-				return false;
-			}
-
-			if ( false === $wpdb->query( $wpdb->prepare(
-				"DELETE FROM {$revision_table} WHERE appointment_id IN ({$placeholders})",
+		if ( $revision_table ) {
+			$revision_ids = $wpdb->get_col( $wpdb->prepare(
+				"SELECT id FROM {$revision_table} WHERE appointment_id IN ({$placeholders})",
 				$appointment_ids
-			) ) ) {
-				return false;
+			) );
+
+			if ( ! empty( $revision_ids ) ) {
+				$revision_ids          = array_map( 'intval', $revision_ids );
+				$revision_placeholders = implode( ',', array_fill( 0, count( $revision_ids ), '%d' ) );
+
+				if ( $revision_meta_table && false === $wpdb->query( $wpdb->prepare(
+					"DELETE FROM {$revision_meta_table} WHERE revision_id IN ({$revision_placeholders})",
+					$revision_ids
+				) ) ) {
+					return false;
+				}
+
+				if ( false === $wpdb->query( $wpdb->prepare(
+					"DELETE FROM {$revision_table} WHERE appointment_id IN ({$placeholders})",
+					$appointment_ids
+				) ) ) {
+					return false;
+				}
 			}
 		}
 
 		return true;
+	}
+
+	/**
+	 * Resolve a dependency model's table name, or '' when that model isn't present
+	 * in the current edition (the property is an SSA_Missing stub whose
+	 * get_table_name() returns null). Callers skip empty tables so a stripped
+	 * feature never yields a malformed "DELETE FROM  WHERE ..." query.
+	 *
+	 * @since 6.12.6
+	 *
+	 * @param  mixed $model Model instance from the plugin container.
+	 * @return string Table name, or '' if the model is missing.
+	 */
+	protected function get_dependency_table_name( $model ) {
+		if ( empty( $model ) || $model instanceof SSA_Missing ) {
+			return '';
+		}
+
+		$table_name = $model->get_table_name();
+
+		return is_string( $table_name ) ? $table_name : '';
 	}
 
 	/**
@@ -2524,13 +2555,13 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		$appointments_table = $this->get_table_name();
 
-		$tables = array(
-			$this->plugin->appointment_meta_model->get_table_name(),
-			$this->plugin->staff_appointment_model->get_table_name(),
-		);
-		if ( ! empty( $this->plugin->resource_appointment_model ) ) {
-			$tables[] = $this->plugin->resource_appointment_model->get_table_name();
-		}
+		// array_filter drops tables for features the current edition doesn't bundle
+		// (get_dependency_table_name() returns '' for an SSA_Missing stub).
+		$tables = array_filter( array(
+			$this->get_dependency_table_name( $this->plugin->appointment_meta_model ),
+			$this->get_dependency_table_name( $this->plugin->staff_appointment_model ),
+			$this->get_dependency_table_name( $this->plugin->resource_appointment_model ),
+		) );
 
 		$chunk_size     = 5000;
 		$max_iterations = 10;
@@ -2566,9 +2597,9 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		// versions when the column has no dedicated index. The object_type filter
 		// scopes to appointment-typed actions only, so customer/order/etc.
 		// queued actions are not touched.
-		$async_actions_table = $this->plugin->async_action_model->get_table_name();
+		$async_actions_table = $this->get_dependency_table_name( $this->plugin->async_action_model );
 
-		for ( $i = 0; $i < $max_iterations; $i++ ) {
+		for ( $i = 0; $async_actions_table && $i < $max_iterations; $i++ ) {
 			$orphan_ids = $wpdb->get_col( $wpdb->prepare(
 				"SELECT a.id FROM {$async_actions_table} a
 				 WHERE a.object_type = 'appointment'
@@ -2590,11 +2621,11 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			) );
 		}
 
-		$revision_table      = $this->plugin->revision_model->get_table_name();
-		$revision_meta_table = $this->plugin->revision_meta_model->get_table_name();
+		$revision_table      = $this->get_dependency_table_name( $this->plugin->revision_model );
+		$revision_meta_table = $this->get_dependency_table_name( $this->plugin->revision_meta_model );
 
 		// appointment_id != 0 filter keeps appointment_type/staff/payment revisions in place.
-		for ( $i = 0; $i < $max_iterations; $i++ ) {
+		for ( $i = 0; $revision_table && $i < $max_iterations; $i++ ) {
 			$orphan_revision_ids = $wpdb->get_col( $wpdb->prepare(
 				"SELECT t.id FROM {$revision_table} t
 				 LEFT JOIN {$appointments_table} a ON a.id = t.appointment_id
@@ -2610,10 +2641,12 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			$orphan_revision_ids = array_map( 'intval', $orphan_revision_ids );
 			$placeholders        = implode( ',', array_fill( 0, count( $orphan_revision_ids ), '%d' ) );
 
-			$wpdb->query( $wpdb->prepare(
-				"DELETE FROM {$revision_meta_table} WHERE revision_id IN ({$placeholders})",
-				$orphan_revision_ids
-			) );
+			if ( $revision_meta_table ) {
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM {$revision_meta_table} WHERE revision_id IN ({$placeholders})",
+					$orphan_revision_ids
+				) );
+			}
 
 			$wpdb->query( $wpdb->prepare(
 				"DELETE FROM {$revision_table} WHERE id IN ({$placeholders})",

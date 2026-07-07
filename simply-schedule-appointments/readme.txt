@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.12.6
+Stable tag:        1.6.12.8
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,11 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.8 - 2026-06-30 =
+
+- Fix purge appointments 500 on Basic/Plus/Pro editions (missing dependency models)
+- Require a non-zero "First Available within" duration (default 1 hour)
+
 = 1.6.12.6 - 2026-06-23 =
 
 - PatchStack [Security][Broken Access Control] Simply Schedule Appointments plugin <= 1.6.12.0 is vulnerable to Broken Access Control
@@ -289,10 +294,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 - Detect and resync out-of-sync appointment reminders
 - Add "Defer loading" toggle to booking integrations
-
-= 1.6.11.3 - 2026-04-28 =
-
-- Add hide_header toggle to embed snippet
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

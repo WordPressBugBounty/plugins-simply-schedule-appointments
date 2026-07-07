@@ -587,6 +587,8 @@
             'success' => __( 'Appointments successfully removed from the database.', 'simply-schedule-appointments' ),
             'error' => __( 'Something went wrong while running this job:', 'simply-schedule-appointments' ),
             'download' => __( 'Download .csv file', 'simply-schedule-appointments' ),
+            'backup_toggle_label' => __( 'Generate backup CSV before deleting', 'simply-schedule-appointments' ),
+            'backup_help' => __( 'On large purges the backup is written across multiple batches into a single file. Closing this tab mid-purge will lose any rows that hadn’t been written yet. Disable to skip the backup entirely.', 'simply-schedule-appointments' ),
           ),
         ),
       ),
