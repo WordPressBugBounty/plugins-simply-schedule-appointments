@@ -762,6 +762,34 @@ class SSA_Shortcodes {
 			'ssa_admin_upcoming_appointments'
 		);
 
+		// Non-managers are pinned to their own staff scope, recomputed from
+		// capability rather than trusted from $atts. Two traps make the atts
+		// unsafe as a filter:
+		//  (1) shortcode atts are always strings, and the staff WHERE clause is
+		//      only appended when staff_ids_any is an array (see
+		//      SSA_Staff_Appointment_Model::filter_query_by_staff_ids) -- a passed
+		//      value silently drops the filter and the query returns every row;
+		//  (2) staff_appointment_model registers that WHERE-clause filter in its
+		//      hooks(), and its file is stripped from Pro/Plus/Basic, so on those
+		//      editions the filter never runs at all.
+		// When the query cannot be scoped (no staff record, or the model is
+		// absent) return nothing rather than leak the whole appointment book.
+		if ( ! current_user_can( 'ssa_manage_others_appointments' ) ) {
+			$staff_id = $this->plugin->staff_model->get_staff_id_for_user_id( get_current_user_id() );
+
+			if ( ! current_user_can( 'ssa_manage_appointments' )
+				|| empty( $staff_id )
+				|| $this->plugin->staff_appointment_model instanceof SSA_Missing ) {
+				return '';
+			}
+
+			// customer_id is honored as passed rather than cleared: it is only ever ANDed
+			// into the query (SSA_Appointment_Model::filter_where_conditions), so alongside
+			// the staff clause below it can narrow this staff member's own appointments but
+			// never reach outside them.
+			$atts['staff_ids_any'] = array( (int) $staff_id );
+		}
+
 		ob_start();
 		include $this->plugin->dir( 'templates/dashboard/dashboard-upcoming-appointments-widget.php' );
 		$output = ob_get_clean();
@@ -793,7 +821,15 @@ class SSA_Shortcodes {
 			$atts,
 			'ssa_upcoming_appointments'
 		);
-	
+
+		// IDOR guard: customer_id is an overridable shortcode att. Only a user
+		// allowed to manage others' appointments may read another customer's
+		// data; everyone else is pinned to their own ID regardless of the
+		// supplied value.
+		if ( ! current_user_can( 'ssa_manage_others_appointments' ) ) {
+			$atts['customer_id'] = get_current_user_id();
+		}
+
 		ob_start();
 		include $this->plugin->dir( 'templates/customer/past-appointments.php' );
 		$output = ob_get_clean();
@@ -845,6 +881,16 @@ class SSA_Shortcodes {
 			$atts,
 			'ssa_upcoming_appointments'
 		);
+
+		// IDOR guard: customer_id and customer_information (email) are both
+		// overridable atts, and appointment_model->query() ORs them together, so
+		// either lever could read another customer's appointments. Only a user
+		// allowed to manage others' appointments may do so; everyone else is
+		// pinned to their own ID and email.
+		if ( ! current_user_can( 'ssa_manage_others_appointments' ) ) {
+			$atts['customer_id']          = get_current_user_id();
+			$atts['customer_information'] = wp_get_current_user()->user_email;
+		}
 
 		ob_start();
 		include $this->plugin->dir( 'templates/customer/upcoming-appointments.php' );

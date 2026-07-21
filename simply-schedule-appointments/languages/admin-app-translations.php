@@ -529,6 +529,11 @@
         'label' => __( 'Enqueue scripts everywhere', 'simply-schedule-appointments' ),
         'help' => __( 'Load scripts on every page. Can be helpful if there are issues with loading the booking form via ajax', 'simply-schedule-appointments' ),
       ),
+      'require_proof_token' => 
+      array (
+        'label' => __( 'Reduce spam bookings', 'simply-schedule-appointments' ),
+        'help' => __( 'Helps block automated spam by checking that bookings come from the booking form. Turn this on if you\'re getting spam bookings.', 'simply-schedule-appointments' ),
+      ),
       'beta_updates' => 
       array (
         'title' => __( 'Beta features', 'simply-schedule-appointments' ),

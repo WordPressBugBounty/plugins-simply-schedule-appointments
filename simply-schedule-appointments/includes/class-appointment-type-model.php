@@ -1330,6 +1330,10 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			'error' => '',
 			'message' => apply_filters('ssa/appointment_type/availability/display_message', '' ),
 			'data' => $bookable_start_datetime_strings,
+			// Proof-of-browser token for the booking flow. Stateless (no expiry,
+			// no single-use), so it stays valid even when the availability
+			// response is served from cache to many visitors. Verified on create.
+			'booking_token' => $this->plugin->appointment_model->mint_booking_token( $appointment_type_id ),
 		);
 
 		return $response;

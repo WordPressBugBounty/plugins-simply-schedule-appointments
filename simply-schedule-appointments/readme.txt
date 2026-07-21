@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.0
-Stable tag:        1.6.12.10
+Stable tag:        1.6.12.11
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,16 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.11 - 2026-07-14 =
+
+- Fix stored XSS via appointment meta javascript: URI
+- Fix Basic-edition upgrade-link CSS leaking into plugin-update AJAX responses
+- Harden booking endpoint against spam bookings.
+- Harden appointment meta links to allow only absolute http(s) URLs
+- Fix memory errors when loading large appointment date ranges, and reduce unnecessary Google Calendar cache rebuilds
+- Security: unauth SQLi route-casing bypass + Contributor IDOR on appointment shortcodes
+- Fix PayPal IPN listener: reject non-POST requests
+
 = 1.6.12.8 - 2026-06-30 =
 
 - Fix purge appointments 500 on Basic/Plus/Pro editions (missing dependency models)
@@ -289,11 +299,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 - Cover both signed in and signed out usage in Cypress tests
 - Cap async endpoint delay to prevent DoS (CVE-2026-7493)
-
-= 1.6.11.5 - 2026-05-05 =
-
-- Detect and resync out-of-sync appointment reminders
-- Add "Defer loading" toggle to booking integrations
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

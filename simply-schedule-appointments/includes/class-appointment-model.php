@@ -380,6 +380,64 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	}
 
 	/**
+	 * Mint a server-signed proof-of-browser token, bound to one appointment
+	 * type. Returned alongside the availability slots so only a client that
+	 * actually ran the booking flow can obtain one — a script that harvested
+	 * the site-wide public nonce cannot forge it. Stateless: the token carries
+	 * no expiry and no server-side use counter, so a cached availability
+	 * response shared across many legitimate visitors never gets rejected.
+	 * Verified on create by verify_booking_token().
+	 *
+	 * @param int $appointment_type_id
+	 * @return string
+	 */
+	public function mint_booking_token( $appointment_type_id ) {
+		$atid    = (int) $appointment_type_id;
+		$rand    = wp_generate_password( 16, false );
+		$payload = $atid . '.' . $rand;
+		$sig     = hash_hmac( 'sha256', $payload, wp_salt( 'nonce' ) );
+
+		return base64_encode( $payload . '.' . $sig );
+	}
+
+	/**
+	 * Verify a token from mint_booking_token(): valid signature, bound to the
+	 * same appointment type.
+	 *
+	 * @param string $token
+	 * @param int    $appointment_type_id
+	 * @return bool
+	 */
+	public function verify_booking_token( $token, $appointment_type_id ) {
+		if ( ! is_string( $token ) || '' === $token ) {
+			return false;
+		}
+
+		$decoded = base64_decode( $token, true );
+		if ( false === $decoded ) {
+			return false;
+		}
+
+		$parts = explode( '.', $decoded );
+		if ( 3 !== count( $parts ) ) {
+			return false;
+		}
+
+		list( $atid, $rand, $sig ) = $parts;
+
+		$expected = hash_hmac( 'sha256', $atid . '.' . $rand, wp_salt( 'nonce' ) );
+		if ( ! hash_equals( $expected, (string) $sig ) ) {
+			return false;
+		}
+
+		if ( (int) $atid !== (int) $appointment_type_id ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
 	 * Fields an unprivileged caller is allowed to submit when updating an
 	 * appointment. Matches the booking app's client-side `bookingProps`
 	 * allowlist plus the request-routing params used by update_item.
@@ -1124,6 +1182,78 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			);
 		}
 
+		// Proof-of-browser: anonymous bookings must carry a server-minted token
+		// (issued with the availability slots) and an empty honeypot. This stops
+		// a script that harvested the site-wide public nonce from POSTing
+		// straight to this endpoint — it must run the real availability->book
+		// flow to obtain a valid, type-bound token. Logged-in users
+		// are exempt: they authenticated against WordPress and carry a real
+		// per-user nonce, so this anti-bot gate adds risk without benefit for
+		// them. Privileged (admin) bookings are exempt; the filter is an escape
+		// hatch for sites with legitimate server-to-server integrations.
+		//
+		// Opt-in: off by default so the ~70k existing installs are unaffected.
+		// Sites enable it under Settings -> Developer (require_proof_token). The
+		// filter default tracks that setting so the code hook and UI agree.
+		$developer_settings = $this->plugin->developer_settings->get();
+		$require_token       = ! empty( $developer_settings['require_proof_token'] );
+		$booking_token       = $request->get_header( 'x_ssa_booking_token' );
+		if ( ! is_user_logged_in() && ! $this->is_privileged_appointment_request() && apply_filters( 'ssa/booking/require_proof_token', $require_token, $params ) ) {
+			$honeypot = $request->get_param( 'ssa_hp' );
+			$token_ok = ! empty( $booking_token )
+				&& $this->verify_booking_token( $booking_token, $params['appointment_type_id'] );
+
+			if ( ! empty( $honeypot ) || ! $token_ok ) {
+				return array(
+					'error' => array(
+						'code'    => 'booking_token_invalid',
+						'message' => __( 'There was a problem booking your appointment. Please reload the page and try again.', 'simply-schedule-appointments' ),
+						'data'    => array(),
+					),
+				);
+			}
+		}
+
+		// Visitors must satisfy the appointment type's own required fields. The
+		// front-end enforces these, but a direct REST POST bypasses that — mirror
+		// the rule server-side. Admin/privileged bookings are exempt, and so are
+		// reserved-status creates (pending_form / pending_payment): form and
+		// payment integrations create the appointment first and collect/validate
+		// the customer fields in a later step, so they are legitimately absent
+		// at create time.
+		$incoming_status = isset( $params['status'] ) ? $params['status'] : '';
+		if ( ! $this->is_privileged_appointment_request() && ! self::is_a_reserved_status( $incoming_status ) ) {
+			$submitted = ( isset( $params['customer_information'] ) && is_array( $params['customer_information'] ) ) ? $params['customer_information'] : array();
+			$missing   = array();
+
+			// custom_customer_information can be a string on Basic — guard is_array.
+			if ( is_array( $appointment_type->custom_customer_information ) ) {
+				foreach ( $appointment_type->custom_customer_information as $field ) {
+					if ( empty( $field['display'] ) || empty( $field['required'] ) || empty( $field['field'] ) ) {
+						continue;
+					}
+					$label = $field['field'];
+					$value = isset( $submitted[ $label ] ) ? $submitted[ $label ] : '';
+					if ( is_array( $value ) ) {
+						$value = implode( '', $value );
+					}
+					if ( '' === trim( (string) $value ) ) {
+						$missing[] = $label;
+					}
+				}
+			}
+
+			if ( ! empty( $missing ) ) {
+				return array(
+					'error' => array(
+						'code'    => 'required_fields_missing',
+						'message' => __( 'Please complete all required fields before booking.', 'simply-schedule-appointments' ),
+						'data'    => array( 'fields' => $missing ),
+					),
+				);
+			}
+		}
+
 		if ( ! empty( $params['customer_information']['Email'] ) ) {
 			$user_by_email = get_user_by( 'email', sanitize_text_field( $params['customer_information']['Email'] ) );
 			if ( ! empty( $user_by_email ) ) {
@@ -1666,6 +1796,17 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			unset( $params['format'] );
 		}
 
+		// The admin app marks its date-range view requests with admin_date_range;
+		// that view used to send number=-1 (no LIMIT), which hydrates every
+		// appointment in the range and can exhaust PHP memory on high-volume
+		// sites. Cap only requests carrying the marker.
+		if ( ! empty( $params['admin_date_range'] ) ) {
+			unset( $params['admin_date_range'] );
+			if ( empty( $params['number'] ) || (int) $params['number'] < 1 || (int) $params['number'] > 200 ) {
+				$params['number'] = 200;
+			}
+		}
+
 		$data = $this->query( $params );
 
 		// If complete_group is set, fetch additional appointments to complete any partial groups
@@ -2097,12 +2238,17 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		$meta_keys_and_values = array();
 		$excluded_keys        = array( 'id', 'context' );
+		$url_meta_keys        = array( 'booking_url', 'formidable_entry_admin_url', 'gravity_entry_admin_url' );
 		foreach ( $metas as $key => $value ) {
 			if ( in_array( $key, $excluded_keys ) ) {
 				continue;
 			}
 
-			$meta_keys_and_values[ $key ] = esc_attr( trim( $value ) );
+			if ( in_array( $key, $url_meta_keys, true ) ) {
+				$meta_keys_and_values[ $key ] = esc_url_raw( trim( $value ) );
+			} else {
+				$meta_keys_and_values[ $key ] = esc_attr( trim( $value ) );
+			}
 		}
 
 		$this->plugin->{$this->slug.'_meta_model'}->bulk_meta_update( $appointment_id, $meta_keys_and_values );

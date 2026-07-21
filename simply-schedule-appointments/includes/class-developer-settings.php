@@ -55,8 +55,8 @@ class SSA_Developer_Settings extends SSA_Settings_Schema {
 		// Caution: When schema modified, please modify usage in ssa_uninstall function in simply-schedule-appointments.php
 		$this->schema = array(
 			// YYYY-MM-DD
-			'version' => '2024-04-09',
-			'fields' => array(				
+			'version' => '2026-06-25',
+			'fields' => array(
 				'enabled' => array(
 					'name' => 'enabled',
 					'default_value' => true,
@@ -64,6 +64,11 @@ class SSA_Developer_Settings extends SSA_Settings_Schema {
 
 				'enqueue_everywhere' => array(
 					'name' => 'enqueue_everywhere',
+					'default_value' => false,
+				),
+
+				'require_proof_token' => array(
+					'name' => 'require_proof_token',
 					'default_value' => false,
 				),
 

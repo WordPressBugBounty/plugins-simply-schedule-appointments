@@ -1,5 +1,17 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.11 - 2026-07-14
+
+### Fixes
+
+- Fix stored XSS via appointment meta javascript: URI
+- Fix Basic-edition upgrade-link CSS leaking into plugin-update AJAX responses
+- Harden booking endpoint against spam bookings.
+- Harden appointment meta links to allow only absolute http(s) URLs
+- Fix memory errors when loading large appointment date ranges, and reduce unnecessary Google Calendar cache rebuilds
+- Security: unauth SQLi route-casing bypass + Contributor IDOR on appointment shortcodes
+- Fix PayPal IPN listener: reject non-POST requests
+
 ## SSA-VERSION-PREFIX.6.12.8 - 2026-06-30
 
 ### Fixes

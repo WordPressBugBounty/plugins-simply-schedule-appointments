@@ -54,6 +54,7 @@ class SSA_Wp_Admin {
 
 		add_action( 'admin_print_scripts', array( $this, 'remove_admin_notices' ) );
 		add_filter( 'plugin_action_links', array( $this, 'plugin_action_upgrade_link'), 10, 2 );
+		add_action( 'admin_print_styles-plugins.php', array( $this, 'plugin_action_upgrade_link_styles' ) );
 		
 		// rest api
 		add_action( 'rest_api_init', array( $this, 'register_wp_endpoints' ) );
@@ -237,6 +238,18 @@ class SSA_Wp_Admin {
 
 		$ssa_pricing_url = 'https://simplyscheduleappointments.com/pricing/?utm_source=plugin&utm_medium=ads&utm_campaign=upgrade&utm_content=upgrade-plugin-listing';
 
+		$upgrade_link = '<a class="ssa-basic-upgrade-link-admin-dash" target="_blank" href="' . $ssa_pricing_url . '">' . __('Upgrade', 'simply-schedule-appointments') . '</a>';
+
+		$links['upgrade'] = $upgrade_link;
+		return $links;
+
+	}
+
+	public function plugin_action_upgrade_link_styles() {
+		if ( $this->plugin->get_current_edition() !== 1 ) {
+			return;
+		}
+
 		echo "<style id='ssa-admin-dash-upgrade-link-css'>
 			.ssa-basic-upgrade-link-admin-dash {
 				padding: 2px 4px;
@@ -245,18 +258,12 @@ class SSA_Wp_Admin {
 				color: #fff;
 				border: none;
 			}
-			
+
 			.ssa-basic-upgrade-link-admin-dash:hover {
 				background-color: #046a66;
 				color: white;
 			}
 		</style>";
-
-		$upgrade_link = '<a class="ssa-basic-upgrade-link-admin-dash" target="_blank" href="' . $ssa_pricing_url . '">' . __('Upgrade', 'simply-schedule-appointments') . '</a>';
-
-		$links['upgrade'] = $upgrade_link;
-		return $links;
-		
 	}
 
 	public function register_admin_menu() {

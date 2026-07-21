@@ -30,7 +30,14 @@ class SSA_REST_Middleware {
 	}
 
 	/**
-	 * Strip internal-only parameters from incoming SSA REST requests.
+	 * Strip internal-only parameters from every incoming REST request.
+	 *
+	 * The strip runs for all routes, not just SSA-namespaced ones. Gating it on
+	 * the request route is unsafe: WP matches routes case-insensitively, so a
+	 * route filter like '/ssa/' is bypassed by requesting '/SSA/...', which lets
+	 * a forbidden key (e.g. append_where_sql) survive into a controller and be
+	 * concatenated into SQL. These keys are never legitimate on any HTTP request,
+	 * so stripping unconditionally makes that bypass class unreachable.
 	 *
 	 * WP_REST_Request::offsetUnset removes the key from every parameter source
 	 * (URL, GET, POST, JSON body, form-urlencoded body, defaults), so by the
@@ -44,10 +51,6 @@ class SSA_REST_Middleware {
 	 */
 	public function handle( $result, $server, $request ) {
 		if ( ! ( $request instanceof WP_REST_Request ) ) {
-			return $result;
-		}
-		
-		if ( strpos( $request->get_route(), '/ssa/' ) !== 0 ) {
 			return $result;
 		}
 
