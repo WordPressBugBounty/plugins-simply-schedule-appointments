@@ -41,11 +41,11 @@ class WPConfigTransformer {
 		$basename = basename( $wp_config_path );
 
 		if ( ! file_exists( $wp_config_path ) ) {
-			throw new Exception( "{$basename} does not exist." );
+			throw new Exception( esc_html( "{$basename} does not exist." ) );
 		}
 
-		if ( ! is_writable( $wp_config_path ) ) {
-			throw new Exception( "{$basename} is not writable." );
+		if ( ! is_writable( $wp_config_path ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Vendored wp-cli wp-config-transformer library upstream code, unmodified; pre-flight writability probe on wp-config.php.
+			throw new Exception( esc_html( "{$basename} is not writable." ) );
 		}
 
 		$this->wp_config_path = $wp_config_path;
@@ -73,7 +73,7 @@ class WPConfigTransformer {
 		$this->wp_configs    = $this->parse_wp_config( $this->wp_config_src );
 
 		if ( ! isset( $this->wp_configs[ $type ] ) ) {
-			throw new Exception( "Config type '{$type}' does not exist." );
+			throw new Exception( esc_html( "Config type '{$type}' does not exist." ) );
 		}
 
 		return isset( $this->wp_configs[ $type ][ $name ] );
@@ -101,7 +101,7 @@ class WPConfigTransformer {
 		$this->wp_configs    = $this->parse_wp_config( $this->wp_config_src );
 
 		if ( ! isset( $this->wp_configs[ $type ] ) ) {
-			throw new Exception( "Config type '{$type}' does not exist." );
+			throw new Exception( esc_html( "Config type '{$type}' does not exist." ) );
 		}
 
 		return $this->wp_configs[ $type ][ $name ]['value'];
@@ -246,7 +246,7 @@ class WPConfigTransformer {
 			throw new Exception( 'Raw value for empty string not supported.' );
 		}
 
-		return ( $raw ) ? $value : var_export( $value, true );
+		return ( $raw ) ? $value : var_export( $value, true ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- var_export with $return=true serializes the value into a PHP literal written to wp-config.php, not debug output.
 	}
 
 	/**
@@ -266,7 +266,7 @@ class WPConfigTransformer {
 		} elseif ( 'variable' === $type ) {
 			$placeholder = '$%s = %s;';
 		} else {
-			throw new Exception( "Unable to normalize config type '{$type}'." );
+			throw new Exception( esc_html( "Unable to normalize config type '{$type}'." ) );
 		}
 
 		return sprintf( $placeholder, $name, $value );

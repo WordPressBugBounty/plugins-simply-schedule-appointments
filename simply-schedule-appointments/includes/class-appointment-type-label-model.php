@@ -80,6 +80,7 @@ class SSA_Appointment_Type_Label_Model extends SSA_Db_Model {
 		$labels = $this->plugin->appointment_type_label_model->query();
 		foreach ($labels as $label) {
 			if( strtolower( $label['name'] ) === strtolower( $data['name'] ) &&  (int)$label['id'] !== (int)$label_id ) {
+				/* translators: %s: label name */
 				$data['error'] = sprintf( __( 'Invalid Label name: \'%s\'. Label name must be unique.', 'simply-schedule-appointments' ), $data['name'] );
 			}
 		}

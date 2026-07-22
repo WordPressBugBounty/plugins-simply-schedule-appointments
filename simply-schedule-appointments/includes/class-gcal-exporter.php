@@ -55,7 +55,7 @@ class SSA_Gcal_Exporter {
 			array(
 				'action'   => 'TEMPLATE',
 				'text'     => urlencode( $appointment->get_title( 'customer' ) ),
-				'dates'    => date( 'Ymd', $appointment->start_date_timestamp ) . 'T' . date( 'His', $appointment->start_date_timestamp ) . 'Z' . '/' . date( 'Ymd', $appointment->end_date_timestamp ) . 'T' . date( 'His', $appointment->end_date_timestamp ) . 'Z',
+				'dates'    => gmdate( 'Ymd', $appointment->start_date_timestamp ) . 'T' . gmdate( 'His', $appointment->start_date_timestamp ) . 'Z' . '/' . gmdate( 'Ymd', $appointment->end_date_timestamp ) . 'T' . gmdate( 'His', $appointment->end_date_timestamp ) . 'Z',
 				'details'  => urlencode( $appointment->get_description( 'customer' ) ),
 				'location' => urlencode( $appointment->get_location( 'customer' ) ),
 				'trp'      => false,

@@ -169,9 +169,9 @@ class SSA_Appointment_Type_Object_Factory extends SSA_Appointment_Type_Object {
 		$fixture_data = array (
 		  'title' => $title,
 		  'slug' => $slug,
-		  'buffer_before' => rand(0,8) * 30,
-		  'duration' => rand(0,12) * 15,
-		  'buffer_after' => rand(0,8) * 30,
+		  'buffer_before' => wp_rand(0,8) * 30,
+		  'duration' => wp_rand(0,12) * 15,
+		  'buffer_after' => wp_rand(0,8) * 30,
 		);
 
 		$data = array_merge( $fixture_data, $data );

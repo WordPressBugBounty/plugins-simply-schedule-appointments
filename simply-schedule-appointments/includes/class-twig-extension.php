@@ -85,7 +85,7 @@ class SSA_Twig_Extension extends Twig\Extension\AbstractExtension {
 			ssa()->translation->set_programmatic_locale( $locale );
 		}
 		
-		$translated_string = __( $string, 'simply-schedule-appointments' );
+		$translated_string = __( $string, 'simply-schedule-appointments' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- Twig |internationalize filter: intentionally performs a runtime gettext lookup of a caller-supplied string against the appointment's customer locale set above; the dynamic arg is the whole purpose of the filter, not a no-op.
 		
 		if(! empty( $locale ) ) {
 			ssa()->translation->set_programmatic_locale( null );

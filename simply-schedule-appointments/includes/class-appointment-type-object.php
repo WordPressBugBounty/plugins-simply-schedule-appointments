@@ -144,7 +144,7 @@ class SSA_Appointment_Type_Object {
 				}
 
 				ssa_debug_log( 10, 'Appointment Type Object (ID '. $this->id .') Invalid field: ' . $field );
-				throw new Exception( 'Invalid ' . __CLASS__ . ' property: ' . $field );
+				throw new Exception( 'Invalid ' . __CLASS__ . ' property: ' . esc_html( $field ) );
 		}
 	}
 

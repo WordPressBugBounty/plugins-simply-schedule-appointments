@@ -1,4 +1,7 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 
 $td_util_classes = array(
 	'class-td-model.php' => 'TD_Model',

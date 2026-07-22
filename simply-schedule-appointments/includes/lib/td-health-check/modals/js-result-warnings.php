@@ -1,3 +1,4 @@
+<?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
 <div class="health-check-modal" data-modal-action="" data-parent-field="">
 	<div class="modal-content">
 		<span class="modal-close">&times;</span>

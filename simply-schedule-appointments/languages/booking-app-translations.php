@@ -1,4 +1,6 @@
-<?php $translations = array (
+<?php
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+$translations = array (
   'actions' => 
   array (
     'back' => __( 'Go back', 'simply-schedule-appointments' ),

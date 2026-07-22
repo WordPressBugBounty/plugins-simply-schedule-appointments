@@ -184,7 +184,7 @@ class SSA_Support {
 			if ( ! method_exists( $this, $secret_url['callback'] ) ) {
 				// if method does not exist on this class
 				// throw an exception here to catch the problems in the CI/CD pipeline
-				throw new Exception( 'Method does not exist on this class: ' . $secret_url['callback'] );
+				throw new Exception( 'Method does not exist on this class: ' . esc_html( $secret_url['callback'] ) );
 			}
 			add_action( 'admin_init', array( $this, $secret_url['callback'] ) );
 		}
@@ -198,7 +198,7 @@ class SSA_Support {
 	 */
 	public function render_secret_support_page() {
 		
-		if ( empty( $_GET['ssa-support-admin'] ) || $_GET['ssa-support-admin'] !== '1') {
+		if ( empty( $_GET['ssa-support-admin'] ) || $_GET['ssa-support-admin'] !== '1') { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only support-page render gated by current_user_can( 'ssa_manage_site_settings' ); no state change.
 			return;
 		}
 		
@@ -260,7 +260,7 @@ class SSA_Support {
 				}
 			</style>
 			<div>
-				<h1 class="danger"><?php echo home_url()?></h1>
+				<h1 class="danger"><?php echo esc_url( home_url() ); ?></h1>
 				<h2>You are on the SSA secret support page</h2>
 				<p>This is available to site administrators only, and should only be used for debugging and support purposes.</p>
 			</div>
@@ -271,7 +271,7 @@ class SSA_Support {
 					foreach( $this->secret_urls as $secret_url ) {
 						$nonce = wp_create_nonce( $secret_url['param'] );
 						$link = admin_url() . '?ssa_nonce=' . $nonce . '&' . $secret_url['param'] . '=' . $secret_url['param_default_value'];
-						echo $this->generateSupportUrl($secret_url, $link);
+						echo $this->generateSupportUrl($secret_url, $link); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- HTML assembled from hardcoded $this->secret_urls entries and $link built from admin_url() + wp_create_nonce() + hardcoded params; no request/user input.
 					}
 				?>
 			</div>
@@ -309,7 +309,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-remove-all-appointments' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-remove-all-appointments' ) === false ) {
 			return;
 		}
 		
@@ -358,7 +358,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-cleanup-excluded-calendars' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-cleanup-excluded-calendars' ) === false ) {
 			return;
 		}
 		
@@ -368,7 +368,7 @@ class SSA_Support {
 		$this->plugin->staff_model->cleanup_staff_excluded_calendars();
 
 		
-		wp_redirect( remove_query_arg( 'ssa-cleanup-excluded-calendars' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-cleanup-excluded-calendars' ) );
 		exit;
 	}
 	 
@@ -386,15 +386,15 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-set-debug-level' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-set-debug-level' ) === false ) {
 			return;
 		}
 		
-		$debug_level = (int) sanitize_text_field( $_GET['ssa-set-debug-level'] );
+		$debug_level = (int) sanitize_text_field( wp_unslash( $_GET['ssa-set-debug-level'] ) );
 		
 		update_option( 'ssa_debug_level', $debug_level );
 		
-		wp_redirect( remove_query_arg( 'ssa-set-debug-level' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-set-debug-level' ) );
 		exit;
 	}
 	
@@ -407,14 +407,14 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-set-license' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-set-license' ) === false ) {
 			return;
 		}
 
-		$license_key = sanitize_text_field( $_GET['ssa-set-license'] );
+		$license_key = sanitize_text_field( wp_unslash( $_GET['ssa-set-license'] ) );
 		$this->plugin->license->activate( $license_key );
 
-		wp_redirect( remove_query_arg( 'ssa-set-license' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-set-license' ) );
 		exit;
 	}
 
@@ -427,13 +427,13 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-populate-cache' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-populate-cache' ) === false ) {
 			return;
 		}
 
 		$this->plugin->availability_cache->populate_cache();
 
-		wp_redirect( remove_query_arg( 'ssa-populate-cache' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-populate-cache' ) );
 		exit;
 	}
 
@@ -446,7 +446,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-clear-google-cache' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-clear-google-cache' ) === false ) {
 			return;
 		}
 
@@ -455,7 +455,7 @@ class SSA_Support {
 		) );
 		$this->plugin->google_calendar->increment_google_cache_version();
 
-		wp_redirect( remove_query_arg( 'ssa-clear-google-cache' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-clear-google-cache' ) );
 		exit;
 	}
 
@@ -468,11 +468,11 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-set-google-query-limit' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-set-google-query-limit' ) === false ) {
 			return;
 		}
 
-		$set_google_query_limit = (int)esc_attr( $_GET['ssa-set-google-query-limit'] );
+		$set_google_query_limit = (int) sanitize_text_field( wp_unslash( $_GET['ssa-set-google-query-limit'] ) );
 		if ( empty( $set_google_query_limit ) ) {
 			return;
 		}
@@ -483,7 +483,7 @@ class SSA_Support {
 
 		$this->plugin->google_calendar->increment_google_cache_version();
 
-		wp_redirect( remove_query_arg( 'ssa-set-google-query-limit' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-set-google-query-limit' ) );
 		exit;
 	}
 
@@ -496,7 +496,7 @@ class SSA_Support {
 			return;
 		}
 
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-set-display-capacity-available' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-set-display-capacity-available' ) === false ) {
 			return;
 		}
 		// if ( ! is_user_logged_in() ) {
@@ -508,7 +508,7 @@ class SSA_Support {
 		$this->plugin->developer_settings->update( $developer_settings );
 		$this->plugin->availability_cache_invalidation->increment_cache_version();
 
-		wp_redirect( remove_query_arg( 'ssa-set-display-capacity-available' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-set-display-capacity-available' ) );
 		exit;
 	}
 
@@ -521,7 +521,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-clear-all-cache' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-clear-all-cache' ) === false ) {
 			return;
 		}
 
@@ -531,7 +531,7 @@ class SSA_Support {
 		$this->plugin->google_calendar->increment_google_cache_version();
 		$this->plugin->availability_cache_invalidation->increment_cache_version();
 
-		wp_redirect( remove_query_arg( 'ssa-clear-all-cache' ) );
+		wp_safe_redirect( remove_query_arg( 'ssa-clear-all-cache' ) );
 		exit;
 	}
 
@@ -544,7 +544,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-fix-appointment-durations' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-fix-appointment-durations' ) === false ) {
 			return;
 		}
 
@@ -570,7 +570,7 @@ class SSA_Support {
 			}
 		}
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 
@@ -583,13 +583,13 @@ class SSA_Support {
 			return;
 		}
 
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-purge-abandoned-appointments' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-purge-abandoned-appointments' ) === false ) {
 			return;
 		}
 		
 		$this->plugin->appointment_model->delete_abandoned();
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 
@@ -602,14 +602,14 @@ class SSA_Support {
 			return;
 		}
 
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-fix-db-availability-schema' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-fix-db-availability-schema' ) === false ) {
 			return;
 		}
 
 		$this->plugin->availability_model->drop();
 		$this->plugin->availability_model->create_table();
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 
@@ -622,7 +622,7 @@ class SSA_Support {
 			return;
 		}
 
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-fix-appointment-types' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-fix-appointment-types' ) === false ) {
 			return;
 		}
 		
@@ -681,7 +681,7 @@ class SSA_Support {
 			);
 		}
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 
@@ -694,13 +694,13 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-fix-missing-appointment-types' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-fix-missing-appointment-types' ) === false ) {
 			return;
 		}
 
 		$this->plugin->upgrade->maybe_fix_deleted_appointment_types();
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 	public function fix_db_datetime_schema() {
@@ -712,7 +712,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-fix-db-datetime-schema' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-fix-db-datetime-schema' ) === false ) {
 			return;
 		}
 
@@ -758,7 +758,7 @@ class SSA_Support {
 
 		$has_failed = false;
 		foreach ($before_queries as $query) {
-			$result = $wpdb->query( $query );
+			$result = $wpdb->query( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Schema-migration UPDATE built only from internal get_table_name() and SSA_Constants class constants; no user input; write query, not cacheable.
 			if ( false === $result ) {
 				$has_failed = true;
 			}
@@ -768,7 +768,7 @@ class SSA_Support {
 		$this->plugin->appointment_model->create_table();
 
 		foreach ($after_queries as $query) {
-			$result = $wpdb->query( $query );
+			$result = $wpdb->query( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Schema-migration UPDATE built only from internal get_table_name() and SSA_Constants class constants; no user input; write query, not cacheable.
 			if ( false === $result ) {
 				$has_failed = true;
 			}
@@ -776,7 +776,7 @@ class SSA_Support {
 
 		$this->fix_appointment_group_ids( true );
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 
@@ -789,7 +789,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-fix-appointment-group-ids' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-fix-appointment-group-ids' ) === false ) {
 			return;
 		}
 
@@ -845,7 +845,7 @@ class SSA_Support {
 			}
 		}
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 
@@ -865,7 +865,7 @@ class SSA_Support {
 			return;
 		}
 
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-factory-reset' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-factory-reset' ) === false ) {
 			return;
 		}
 
@@ -906,7 +906,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-rebuild-db' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-rebuild-db' ) === false ) {
 			return;
 		}
 
@@ -929,7 +929,7 @@ class SSA_Support {
 		$this->plugin->staff_appointment_model->create_table();
 		$this->plugin->staff_appointment_type_model->create_table();
 
-		wp_redirect( $this->plugin->wp_admin->url(), $status = 302);
+		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302);
 		exit;
 	}
 
@@ -942,7 +942,7 @@ class SSA_Support {
 			return;
 		}
 
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-restore-backup' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-restore-backup' ) === false ) {
 			return;
 		}
 		
@@ -952,7 +952,7 @@ class SSA_Support {
 		// if something happens, print the errors
 		if( is_wp_error( $restore ) ) {
 			$string = implode("\n", $restore->get_error_messages());
-			wp_die($string);
+			wp_die( esc_html( $string ) );
 		}
 
 		$redirect_url = $this->plugin->wp_admin->url();
@@ -961,7 +961,7 @@ class SSA_Support {
 			$redirect_url = add_query_arg( 'error', __( 'Google Calendar was disconnected because the import came from a different site. Please reconnect.', 'simply-schedule-appointments' ), $redirect_url );
 		}
 
-		wp_redirect( $redirect_url, 302 );
+		wp_safe_redirect( $redirect_url, 302 );
 		exit;
 	}
 
@@ -981,7 +981,7 @@ class SSA_Support {
 			return;
 		}
 		
-		if ( wp_verify_nonce( $_GET['ssa_nonce'], 'ssa-resend-booked-notifications' ) === false ) {
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-resend-booked-notifications' ) === false ) {
 			return;
 		}
 

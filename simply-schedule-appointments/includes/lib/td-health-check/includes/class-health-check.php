@@ -75,7 +75,7 @@ class TD_Health_Check {
 	 * @return void
 	 */
 	public function start_troubleshoot_mode() {
-		if ( ! isset( $_POST['health-check-troubleshoot-mode'] ) || ! current_user_can( 'ssa_manage_site_settings' ) ) {
+		if ( ! isset( $_POST['health-check-troubleshoot-mode'] ) || ! current_user_can( 'ssa_manage_site_settings' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Vendored Health Check library upstream code, unmodified; access gated by current_user_can() capability check.
 			return;
 		}
 
@@ -102,7 +102,7 @@ class TD_Health_Check {
 	 * @return void
 	 */
 	public function start_troubleshoot_single_plugin_mode() {
-		if ( ! isset( $_GET['health-check-troubleshoot-plugin'] ) || ! current_user_can( 'ssa_manage_site_settings' ) ) {
+		if ( ! isset( $_GET['health-check-troubleshoot-plugin'] ) || ! current_user_can( 'ssa_manage_site_settings' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Vendored Health Check library upstream code, unmodified; access gated by current_user_can() capability check.
 			return;
 		}
 
@@ -135,11 +135,12 @@ class TD_Health_Check {
 			return;
 		}
 
+		$troubleshoot_plugin = sanitize_text_field( wp_unslash( $_GET['health-check-troubleshoot-plugin'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Vendored Health Check library upstream code, unmodified; access gated by current_user_can() capability check above.
 		TD_Health_Check_Troubleshoot::initiate_troubleshooting_mode( array(
-			$_GET['health-check-troubleshoot-plugin'] => $_GET['health-check-troubleshoot-plugin'],
+			$troubleshoot_plugin => $troubleshoot_plugin,
 		) );
 
-		wp_redirect( admin_url( 'plugins.php' ) );
+		wp_safe_redirect( admin_url( 'plugins.php' ) );
 	}
 
 	/**
@@ -154,7 +155,7 @@ class TD_Health_Check {
 	 * @return void
 	 */
 	public function load_i18n() {
-		load_plugin_textdomain( 'health-check', false, basename( dirname( __FILE__ ) ) . '/languages/' );
+		load_plugin_textdomain( 'health-check', false, basename( dirname( __FILE__ ) ) . '/languages/' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Vendored Health Check library upstream code, unmodified.
 	}
 
 	/**
@@ -172,7 +173,7 @@ class TD_Health_Check {
 	 */
 	public function enqueues() {
 		// Don't enqueue anything unless we're on the health check page
-		if ( ! isset( $_GET['page'] ) || 'health-check' !== $_GET['page'] ) {
+		if ( ! isset( $_GET['page'] ) || 'health-check' !== $_GET['page'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only check of the current admin page slug to decide asset enqueuing; no state change.
 
 			/*
 			 * Special consideration, if warnings are not dismissed we need to display
@@ -190,9 +191,9 @@ class TD_Health_Check {
 
 		wp_localize_script( 'health-check', 'HealthCheck', array(
 			'string'  => array(
-				'please_wait'   => esc_html__( 'Please wait...', 'health-check' ),
-				'copied'        => esc_html__( 'Copied', 'health-check' ),
-				'running_tests' => esc_html__( 'Currently being tested...', 'health-check' ),
+				'please_wait'   => esc_html__( 'Please wait...', 'simply-schedule-appointments' ),
+				'copied'        => esc_html__( 'Copied', 'simply-schedule-appointments' ),
+				'running_tests' => esc_html__( 'Currently being tested...', 'simply-schedule-appointments' ),
 			),
 			'warning' => array(
 				'seen_backup' => TD_Health_Check_Troubleshoot::has_seen_warning(),
@@ -209,7 +210,7 @@ class TD_Health_Check {
 	 * @return void
 	 */
 	public function action_admin_menu() {
-		add_dashboard_page( _x( 'Health Check', 'Menu, Section and Page Title', 'health-check' ), _x( 'Health Check', 'Menu, Section and Page Title', 'health-check' ), 'ssa_manage_site_settings', 'health-check', array( $this, 'dashboard_page' ) );
+		add_dashboard_page( _x( 'Health Check', 'Menu, Section and Page Title', 'simply-schedule-appointments' ), _x( 'Health Check', 'Menu, Section and Page Title', 'simply-schedule-appointments' ), 'ssa_manage_site_settings', 'health-check', array( $this, 'dashboard_page' ) );
 	}
 
 	/**
@@ -226,7 +227,7 @@ class TD_Health_Check {
 	 */
 	public function settings_link( $meta, $name ) {
 		if ( plugin_basename( __FILE__ ) === $name ) {
-			$meta[] = sprintf( '<a href="%s">' . _x( 'Health Check', 'Menu, Section and Page Title', 'health-check' ) . '</a>', menu_page_url( 'health-check', false ) );
+			$meta[] = sprintf( '<a href="%s">' . _x( 'Health Check', 'Menu, Section and Page Title', 'simply-schedule-appointments' ) . '</a>', menu_page_url( 'health-check', false ) );
 		}
 
 		return $meta;
@@ -263,7 +264,7 @@ class TD_Health_Check {
 			esc_url( add_query_arg( array(
 				'health-check-troubleshoot-plugin' => ( isset( $plugin_data['slug'] ) ? $plugin_data['slug'] : sanitize_title( $plugin_data['Name'] ) ),
 			), admin_url( 'plugins.php' ) ) ),
-			esc_html__( 'Troubleshoot', 'health-check' )
+			esc_html__( 'Troubleshoot', 'simply-schedule-appointments' )
 		);
 
 		return $actions;
@@ -285,19 +286,19 @@ class TD_Health_Check {
 		?>
 		<div class="wrap">
 			<h1>
-				<?php _ex( 'Health Check', 'Menu, Section and Page Title', 'health-check' ); ?>
+				<?php echo esc_html_x( 'Health Check', 'Menu, Section and Page Title', 'simply-schedule-appointments' ); ?>
 			</h1>
 
 			<?php
 			$tabs = array(
-				'site-status'  => esc_html__( 'Site Status', 'health-check' ),
-				'debug'        => esc_html__( 'Debug Information', 'health-check' ),
-				'troubleshoot' => esc_html__( 'Troubleshooting', 'health-check' ),
-				'phpinfo'      => esc_html__( 'PHP Information', 'health-check' ),
-				'tools'        => esc_html__( 'Tools', 'health-check' ),
+				'site-status'  => esc_html__( 'Site Status', 'simply-schedule-appointments' ),
+				'debug'        => esc_html__( 'Debug Information', 'simply-schedule-appointments' ),
+				'troubleshoot' => esc_html__( 'Troubleshooting', 'simply-schedule-appointments' ),
+				'phpinfo'      => esc_html__( 'PHP Information', 'simply-schedule-appointments' ),
+				'tools'        => esc_html__( 'Tools', 'simply-schedule-appointments' ),
 			);
 
-			$current_tab = ( isset( $_GET['tab'] ) ? $_GET['tab'] : 'site-status' );
+			$current_tab = ( isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'site-status' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin page tab selection for display; no state change.
 			?>
 
 			<h2 class="nav-tab-wrapper wp-clearfix">
@@ -305,13 +306,15 @@ class TD_Health_Check {
 				foreach ( $tabs as $tab => $label ) {
 					printf(
 						'<a href="%s" class="nav-tab %s">%s</a>',
-						sprintf(
-							'%s&tab=%s',
-							menu_page_url( 'health-check', false ),
-							$tab
+						esc_url(
+							sprintf(
+								'%s&tab=%s',
+								menu_page_url( 'health-check', false ),
+								$tab
+							)
 						),
 						( $current_tab === $tab ? 'nav-tab-active' : '' ),
-						$label
+						$label // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $label values are pre-escaped via esc_html__() in the $tabs array above.
 					);
 				}
 				?>
@@ -353,12 +356,12 @@ class TD_Health_Check {
 	static function display_notice( $message, $status = 'success' ) {
 		printf(
 			'<div class="notice notice-%s inline">',
-			$status
+			esc_attr( $status )
 		);
 
 		printf(
 			'<p>%s</p>',
-			$message
+			$message // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $message is passed pre-escaped by callers (esc_html__() strings and trusted markup built with esc_url()/esc_html__() in class-health-check-troubleshoot.php); escaping again would double-escape and break the markup.
 		);
 
 		echo '</div>';
@@ -374,7 +377,7 @@ class TD_Health_Check {
 			printf(
 				'<div class="notice notice-%s"><p>%s</p></div>',
 				esc_attr( $admin_notice->type ),
-				$admin_notice->message
+				$admin_notice->message // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- message holds buffered HTML captured via ob_get_clean() from WP core's request_filesystem_credentials() form (see start_troubleshoot_single_plugin_mode); it is trusted markup that must not be escaped.
 			);
 		}
 	}

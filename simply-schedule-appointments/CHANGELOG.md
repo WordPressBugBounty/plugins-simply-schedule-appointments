@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.13 - 2026-07-21
+
+### Fixes
+
+- Handle Google Calendar invalid_grant: stop dead-token retries and flag staff needing reconnect
+
 ## SSA-VERSION-PREFIX.6.12.11 - 2026-07-14
 
 ### Fixes

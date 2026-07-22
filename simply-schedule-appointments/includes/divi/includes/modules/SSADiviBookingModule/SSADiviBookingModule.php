@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 
 // Only define this Divi 4 module class if not using Divi 5
 // This prevents it from appearing in the migrator's "Will Not Be Converted" list
@@ -168,7 +172,7 @@ class SSA_Divi_Booking_Module extends ET_Builder_Module {
 		ob_start(); ?>
 		<div class="divi-module-ssa-booking-wrapper">
 			<div class="ssa-booking">
-				<?php echo ssa()->shortcodes->ssa_booking( $attrs ); ?>
+				<?php echo ssa()->shortcodes->ssa_booking( $attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ssa_booking() returns the plugin's own booking-widget HTML markup (iframe/div); its dynamic values are escaped at the source in class-shortcodes.php, and HTML-escaping the markup here would break rendering. ?>
 			</div>
 		</div>
 		<?php

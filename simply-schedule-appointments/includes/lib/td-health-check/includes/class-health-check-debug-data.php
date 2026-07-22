@@ -52,7 +52,7 @@ class TD_Health_Check_Debug_Data {
 		foreach ( $core_updates as $core => $update ) {
 			if ( 'upgrade' === $update->response ) {
 				// translators: %s: Latest WordPress version number.
-				$core_update_needed = ' ' . sprintf( __( '( Latest version: %s )', 'health-check' ), $update->version );
+				$core_update_needed = ' ' . sprintf( __( '( Latest version: %s )', 'simply-schedule-appointments' ), $update->version );
 			} else {
 				$core_update_needed = '';
 			}
@@ -60,175 +60,175 @@ class TD_Health_Check_Debug_Data {
 
 		$info = array(
 			'wp-core'             => array(
-				'label'  => __( 'WordPress', 'health-check' ),
+				'label'  => __( 'WordPress', 'simply-schedule-appointments' ),
 				'fields' => array(
 					array(
-						'label' => __( 'Version', 'health-check' ),
+						'label' => __( 'Version', 'simply-schedule-appointments' ),
 						'value' => $core_current_version . $core_update_needed,
 					),
 					array(
-						'label' => __( 'Language', 'health-check' ),
+						'label' => __( 'Language', 'simply-schedule-appointments' ),
 						'value' => ( ! empty( $locale ) ? $original_locale : get_locale() ),
 					),
 					array(
-						'label'   => __( 'Home URL', 'health-check' ),
+						'label'   => __( 'Home URL', 'simply-schedule-appointments' ),
 						'value'   => get_bloginfo( 'url' ),
 						'private' => true,
 					),
 					array(
-						'label'   => __( 'Site URL', 'health-check' ),
+						'label'   => __( 'Site URL', 'simply-schedule-appointments' ),
 						'value'   => get_bloginfo( 'wpurl' ),
 						'private' => true,
 					),
 					array(
-						'label' => __( 'Permalink structure', 'health-check' ),
+						'label' => __( 'Permalink structure', 'simply-schedule-appointments' ),
 						'value' => get_option( 'permalink_structure' ),
 					),
 					array(
-						'label' => __( 'Is this site using HTTPS?', 'health-check' ),
-						'value' => ( is_ssl() ? __( 'Yes', 'health-check' ) : __( 'No', 'health-check' ) ),
+						'label' => __( 'Is this site using HTTPS?', 'simply-schedule-appointments' ),
+						'value' => ( is_ssl() ? __( 'Yes', 'simply-schedule-appointments' ) : __( 'No', 'simply-schedule-appointments' ) ),
 					),
 					array(
-						'label' => __( 'Can anyone register on this site?', 'health-check' ),
-						'value' => ( get_option( 'users_can_register' ) ? __( 'Yes', 'health-check' ) : __( 'No', 'health-check' ) ),
+						'label' => __( 'Can anyone register on this site?', 'simply-schedule-appointments' ),
+						'value' => ( get_option( 'users_can_register' ) ? __( 'Yes', 'simply-schedule-appointments' ) : __( 'No', 'simply-schedule-appointments' ) ),
 					),
 					array(
-						'label' => __( 'Default comment status', 'health-check' ),
+						'label' => __( 'Default comment status', 'simply-schedule-appointments' ),
 						'value' => get_option( 'default_comment_status' ),
 					),
 					array(
-						'label' => __( 'Is this a multisite?', 'health-check' ),
-						'value' => ( is_multisite() ? __( 'Yes', 'health-check' ) : __( 'No', 'health-check' ) ),
+						'label' => __( 'Is this a multisite?', 'simply-schedule-appointments' ),
+						'value' => ( is_multisite() ? __( 'Yes', 'simply-schedule-appointments' ) : __( 'No', 'simply-schedule-appointments' ) ),
 					),
 				),
 			),
 			'wp-install-size'     => array(
-				'label'  => __( 'Installation size', 'health-check' ),
+				'label'  => __( 'Installation size', 'simply-schedule-appointments' ),
 				'fields' => array(),
 			),
 			'wp-dropins'          => array(
-				'label'       => __( 'Drop-ins', 'health-check' ),
-				'description' => __( 'Drop-ins are single files that replace or enhance WordPress features in ways that are not possible for traditional plugins', 'health-check' ),
+				'label'       => __( 'Drop-ins', 'simply-schedule-appointments' ),
+				'description' => __( 'Drop-ins are single files that replace or enhance WordPress features in ways that are not possible for traditional plugins', 'simply-schedule-appointments' ),
 				'fields'      => array(),
 			),
 			'wp-active-theme'     => array(
-				'label'  => __( 'Active Theme', 'health-check' ),
+				'label'  => __( 'Active Theme', 'simply-schedule-appointments' ),
 				'fields' => array(),
 			),
 			'wp-themes'           => array(
-				'label'      => __( 'Other themes', 'health-check' ),
+				'label'      => __( 'Other themes', 'simply-schedule-appointments' ),
 				'show_count' => true,
 				'fields'     => array(),
 			),
 			'wp-mu-plugins'       => array(
-				'label'      => __( 'Must Use Plugins', 'health-check' ),
+				'label'      => __( 'Must Use Plugins', 'simply-schedule-appointments' ),
 				'show_count' => true,
 				'fields'     => array(),
 			),
 			'wp-plugins-active'   => array(
-				'label'      => __( 'Active Plugins', 'health-check' ),
+				'label'      => __( 'Active Plugins', 'simply-schedule-appointments' ),
 				'show_count' => true,
 				'fields'     => array(),
 			),
 			'wp-plugins-inactive' => array(
-				'label'      => __( 'Inactive Plugins', 'health-check' ),
+				'label'      => __( 'Inactive Plugins', 'simply-schedule-appointments' ),
 				'show_count' => true,
 				'fields'     => array(),
 			),
 			'wp-media'            => array(
-				'label'  => __( 'Media handling', 'health-check' ),
+				'label'  => __( 'Media handling', 'simply-schedule-appointments' ),
 				'fields' => array(),
 			),
 			'wp-server'           => array(
-				'label'       => __( 'Server', 'health-check' ),
-				'description' => __( 'The options shown below relate to your server setup. If changes are required, you may need your web host\'s assistance.', 'health-check' ),
+				'label'       => __( 'Server', 'simply-schedule-appointments' ),
+				'description' => __( 'The options shown below relate to your server setup. If changes are required, you may need your web host\'s assistance.', 'simply-schedule-appointments' ),
 				'fields'      => array(),
 			),
 			'wp-database'         => array(
-				'label'  => __( 'Database', 'health-check' ),
+				'label'  => __( 'Database', 'simply-schedule-appointments' ),
 				'fields' => array(),
 			),
 			'wp-constants'        => array(
-				'label'       => __( 'WordPress Constants', 'health-check' ),
-				'description' => __( 'These values represent values set in your websites code which affect WordPress in various ways that may be of importance when seeking help with your site.', 'health-check' ),
+				'label'       => __( 'WordPress Constants', 'simply-schedule-appointments' ),
+				'description' => __( 'These values represent values set in your websites code which affect WordPress in various ways that may be of importance when seeking help with your site.', 'simply-schedule-appointments' ),
 				'fields'      => array(
 					array(
 						'label' => 'ABSPATH',
-						'value' => ( ! defined( 'ABSPATH' ) ? __( 'Undefined', 'health-check' ) : ABSPATH ),
+						'value' => ( ! defined( 'ABSPATH' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ABSPATH ),
 					),
 					array(
 						'label' => 'WP_HOME',
-						'value' => ( ! defined( 'WP_HOME' ) ? __( 'Undefined', 'health-check' ) : WP_HOME ),
+						'value' => ( ! defined( 'WP_HOME' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : WP_HOME ),
 					),
 					array(
 						'label' => 'WP_SITEURL',
-						'value' => ( ! defined( 'WP_SITEURL' ) ? __( 'Undefined', 'health-check' ) : WP_SITEURL ),
+						'value' => ( ! defined( 'WP_SITEURL' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : WP_SITEURL ),
 					),
 					array(
 						'label' => 'WP_DEBUG',
-						'value' => ( ! defined( 'WP_DEBUG' ) ? __( 'Undefined', 'health-check' ) : ( WP_DEBUG ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'WP_DEBUG' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( WP_DEBUG ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'WP_MAX_MEMORY_LIMIT',
-						'value' => ( ! defined( 'WP_MAX_MEMORY_LIMIT' ) ? __( 'Undefined', 'health-check' ) : WP_MAX_MEMORY_LIMIT ),
+						'value' => ( ! defined( 'WP_MAX_MEMORY_LIMIT' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : WP_MAX_MEMORY_LIMIT ),
 					),
 					array(
 						'label' => 'WP_DEBUG_DISPLAY',
-						'value' => ( ! defined( 'WP_DEBUG_DISPLAY' ) ? __( 'Undefined', 'health-check' ) : ( WP_DEBUG_DISPLAY ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'WP_DEBUG_DISPLAY' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( WP_DEBUG_DISPLAY ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'WP_DEBUG_LOG',
-						'value' => ( ! defined( 'WP_DEBUG_LOG' ) ? __( 'Undefined', 'health-check' ) : ( WP_DEBUG_LOG ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'WP_DEBUG_LOG' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( WP_DEBUG_LOG ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'SCRIPT_DEBUG',
-						'value' => ( ! defined( 'SCRIPT_DEBUG' ) ? __( 'Undefined', 'health-check' ) : ( SCRIPT_DEBUG ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'SCRIPT_DEBUG' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( SCRIPT_DEBUG ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'WP_CACHE',
-						'value' => ( ! defined( 'WP_CACHE' ) ? __( 'Undefined', 'health-check' ) : ( WP_CACHE ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'WP_CACHE' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( WP_CACHE ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'CONCATENATE_SCRIPTS',
-						'value' => ( ! defined( 'CONCATENATE_SCRIPTS' ) ? __( 'Undefined', 'health-check' ) : ( CONCATENATE_SCRIPTS ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'CONCATENATE_SCRIPTS' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( CONCATENATE_SCRIPTS ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'COMPRESS_SCRIPTS',
-						'value' => ( ! defined( 'COMPRESS_SCRIPTS' ) ? __( 'Undefined', 'health-check' ) : ( COMPRESS_SCRIPTS ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'COMPRESS_SCRIPTS' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( COMPRESS_SCRIPTS ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'COMPRESS_CSS',
-						'value' => ( ! defined( 'COMPRESS_CSS' ) ? __( 'Undefined', 'health-check' ) : ( COMPRESS_CSS ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'COMPRESS_CSS' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( COMPRESS_CSS ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 					array(
 						'label' => 'WP_LOCAL_DEV',
-						'value' => ( ! defined( 'WP_LOCAL_DEV' ) ? __( 'Undefined', 'health-check' ) : ( WP_LOCAL_DEV ? __( 'Enabled', 'health-check' ) : __( 'Disabled', 'health-check' ) ) ),
+						'value' => ( ! defined( 'WP_LOCAL_DEV' ) ? __( 'Undefined', 'simply-schedule-appointments' ) : ( WP_LOCAL_DEV ? __( 'Enabled', 'simply-schedule-appointments' ) : __( 'Disabled', 'simply-schedule-appointments' ) ) ),
 					),
 				),
 			),
 			'wp-filesystem'       => array(
-				'label'       => __( 'Filesystem Permissions', 'health-check' ),
-				'description' => __( 'The status of various locations WordPress needs to write files in various scenarios.', 'health-check' ),
+				'label'       => __( 'Filesystem Permissions', 'simply-schedule-appointments' ),
+				'description' => __( 'The status of various locations WordPress needs to write files in various scenarios.', 'simply-schedule-appointments' ),
 				'fields'      => array(
 					array(
-						'label' => __( 'The main WordPress directory', 'health-check' ),
-						'value' => ( wp_is_writable( ABSPATH ) ? __( 'Writable', 'health-check' ) : __( 'Not writable', 'health-check' ) ),
+						'label' => __( 'The main WordPress directory', 'simply-schedule-appointments' ),
+						'value' => ( wp_is_writable( ABSPATH ) ? __( 'Writable', 'simply-schedule-appointments' ) : __( 'Not writable', 'simply-schedule-appointments' ) ),
 					),
 					array(
-						'label' => __( 'The wp-content directory', 'health-check' ),
-						'value' => ( wp_is_writable( WP_CONTENT_DIR ) ? __( 'Writable', 'health-check' ) : __( 'Not writable', 'health-check' ) ),
+						'label' => __( 'The wp-content directory', 'simply-schedule-appointments' ),
+						'value' => ( wp_is_writable( WP_CONTENT_DIR ) ? __( 'Writable', 'simply-schedule-appointments' ) : __( 'Not writable', 'simply-schedule-appointments' ) ),
 					),
 					array(
-						'label' => __( 'The uploads directory', 'health-check' ),
-						'value' => ( wp_is_writable( $upload_dir['basedir'] ) ? __( 'Writable', 'health-check' ) : __( 'Not writable', 'health-check' ) ),
+						'label' => __( 'The uploads directory', 'simply-schedule-appointments' ),
+						'value' => ( wp_is_writable( $upload_dir['basedir'] ) ? __( 'Writable', 'simply-schedule-appointments' ) : __( 'Not writable', 'simply-schedule-appointments' ) ),
 					),
 					array(
-						'label' => __( 'The plugins directory', 'health-check' ),
-						'value' => ( wp_is_writable( WP_PLUGIN_DIR ) ? __( 'Writable', 'health-check' ) : __( 'Not writable', 'health-check' ) ),
+						'label' => __( 'The plugins directory', 'simply-schedule-appointments' ),
+						'value' => ( wp_is_writable( WP_PLUGIN_DIR ) ? __( 'Writable', 'simply-schedule-appointments' ) : __( 'Not writable', 'simply-schedule-appointments' ) ),
 					),
 					array(
-						'label' => __( 'The themes directory', 'health-check' ),
-						'value' => ( wp_is_writable( get_template_directory() . '/..' ) ? __( 'Writable', 'health-check' ) : __( 'Not writable', 'health-check' ) ),
+						'label' => __( 'The themes directory', 'simply-schedule-appointments' ),
+						'value' => ( wp_is_writable( get_template_directory() . '/..' ) ? __( 'Writable', 'simply-schedule-appointments' ) : __( 'Not writable', 'simply-schedule-appointments' ) ),
 					),
 				),
 			),
@@ -248,22 +248,22 @@ class TD_Health_Check_Debug_Data {
 			}
 
 			$info['wp-core']['fields'][] = array(
-				'label' => __( 'User Count', 'health-check' ),
+				'label' => __( 'User Count', 'simply-schedule-appointments' ),
 				'value' => get_user_count(),
 			);
 			$info['wp-core']['fields'][] = array(
-				'label' => __( 'Site Count', 'health-check' ),
+				'label' => __( 'Site Count', 'simply-schedule-appointments' ),
 				'value' => $site_count,
 			);
 			$info['wp-core']['fields'][] = array(
-				'label' => __( 'Network Count', 'health-check' ),
+				'label' => __( 'Network Count', 'simply-schedule-appointments' ),
 				'value' => $network_query->found_networks,
 			);
 		} else {
 			$user_count = count_users();
 
 			$info['wp-core']['fields'][] = array(
-				'label' => __( 'User Count', 'health-check' ),
+				'label' => __( 'User Count', 'simply-schedule-appointments' ),
 				'value' => $user_count['total_users'],
 			);
 		}
@@ -274,17 +274,17 @@ class TD_Health_Check_Debug_Data {
 		) );
 		if ( ! is_wp_error( $wp_dotorg ) ) {
 			$info['wp-core']['fields'][] = array(
-				'label' => __( 'Communication with WordPress.org', 'health-check' ),
+				'label' => __( 'Communication with WordPress.org', 'simply-schedule-appointments' ),
 				'value' => sprintf(
-					__( 'WordPress.org is reachable', 'health-check' )
+					__( 'WordPress.org is reachable', 'simply-schedule-appointments' )
 				),
 			);
 		} else {
 			$info['wp-core']['fields'][] = array(
-				'label' => __( 'Communication with WordPress.org', 'health-check' ),
+				'label' => __( 'Communication with WordPress.org', 'simply-schedule-appointments' ),
 				'value' => sprintf(
 					// translators: %1$s: The IP address WordPress.org resolves to. %2$s: The error returned by the lookup.
-					__( 'Unable to reach WordPress.org at %1$s: %2$s', 'health-check' ),
+					__( 'Unable to reach WordPress.org at %1$s: %2$s', 'simply-schedule-appointments' ),
 					gethostbyname( 'wordpress.org' ),
 					$wp_dotorg->get_error_message()
 				),
@@ -293,7 +293,7 @@ class TD_Health_Check_Debug_Data {
 
 		$loopback                    = TD_Health_Check_Loopback::can_perform_loopback();
 		$info['wp-core']['fields'][] = array(
-			'label' => __( 'Create loopback requests', 'health-check' ),
+			'label' => __( 'Create loopback requests', 'simply-schedule-appointments' ),
 			'value' => $loopback->message,
 		);
 
@@ -309,7 +309,7 @@ class TD_Health_Check_Debug_Data {
 
 		// Populate the media fields.
 		$info['wp-media']['fields'][] = array(
-			'label' => __( 'Active editor', 'health-check' ),
+			'label' => __( 'Active editor', 'simply-schedule-appointments' ),
 			'value' => _wp_image_editor_choose(),
 		);
 
@@ -322,11 +322,11 @@ class TD_Health_Check_Debug_Data {
 			$imagick_version = 'Imagick not available';
 		}
 		$info['wp-media']['fields'][] = array(
-			'label' => __( 'Imagick Module Version', 'health-check' ),
+			'label' => __( 'Imagick Module Version', 'simply-schedule-appointments' ),
 			'value' => ( is_array( $imagick_version ) ? $imagick_version['versionNumber'] : $imagick_version ),
 		);
 		$info['wp-media']['fields'][] = array(
-			'label' => __( 'ImageMagick Version', 'health-check' ),
+			'label' => __( 'ImageMagick Version', 'simply-schedule-appointments' ),
 			'value' => ( is_array( $imagick_version ) ? $imagick_version['versionString'] : $imagick_version ),
 		);
 
@@ -342,7 +342,7 @@ class TD_Health_Check_Debug_Data {
 			);
 
 			$info['wp-media']['fields'][] = array(
-				'label' => __( 'Imagick Resource Limits', 'health-check' ),
+				'label' => __( 'Imagick Resource Limits', 'simply-schedule-appointments' ),
 				'value' => $limits,
 			);
 		}
@@ -354,69 +354,69 @@ class TD_Health_Check_Debug_Data {
 			$gd = false;
 		}
 		$info['wp-media']['fields'][] = array(
-			'label' => __( 'GD Version', 'health-check' ),
-			'value' => ( is_array( $gd ) ? $gd['GD Version'] : __( 'GD not available', 'health-check' ) ),
+			'label' => __( 'GD Version', 'simply-schedule-appointments' ),
+			'value' => ( is_array( $gd ) ? $gd['GD Version'] : __( 'GD not available', 'simply-schedule-appointments' ) ),
 		);
 
 		// Get Ghostscript information, if available.
 		if ( function_exists( 'exec' ) ) {
 			$gs = exec( 'gs --version' );
-			$gs = ( ! empty( $gs ) ? $gs : __( 'Not available', 'health-check' ) );
+			$gs = ( ! empty( $gs ) ? $gs : __( 'Not available', 'simply-schedule-appointments' ) );
 		} else {
-			$gs = __( 'Unable to determine if Ghostscript is installed', 'health-check' );
+			$gs = __( 'Unable to determine if Ghostscript is installed', 'simply-schedule-appointments' );
 		}
 		$info['wp-media']['fields'][] = array(
-			'label' => __( 'Ghostscript Version', 'health-check' ),
+			'label' => __( 'Ghostscript Version', 'simply-schedule-appointments' ),
 			'value' => $gs,
 		);
 
 		// Populate the server debug fields.
 		$info['wp-server']['fields'][] = array(
-			'label' => __( 'Server architecture', 'health-check' ),
-			'value' => ( ! function_exists( 'php_uname' ) ? __( 'Unable to determine server architecture', 'health-check' ) : sprintf( '%s %s %s', php_uname( 's' ), php_uname( 'r' ), php_uname( 'm' ) ) ),
+			'label' => __( 'Server architecture', 'simply-schedule-appointments' ),
+			'value' => ( ! function_exists( 'php_uname' ) ? __( 'Unable to determine server architecture', 'simply-schedule-appointments' ) : sprintf( '%s %s %s', php_uname( 's' ), php_uname( 'r' ), php_uname( 'm' ) ) ),
 		);
 		$info['wp-server']['fields'][] = array(
-			'label' => __( 'PHP Version', 'health-check' ),
-			'value' => ( ! function_exists( 'phpversion' ) ? __( 'Unable to determine PHP version', 'health-check' ) : sprintf(
+			'label' => __( 'PHP Version', 'simply-schedule-appointments' ),
+			'value' => ( ! function_exists( 'phpversion' ) ? __( 'Unable to determine PHP version', 'simply-schedule-appointments' ) : sprintf(
 				'%s %s',
 				phpversion(),
-				( 64 === PHP_INT_SIZE * 8 ? __( '(Supports 64bit values)', 'health-check' ) : '' )
+				( 64 === PHP_INT_SIZE * 8 ? __( '(Supports 64bit values)', 'simply-schedule-appointments' ) : '' )
 			)
 			),
 		);
 		$info['wp-server']['fields'][] = array(
-			'label' => __( 'PHP SAPI', 'health-check' ),
-			'value' => ( ! function_exists( 'php_sapi_name' ) ? __( 'Unable to determine PHP SAPI', 'health-check' ) : php_sapi_name() ),
+			'label' => __( 'PHP SAPI', 'simply-schedule-appointments' ),
+			'value' => ( ! function_exists( 'php_sapi_name' ) ? __( 'Unable to determine PHP SAPI', 'simply-schedule-appointments' ) : php_sapi_name() ),
 		);
 
 		if ( ! function_exists( 'ini_get' ) ) {
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'Server settings', 'health-check' ),
-				'value' => __( 'Unable to determine some settings as the ini_get() function has been disabled', 'health-check' ),
+				'label' => __( 'Server settings', 'simply-schedule-appointments' ),
+				'value' => __( 'Unable to determine some settings as the ini_get() function has been disabled', 'simply-schedule-appointments' ),
 			);
 		} else {
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'PHP max input variables', 'health-check' ),
+				'label' => __( 'PHP max input variables', 'simply-schedule-appointments' ),
 				'value' => ini_get( 'max_input_vars' ),
 			);
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'PHP time limit', 'health-check' ),
+				'label' => __( 'PHP time limit', 'simply-schedule-appointments' ),
 				'value' => ini_get( 'max_execution_time' ),
 			);
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'PHP memory limit', 'health-check' ),
+				'label' => __( 'PHP memory limit', 'simply-schedule-appointments' ),
 				'value' => ini_get( 'memory_limit' ),
 			);
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'Max input time', 'health-check' ),
+				'label' => __( 'Max input time', 'simply-schedule-appointments' ),
 				'value' => ini_get( 'max_input_time' ),
 			);
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'Upload max filesize', 'health-check' ),
+				'label' => __( 'Upload max filesize', 'simply-schedule-appointments' ),
 				'value' => ini_get( 'upload_max_filesize' ),
 			);
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'PHP post max size', 'health-check' ),
+				'label' => __( 'PHP post max size', 'simply-schedule-appointments' ),
 				'value' => ini_get( 'post_max_size' ),
 			);
 		}
@@ -424,24 +424,24 @@ class TD_Health_Check_Debug_Data {
 		if ( function_exists( 'curl_version' ) ) {
 			$curl                          = curl_version();
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'cURL Version', 'health-check' ),
+				'label' => __( 'cURL Version', 'simply-schedule-appointments' ),
 				'value' => sprintf( '%s %s', $curl['version'], $curl['ssl_version'] ),
 			);
 		} else {
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'cURL Version', 'health-check' ),
-				'value' => __( 'Your server does not support cURL', 'health-check' ),
+				'label' => __( 'cURL Version', 'simply-schedule-appointments' ),
+				'value' => __( 'Your server does not support cURL', 'simply-schedule-appointments' ),
 			);
 		}
 
 		$info['wp-server']['fields'][] = array(
-			'label' => __( 'SUHOSIN installed', 'health-check' ),
-			'value' => ( ( extension_loaded( 'suhosin' ) || ( defined( 'SUHOSIN_PATCH' ) && constant( 'SUHOSIN_PATCH' ) ) ) ? __( 'Yes', 'health-check' ) : __( 'No', 'health-check' ) ),
+			'label' => __( 'SUHOSIN installed', 'simply-schedule-appointments' ),
+			'value' => ( ( extension_loaded( 'suhosin' ) || ( defined( 'SUHOSIN_PATCH' ) && constant( 'SUHOSIN_PATCH' ) ) ) ? __( 'Yes', 'simply-schedule-appointments' ) : __( 'No', 'simply-schedule-appointments' ) ),
 		);
 
 		$info['wp-server']['fields'][] = array(
-			'label' => __( 'Is the Imagick library available', 'health-check' ),
-			'value' => ( extension_loaded( 'imagick' ) ? __( 'Yes', 'health-check' ) : __( 'No', 'health-check' ) ),
+			'label' => __( 'Is the Imagick library available', 'simply-schedule-appointments' ),
+			'value' => ( extension_loaded( 'imagick' ) ? __( 'Yes', 'simply-schedule-appointments' ) : __( 'No', 'simply-schedule-appointments' ) ),
 		);
 
 		// Check if a .htaccess file exists.
@@ -453,8 +453,8 @@ class TD_Health_Check_Debug_Data {
 			$filtered_htaccess_content = trim( preg_replace( '/\# BEGIN WordPress[\s\S]+?# END WordPress/si', '', $htaccess_content ) );
 
 			$info['wp-server']['fields'][] = array(
-				'label' => __( 'htaccess rules', 'health-check' ),
-				'value' => ( ! empty( $filtered_htaccess_content ) ? __( 'Custom rules have been added to your htaccess file', 'health-check' ) : __( 'Your htaccess file only contains core WordPress features', 'health-check' ) ),
+				'label' => __( 'htaccess rules', 'simply-schedule-appointments' ),
+				'value' => ( ! empty( $filtered_htaccess_content ) ? __( 'Custom rules have been added to your htaccess file', 'simply-schedule-appointments' ) : __( 'Your htaccess file only contains core WordPress features', 'simply-schedule-appointments' ) ),
 			);
 		}
 
@@ -494,34 +494,34 @@ class TD_Health_Check_Debug_Data {
 		}
 
 		$info['wp-database']['fields'][] = array(
-			'label' => __( 'Extension', 'health-check' ),
+			'label' => __( 'Extension', 'simply-schedule-appointments' ),
 			'value' => $extension,
 		);
 		$info['wp-database']['fields'][] = array(
-			'label' => __( 'Server version', 'health-check' ),
+			'label' => __( 'Server version', 'simply-schedule-appointments' ),
 			'value' => $server,
 		);
 		$info['wp-database']['fields'][] = array(
-			'label' => __( 'Client version', 'health-check' ),
+			'label' => __( 'Client version', 'simply-schedule-appointments' ),
 			'value' => $client_version,
 		);
 		$info['wp-database']['fields'][] = array(
-			'label'   => __( 'Database user', 'health-check' ),
+			'label'   => __( 'Database user', 'simply-schedule-appointments' ),
 			'value'   => $wpdb->dbuser,
 			'private' => true,
 		);
 		$info['wp-database']['fields'][] = array(
-			'label'   => __( 'Database host', 'health-check' ),
+			'label'   => __( 'Database host', 'simply-schedule-appointments' ),
 			'value'   => $wpdb->dbhost,
 			'private' => true,
 		);
 		$info['wp-database']['fields'][] = array(
-			'label'   => __( 'Database name', 'health-check' ),
+			'label'   => __( 'Database name', 'simply-schedule-appointments' ),
 			'value'   => $wpdb->dbname,
 			'private' => true,
 		);
 		$info['wp-database']['fields'][] = array(
-			'label' => __( 'Database prefix', 'health-check' ),
+			'label' => __( 'Database prefix', 'simply-schedule-appointments' ),
 			'value' => $wpdb->prefix,
 		);
 
@@ -532,19 +532,19 @@ class TD_Health_Check_Debug_Data {
 			$plugin_version = $plugin['Version'];
 			$plugin_author  = $plugin['Author'];
 
-			$plugin_version_string = __( 'No version or author information available', 'health-check' );
+			$plugin_version_string = __( 'No version or author information available', 'simply-schedule-appointments' );
 
 			if ( ! empty( $plugin_version ) && ! empty( $plugin_author ) ) {
 				// translators: %1$s: Plugin version number. %2$s: Plugin author name.
-				$plugin_version_string = sprintf( __( 'Version %1$s by %2$s', 'health-check' ), $plugin_version, $plugin_author );
+				$plugin_version_string = sprintf( __( 'Version %1$s by %2$s', 'simply-schedule-appointments' ), $plugin_version, $plugin_author );
 			}
 			if ( empty( $plugin_version ) && ! empty( $plugin_author ) ) {
 				// translators: %s: Plugin author name.
-				$plugin_version_string = sprintf( __( 'By %s', 'health-check' ), $plugin_author );
+				$plugin_version_string = sprintf( __( 'By %s', 'simply-schedule-appointments' ), $plugin_author );
 			}
 			if ( ! empty( $plugin_version ) && empty( $plugin_author ) ) {
 				// translators: %s: Plugin version number.
-				$plugin_version_string = sprintf( __( 'Version %s', 'health-check' ), $plugin_version );
+				$plugin_version_string = sprintf( __( 'Version %s', 'simply-schedule-appointments' ), $plugin_version );
 			}
 
 			$info['wp-mu-plugins']['fields'][] = array(
@@ -563,24 +563,24 @@ class TD_Health_Check_Debug_Data {
 			$plugin_version = $plugin['Version'];
 			$plugin_author  = $plugin['Author'];
 
-			$plugin_version_string = __( 'No version or author information available', 'health-check' );
+			$plugin_version_string = __( 'No version or author information available', 'simply-schedule-appointments' );
 
 			if ( ! empty( $plugin_version ) && ! empty( $plugin_author ) ) {
 				// translators: %1$s: Plugin version number. %2$s: Plugin author name.
-				$plugin_version_string = sprintf( __( 'Version %1$s by %2$s', 'health-check' ), $plugin_version, $plugin_author );
+				$plugin_version_string = sprintf( __( 'Version %1$s by %2$s', 'simply-schedule-appointments' ), $plugin_version, $plugin_author );
 			}
 			if ( empty( $plugin_version ) && ! empty( $plugin_author ) ) {
 				// translators: %s: Plugin author name.
-				$plugin_version_string = sprintf( __( 'By %s', 'health-check' ), $plugin_author );
+				$plugin_version_string = sprintf( __( 'By %s', 'simply-schedule-appointments' ), $plugin_author );
 			}
 			if ( ! empty( $plugin_version ) && empty( $plugin_author ) ) {
 				// translators: %s: Plugin version number.
-				$plugin_version_string = sprintf( __( 'Version %s', 'health-check' ), $plugin_version );
+				$plugin_version_string = sprintf( __( 'Version %s', 'simply-schedule-appointments' ), $plugin_version );
 			}
 
 			if ( array_key_exists( $plugin_path, $plugin_updates ) ) {
 				// translators: %s: Latest plugin version number.
-				$plugin_update_needed = ' ' . sprintf( __( '( Latest version: %s )', 'health-check' ), $plugin_updates[ $plugin_path ]->update->new_version );
+				$plugin_update_needed = ' ' . sprintf( __( '( Latest version: %s )', 'simply-schedule-appointments' ), $plugin_updates[ $plugin_path ]->update->new_version );
 			} else {
 				$plugin_update_needed = '';
 			}
@@ -605,37 +605,37 @@ class TD_Health_Check_Debug_Data {
 
 		if ( array_key_exists( $active_theme->stylesheet, $theme_updates ) ) {
 			// translators: %s: Latest theme version number.
-			$theme_update_needed_active = ' ' . sprintf( __( '( Latest version: %s )', 'health-check' ), $theme_updates[ $active_theme->stylesheet ]->update['new_version'] );
+			$theme_update_needed_active = ' ' . sprintf( __( '( Latest version: %s )', 'simply-schedule-appointments' ), $theme_updates[ $active_theme->stylesheet ]->update['new_version'] );
 		} else {
 			$theme_update_needed_active = '';
 		}
 
 		$info['wp-active-theme']['fields'] = array(
 			array(
-				'label' => __( 'Name', 'health-check' ),
+				'label' => __( 'Name', 'simply-schedule-appointments' ),
 				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.NotSnakeCaseMemberVar
 				'value' => $active_theme->Name,
 			),
 			array(
-				'label' => __( 'Version', 'health-check' ),
+				'label' => __( 'Version', 'simply-schedule-appointments' ),
 				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.NotSnakeCaseMemberVar
 				'value' => $active_theme->Version . $theme_update_needed_active,
 			),
 			array(
-				'label' => __( 'Author', 'health-check' ),
+				'label' => __( 'Author', 'simply-schedule-appointments' ),
 				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.NotSnakeCaseMemberVar
 				'value' => wp_kses( $active_theme->Author, array() ),
 			),
 			array(
-				'label' => __( 'Author website', 'health-check' ),
-				'value' => ( $active_theme->offsetGet( 'Author URI' ) ? $active_theme->offsetGet( 'Author URI' ) : __( 'Undefined', 'health-check' ) ),
+				'label' => __( 'Author website', 'simply-schedule-appointments' ),
+				'value' => ( $active_theme->offsetGet( 'Author URI' ) ? $active_theme->offsetGet( 'Author URI' ) : __( 'Undefined', 'simply-schedule-appointments' ) ),
 			),
 			array(
-				'label' => __( 'Parent theme', 'health-check' ),
-				'value' => ( $active_theme->parent_theme ? $active_theme->parent_theme : __( 'Not a child theme', 'health-check' ) ),
+				'label' => __( 'Parent theme', 'simply-schedule-appointments' ),
+				'value' => ( $active_theme->parent_theme ? $active_theme->parent_theme : __( 'Not a child theme', 'simply-schedule-appointments' ) ),
 			),
 			array(
-				'label' => __( 'Supported theme features', 'health-check' ),
+				'label' => __( 'Supported theme features', 'simply-schedule-appointments' ),
 				'value' => implode( ', ', $theme_features ),
 			),
 		);
@@ -653,24 +653,24 @@ class TD_Health_Check_Debug_Data {
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.NotSnakeCaseMemberVar
 			$theme_author = $theme->Author;
 
-			$theme_version_string = __( 'No version or author information available', 'health-check' );
+			$theme_version_string = __( 'No version or author information available', 'simply-schedule-appointments' );
 
 			if ( ! empty( $theme_version ) && ! empty( $theme_author ) ) {
 				// translators: %1$s: Theme version number. %2$s: Theme author name.
-				$theme_version_string = sprintf( __( 'Version %1$s by %2$s', 'health-check' ), $theme_version, wp_kses( $theme_author, array() ) );
+				$theme_version_string = sprintf( __( 'Version %1$s by %2$s', 'simply-schedule-appointments' ), $theme_version, wp_kses( $theme_author, array() ) );
 			}
 			if ( empty( $theme_version ) && ! empty( $theme_author ) ) {
 				// translators: %s: Theme author name.
-				$theme_version_string = sprintf( __( 'By %s', 'health-check' ), wp_kses( $theme_author, array() ) );
+				$theme_version_string = sprintf( __( 'By %s', 'simply-schedule-appointments' ), wp_kses( $theme_author, array() ) );
 			}
 			if ( ! empty( $theme_version ) && empty( $theme_author ) ) {
 				// translators: %s: Theme version number.
-				$theme_version_string = sprintf( __( 'Version %s', 'health-check' ), $theme_version );
+				$theme_version_string = sprintf( __( 'Version %s', 'simply-schedule-appointments' ), $theme_version );
 			}
 
 			if ( array_key_exists( $theme_slug, $theme_updates ) ) {
 				// translators: %s: Latest theme version number.
-				$theme_update_needed = ' ' . sprintf( __( '( Latest version: %s )', 'health-check' ), $theme_updates[ $theme_slug ]->update['new_version'] );
+				$theme_update_needed = ' ' . sprintf( __( '( Latest version: %s )', 'simply-schedule-appointments' ), $theme_updates[ $theme_slug ]->update['new_version'] );
 			} else {
 				$theme_update_needed = '';
 			}
@@ -678,7 +678,7 @@ class TD_Health_Check_Debug_Data {
 			$info['wp-themes']['fields'][] = array(
 				'label' => sprintf(
 					// translators: %1$s: Theme name. %2$s: Theme slug.
-					__( '%1$s (%2$s)', 'health-check' ),
+					__( '%1$s (%2$s)', 'simply-schedule-appointments' ),
 					// phpcs:ignore WordPress.NamingConventions.ValidVariableName.NotSnakeCaseMemberVar
 					$theme->Name,
 					$theme_slug
@@ -690,8 +690,8 @@ class TD_Health_Check_Debug_Data {
 		// Add more filesystem checks
 		if ( defined( 'WPMU_PLUGIN_DIR' ) && is_dir( WPMU_PLUGIN_DIR ) ) {
 			$info['wp-filesystem']['fields'][] = array(
-				'label' => __( 'The Must Use Plugins directory', 'health-check' ),
-				'value' => ( wp_is_writable( WPMU_PLUGIN_DIR ) ? __( 'Writable', 'health-check' ) : __( 'Not writable', 'health-check' ) ),
+				'label' => __( 'The Must Use Plugins directory', 'simply-schedule-appointments' ),
+				'value' => ( wp_is_writable( WPMU_PLUGIN_DIR ) ? __( 'Writable', 'simply-schedule-appointments' ) : __( 'Not writable', 'simply-schedule-appointments' ) ),
 			);
 		}
 
@@ -785,31 +785,31 @@ class TD_Health_Check_Debug_Data {
 
 		$result = array(
 			array(
-				'label' => __( 'Uploads Directory', 'health-check' ),
+				'label' => __( 'Uploads Directory', 'simply-schedule-appointments' ),
 				'value' => size_format( $sizes['uploads']['size'], 2 ),
 			),
 			array(
-				'label' => __( 'Themes Directory', 'health-check' ),
+				'label' => __( 'Themes Directory', 'simply-schedule-appointments' ),
 				'value' => size_format( $sizes['themes']['size'], 2 ),
 			),
 			array(
-				'label' => __( 'Plugins Directory', 'health-check' ),
+				'label' => __( 'Plugins Directory', 'simply-schedule-appointments' ),
 				'value' => size_format( $sizes['plugins']['size'], 2 ),
 			),
 			array(
-				'label' => __( 'Database size', 'health-check' ),
+				'label' => __( 'Database size', 'simply-schedule-appointments' ),
 				'value' => size_format( $size_db, 2 ),
 			),
 			array(
-				'label' => __( 'Whole WordPress Directory', 'health-check' ),
+				'label' => __( 'Whole WordPress Directory', 'simply-schedule-appointments' ),
 				'value' => size_format( $sizes['wp']['size'], 2 ),
 			),
 			array(
-				'label' => __( 'Total installation size', 'health-check' ),
+				'label' => __( 'Total installation size', 'simply-schedule-appointments' ),
 				'value' => sprintf(
 					'%s%s',
 					size_format( $size_total, 2 ),
-					( false === $inaccurate ? '' : __( '- Some errors, likely caused by invalid permissions, were encountered when determining the size of your installation. This means the values represented may be inaccurate.', 'health-check' ) )
+					( false === $inaccurate ? '' : __( '- Some errors, likely caused by invalid permissions, were encountered when determining the size of your installation. This means the values represented may be inaccurate.', 'simply-schedule-appointments' ) )
 				),
 			),
 		);
@@ -830,7 +830,7 @@ class TD_Health_Check_Debug_Data {
 	public static function get_database_size() {
 		global $wpdb;
 		$size = 0;
-		$rows = $wpdb->get_results( 'SHOW TABLE STATUS', ARRAY_A );
+		$rows = $wpdb->get_results( 'SHOW TABLE STATUS', ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- SHOW TABLE STATUS is a metadata query with no WordPress API equivalent; run on-demand for the Site Health installation-size report, where a cached value would misreport the current database size.
 
 		if ( $wpdb->num_rows > 0 ) {
 			foreach ( $rows as $row ) {

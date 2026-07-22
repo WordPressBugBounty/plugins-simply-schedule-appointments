@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 // $atts are defined in class-shortcodes.php
 // don't try to load this file directly, instead call ssa()->shortcodes->ssa_upcoming_appointments()
 
@@ -84,7 +88,7 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 					}
 				}
 				?>
-						<div class="appointment-card" role="article" aria-labelledby="appointment-<?php echo $upcoming_appointment['id']; ?>">
+						<div class="appointment-card" role="article" aria-labelledby="appointment-<?php echo esc_attr( $upcoming_appointment['id'] ); ?>">
 							<div class="appointment-card-header">
 									<?php
 										if ($staff_details && is_array($staff_details) && count($staff_details) > 1) {
@@ -125,26 +129,26 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 
 											$localized_date = SSA_Utils::translate_formatted_date($localized_date);
 
-											echo '<p><span class="appointment-date">' . esc_html__($localized_date, 'simply-schedule-appointments') . 
-											'</span> <span class="appointment-time">' . esc_html__('at', 'simply-schedule-appointments') . ' ' . esc_html__($localized_time, 'simply-schedule-appointments') . '</span></p>';
+											echo '<p><span class="appointment-date">' . esc_html($localized_date) .
+											'</span> <span class="appointment-time">' . esc_html__('at', 'simply-schedule-appointments') . ' ' . esc_html($localized_time) . '</span></p>';
 
 											$upcoming_appointment_type = new SSA_Appointment_Type_Object( $upcoming_appointment['appointment_type_id'] );
 											$upcoming_appointment_title = $upcoming_appointment_type->get_title();
 
 											if ($staff_details && $show_appointment_type && !$hide_team_member && $show_staff_name) {
-												echo '<p>' . esc_html__($upcoming_appointment_title, 'simply-schedule-appointments') . ' ' . esc_html__('with', 'simply-schedule-appointments') . ' ';
+												echo '<p>' . esc_html($upcoming_appointment_title) . ' ' . esc_html__('with', 'simply-schedule-appointments') . ' ';
 												$staff_names = array_map('esc_html', array_column($staff_details, 'name'));
-												echo '<span class="appointment-staff">' . implode(', ', $staff_names) . '</span>';
+												echo '<span class="appointment-staff">' . implode(', ', $staff_names) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $staff_names elements already escaped via array_map('esc_html', ...) above; ', ' separator is a safe literal
 												echo '</p>';
 											} elseif ($staff_details && !$hide_team_member && $show_staff_name) {
 												echo '<p>' . esc_html__('With', 'simply-schedule-appointments') . ' ';
 												$staff_names = array_map('esc_html', array_column($staff_details, 'name'));
-												echo '<span class="appointment-staff">' . implode(', ', $staff_names) . '</span>';
+												echo '<span class="appointment-staff">' . implode(', ', $staff_names) . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $staff_names elements already escaped via array_map('esc_html', ...) above; ', ' separator is a safe literal
 												echo '</p>';
 											} elseif ($show_appointment_type) {
-												echo '<p>' . esc_html__($upcoming_appointment_title, 'simply-schedule-appointments') . '</p>';
+												echo '<p>' . esc_html($upcoming_appointment_title) . '</p>';
 											} elseif ( filter_var( $atts['appointment_type_displayed'], FILTER_VALIDATE_BOOLEAN ) ) {
-												echo '<p>' . esc_html__($upcoming_appointment_title, 'simply-schedule-appointments') . '</p>';
+												echo '<p>' . esc_html($upcoming_appointment_title) . '</p>';
 											}
 											
 										?>
@@ -161,13 +165,13 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 																	is_array($appointmentResources) &&
 																	in_array($resource['resource_group_id'], $appointmentResources)
 																) {
-																	echo '<li>' . esc_html__($resource['group_title'] . ': ' . $resource['resource_title'], 'simply-schedule-appointments') . '</li>';
+																	echo '<li>' . esc_html($resource['group_title'] . ': ' . $resource['resource_title']) . '</li>';
 																}
 															}
 														}
 													} else {
 														foreach ($resources as $resource) {
-															echo '<li>' . esc_html__($resource['group_title'] . ': ' . $resource['resource_title'], 'simply-schedule-appointments') . '</li>';
+															echo '<li>' . esc_html($resource['group_title'] . ': ' . $resource['resource_title']) . '</li>';
 														}
 													}
 												}
@@ -185,7 +189,7 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 							<div class="action-bar">
 								<?php
 								if ( ! empty( $atts['details_link_displayed'] ) ) {
-									echo '<button id="details_button" onclick="window.open(\'' . ssa()->appointment_model->get_public_edit_url($upcoming_appointment['id']) . '\', \'_blank\')">' . wp_kses_post( $atts['details_link_label'] ) . '</button>';
+									echo '<button id="details_button" onclick="window.open(\'' . esc_url( ssa()->appointment_model->get_public_edit_url($upcoming_appointment['id']) ) . '\', \'_blank\')">' . wp_kses_post( $atts['details_link_label'] ) . '</button>';
 								}
 								?>
 							</div>

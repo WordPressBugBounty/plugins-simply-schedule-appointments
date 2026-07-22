@@ -112,12 +112,12 @@ class TD_Health_Check_Troubleshooting_MU {
 
 		printf(
 			'<div class="notice notice-warning dismissable"><p>%s</p><p><a href="%s" class="button button-primary">%s</a></p></div>',
-			esc_html__( 'You don\'t have any of the default themes installed. A default theme helps you determine if your current theme is causing conflicts.', 'health-check' ),
+			esc_html__( 'You don\'t have any of the default themes installed. A default theme helps you determine if your current theme is causing conflicts.', 'simply-schedule-appointments' ),
 			esc_url( admin_url( sprintf(
 				'theme-install.php?theme=%s',
 				$this->default_themes[0]
 			) ) ),
-			esc_html__( 'Install a default theme', 'health-check' )
+			esc_html__( 'Install a default theme', 'simply-schedule-appointments' )
 		);
 	}
 
@@ -143,7 +143,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		 * This is to early for `get_current_screen()`, so we have to do it the
 		 * old fashioned way with `$_SERVER`.
 		 */
-		if ( 'plugin-install.php' === substr( $_SERVER['REQUEST_URI'], -18 ) ) {
+		if ( isset( $_SERVER['REQUEST_URI'] ) && 'plugin-install.php' === substr( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), -18 ) ) {
 			$caps['activate_plugins'] = false;
 		}
 
@@ -220,7 +220,7 @@ class TD_Health_Check_Troubleshooting_MU {
 				esc_url( add_query_arg( array(
 					'health-check-troubleshoot-disable-plugin' => $plugin_slug,
 				), admin_url( 'plugins.php' ) ) ),
-				esc_html__( 'Disable while troubleshooting', 'health-check' )
+				esc_html__( 'Disable while troubleshooting', 'simply-schedule-appointments' )
 			);
 		} else {
 			$actions['troubleshoot-disable'] = sprintf(
@@ -228,7 +228,7 @@ class TD_Health_Check_Troubleshooting_MU {
 				esc_url( add_query_arg( array(
 					'health-check-troubleshoot-enable-plugin' => $plugin_slug,
 				), admin_url( 'plugins.php' ) ) ),
-				esc_html__( 'Enable while troubleshooting', 'health-check' )
+				esc_html__( 'Enable while troubleshooting', 'simply-schedule-appointments' )
 			);
 		}
 
@@ -260,11 +260,11 @@ class TD_Health_Check_Troubleshooting_MU {
 	public function is_troubleshooting() {
 		// Check if a session cookie to disable plugins has been set.
 		if ( isset( $_COOKIE['health-check-disable-plugins'] ) ) {
-			$_GET['health-check-disable-plugin-hash'] = $_COOKIE['health-check-disable-plugins'];
+			$_GET['health-check-disable-plugin-hash'] = sanitize_text_field( wp_unslash( $_COOKIE['health-check-disable-plugins'] ) );
 		}
 
 		// If the disable hash isn't set, no need to interact with things.
-		if ( ! isset( $_GET['health-check-disable-plugin-hash'] ) ) {
+		if ( ! isset( $_GET['health-check-disable-plugin-hash'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only presence check inside a boolean predicate, no state change.
 			return false;
 		}
 
@@ -273,7 +273,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		}
 
 		// If the plugin hash is not valid, we also break out
-		if ( $this->disable_hash !== $_GET['health-check-disable-plugin-hash'] ) {
+		if ( $this->disable_hash !== $_GET['health-check-disable-plugin-hash'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only comparison against the server-stored disable_hash secret, no state change.
 			return false;
 		}
 
@@ -293,9 +293,11 @@ class TD_Health_Check_Troubleshooting_MU {
 		}
 
 		// If we've received a comma-separated list of allowed plugins, we'll add them to the array of allowed plugins.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only filter that only adjusts the in-request active-plugins list; no persistent state change, and it is gated by is_troubleshooting() hash verification above.
 		if ( isset( $_GET['health-check-allowed-plugins'] ) ) {
-			$this->allowed_plugins = explode( ',', $_GET['health-check-allowed-plugins'] );
+			$this->allowed_plugins = explode( ',', sanitize_text_field( wp_unslash( $_GET['health-check-allowed-plugins'] ) ) );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		foreach ( $plugins as $plugin_no => $plugin_path ) {
 			// Split up the plugin path, [0] is the slug and [1] holds the primary plugin file.
@@ -468,6 +470,7 @@ class TD_Health_Check_Troubleshooting_MU {
 	 * @return void
 	 */
 	function health_check_troubleshoot_get_captures() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Vendored Health Check troubleshooting-mode controller: these GET-triggered actions are gated by the library's own troubleshooting session (is_troubleshooting() secret/cookie loopback), not by WP nonces. Maintained upstream.
 		if ( ! $this->is_troubleshooting() ) {
 			return;
 		}
@@ -476,7 +479,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		if ( isset( $_GET['health-check-disable-troubleshooting'] ) ) {
 			$this->disable_troubleshooting_mode();
 
-			wp_redirect( remove_query_arg( $this->available_query_args ) );
+			wp_safe_redirect( remove_query_arg( $this->available_query_args ) );
 			die(); // phpcs:ignore
 		}
 
@@ -484,7 +487,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		if ( isset( $_GET['health-check-dismiss-notices'] ) && $this->is_troubleshooting() && is_admin() ) {
 			update_option( 'health-check-dashboard-notices', array() );
 
-			wp_redirect( admin_url() );
+			wp_safe_redirect( admin_url() );
 			die(); // phpcs:ignore
 		}
 
@@ -492,7 +495,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		if ( isset( $_GET['health-check-troubleshoot-enable-plugin'] ) ) {
 			$old_allowed_plugins = $this->allowed_plugins;
 
-			$this->allowed_plugins[ $_GET['health-check-troubleshoot-enable-plugin'] ] = $_GET['health-check-troubleshoot-enable-plugin'];
+			$this->allowed_plugins[ sanitize_text_field( wp_unslash( $_GET['health-check-troubleshoot-enable-plugin'] ) ) ] = sanitize_text_field( wp_unslash( $_GET['health-check-troubleshoot-enable-plugin'] ) );
 
 			update_option( 'health-check-allowed-plugins', $this->allowed_plugins );
 
@@ -503,14 +506,14 @@ class TD_Health_Check_Troubleshooting_MU {
 				$this->add_dashboard_notice(
 					sprintf(
 						// translators: %s: The plugin slug that was enabled.
-						__( 'When enabling the plugin, %s, a site failure occurred. Because of this the change was automatically reverted.', 'health-check' ),
-						$_GET['health-check-troubleshoot-enable-plugin']
+						__( 'When enabling the plugin, %s, a site failure occurred. Because of this the change was automatically reverted.', 'simply-schedule-appointments' ),
+						sanitize_text_field( wp_unslash( $_GET['health-check-troubleshoot-enable-plugin'] ) )
 					),
 					'warning'
 				);
 			}
 
-			wp_redirect( remove_query_arg( $this->available_query_args ) );
+			wp_safe_redirect( remove_query_arg( $this->available_query_args ) );
 			die(); // phpcs:ignore
 		}
 
@@ -529,14 +532,14 @@ class TD_Health_Check_Troubleshooting_MU {
 				$this->add_dashboard_notice(
 					sprintf(
 						// translators: %s: The plugin slug that was disabled.
-						__( 'When disabling the plugin, %s, a site failure occurred. Because of this the change was automatically reverted.', 'health-check' ),
-						$_GET['health-check-troubleshoot-enable-plugin']
+						__( 'When disabling the plugin, %s, a site failure occurred. Because of this the change was automatically reverted.', 'simply-schedule-appointments' ),
+						sanitize_text_field( wp_unslash( $_GET['health-check-troubleshoot-enable-plugin'] ) )
 					),
 					'warning'
 				);
 			}
 
-			wp_redirect( remove_query_arg( $this->available_query_args ) );
+			wp_safe_redirect( remove_query_arg( $this->available_query_args ) );
 			die(); // phpcs:ignore
 		}
 
@@ -544,7 +547,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		if ( isset( $_GET['health-check-change-active-theme'] ) ) {
 			$old_theme = get_option( 'health-check-current-theme' );
 
-			update_option( 'health-check-current-theme', $_GET['health-check-change-active-theme'] );
+			update_option( 'health-check-current-theme', sanitize_text_field( wp_unslash( $_GET['health-check-change-active-theme'] ) ) );
 
 			if ( ! $this->test_site_state() ) {
 				update_option( 'health-check-current-theme', $old_theme );
@@ -552,16 +555,17 @@ class TD_Health_Check_Troubleshooting_MU {
 				$this->add_dashboard_notice(
 					sprintf(
 						// translators: %s: The theme slug that was switched to.
-						__( 'When switching the active theme to %s, a site failure occurred. Because of this we reverted the theme to the one you used previously.', 'health-check' ),
-						$_GET['health-check-change-active-theme']
+						__( 'When switching the active theme to %s, a site failure occurred. Because of this we reverted the theme to the one you used previously.', 'simply-schedule-appointments' ),
+						sanitize_text_field( wp_unslash( $_GET['health-check-change-active-theme'] ) )
 					),
 					'warning'
 				);
 			}
 
-			wp_redirect( remove_query_arg( $this->available_query_args ) );
+			wp_safe_redirect( remove_query_arg( $this->available_query_args ) );
 			die(); // phpcs:ignore
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	private function add_dashboard_notice( $message, $severity = 'notice' ) {
@@ -570,7 +574,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		$notices[] = array(
 			'severity' => $severity,
 			'message'  => $message,
-			'time'     => date( 'Y-m-d H:i' ),
+			'time'     => gmdate( 'Y-m-d H:i' ),
 		);
 
 		update_option( 'health-check-dashboard-notices', $notices );
@@ -603,21 +607,21 @@ class TD_Health_Check_Troubleshooting_MU {
 		// Add top-level menu item.
 		$wp_menu->add_menu( array(
 			'id'    => 'health-check',
-			'title' => esc_html__( 'Troubleshooting Mode', 'health-check' ),
+			'title' => esc_html__( 'Troubleshooting Mode', 'simply-schedule-appointments' ),
 		) );
 
 		// Add a link to manage plugins if there are more than 20 set to be active.
 		if ( count( $this->active_plugins ) > 20 ) {
 			$wp_menu->add_node( array(
 				'id'     => 'health-check-plugins',
-				'title'  => esc_html__( 'Manage active plugins', 'health-check' ),
+				'title'  => esc_html__( 'Manage active plugins', 'simply-schedule-appointments' ),
 				'parent' => 'health-check',
 				'href'   => admin_url( 'plugins.php' ),
 			) );
 		} else {
 			$wp_menu->add_node( array(
 				'id'     => 'health-check-plugins',
-				'title'  => esc_html__( 'Plugins', 'health-check' ),
+				'title'  => esc_html__( 'Plugins', 'simply-schedule-appointments' ),
 				'parent' => 'health-check',
 			) );
 
@@ -641,7 +645,7 @@ class TD_Health_Check_Troubleshooting_MU {
 				if ( in_array( $plugin_slug, $this->allowed_plugins ) ) {
 					$label = sprintf(
 						// Translators: %s: Plugin slug.
-						esc_html__( 'Disable %s', 'health-check' ),
+						esc_html__( 'Disable %s', 'simply-schedule-appointments' ),
 						sprintf(
 							'<strong>%s</strong>',
 							$plugin_data['Name']
@@ -654,7 +658,7 @@ class TD_Health_Check_Troubleshooting_MU {
 					$enabled = false;
 					$label   = sprintf(
 						// Translators: %s: Plugin slug.
-						esc_html__( 'Enable %s', 'health-check' ),
+						esc_html__( 'Enable %s', 'simply-schedule-appointments' ),
 						sprintf(
 							'<strong>%s</strong>',
 							$plugin_data['Name']
@@ -679,7 +683,7 @@ class TD_Health_Check_Troubleshooting_MU {
 
 		$wp_menu->add_node( array(
 			'id'     => 'health-check-theme',
-			'title'  => esc_html__( 'Themes', 'health-check' ),
+			'title'  => esc_html__( 'Themes', 'simply-schedule-appointments' ),
 			'parent' => 'health-check',
 		) );
 
@@ -694,7 +698,7 @@ class TD_Health_Check_Troubleshooting_MU {
 				'title'  => sprintf(
 					'%s %s',
 					// translators: Prefix for the active theme in a listing.
-					( $theme['active'] ? esc_html__( 'Active:', 'health-check' ) : '' ),
+					( $theme['active'] ? esc_html__( 'Active:', 'simply-schedule-appointments' ) : '' ),
 					$theme['name']
 				),
 				'parent' => 'health-check-theme',
@@ -712,7 +716,7 @@ class TD_Health_Check_Troubleshooting_MU {
 		// Add a link to disable Troubleshooting Mode.
 		$wp_menu->add_node( array(
 			'id'     => 'health-check-disable',
-			'title'  => esc_html__( 'Disable Troubleshooting Mode', 'health-check' ),
+			'title'  => esc_html__( 'Disable Troubleshooting Mode', 'simply-schedule-appointments' ),
 			'parent' => 'health-check',
 			'href'   => add_query_arg( array(
 				'health-check-disable-troubleshooting' => true,
@@ -856,27 +860,27 @@ class TD_Health_Check_Troubleshooting_MU {
 			<div id="health-check-dashboard-widget" class="welcome-panel">
 				<div class="welcome-panel-content">
 					<h2>
-						<?php esc_html_e( 'Health Check &mdash; Troubleshooting Mode', 'health-check' ); ?>
+						<?php esc_html_e( 'Health Check &mdash; Troubleshooting Mode', 'simply-schedule-appointments' ); ?>
 					</h2>
 
 					<p class="about-description">
-						<?php esc_html_e( 'Your site is currently in Troubleshooting Mode. This has no effect on your site visitors, they will continue to view your site as usual, but for you it will look as if you had just installed WordPress for the first time.', 'health-check' ); ?>
+						<?php esc_html_e( 'Your site is currently in Troubleshooting Mode. This has no effect on your site visitors, they will continue to view your site as usual, but for you it will look as if you had just installed WordPress for the first time.', 'simply-schedule-appointments' ); ?>
 					</p>
 
 					<p class="about-description">
-						<?php esc_html_e( 'Here you can enable individual plugins or themes, helping you to find out what might be causing strange behaviors on your site. Do note that any changes you make to settings will be kept when you disable Troubleshooting Mode.', 'health-check' ); ?>
+						<?php esc_html_e( 'Here you can enable individual plugins or themes, helping you to find out what might be causing strange behaviors on your site. Do note that any changes you make to settings will be kept when you disable Troubleshooting Mode.', 'simply-schedule-appointments' ); ?>
 					</p>
 
 					<div class="notices">
 						<h3>
 							<span class="dashicons dashicons-flag"></span>
-							<?php esc_html_e( 'Notices', 'health-check' ); ?>
+							<?php esc_html_e( 'Notices', 'simply-schedule-appointments' ); ?>
 						</h3>
 
 						<?php if ( empty( $notices ) && 'plugins' !== $screen->id ) : ?>
 							<div class="no-notices">
 								<p>
-									<?php esc_html_e( 'There are no notices to show.', 'health-check' ); ?>
+									<?php esc_html_e( 'There are no notices to show.', 'simply-schedule-appointments' ); ?>
 								</p>
 							</div>
 						<?php endif; ?>
@@ -884,7 +888,7 @@ class TD_Health_Check_Troubleshooting_MU {
 						<?php if ( 'plugins' === $screen->id ) : ?>
 							<div class="notice notice-warning inline">
 								<p>
-									<?php esc_html_e( 'Plugin actions, such as activating and deactivating, are not available while in Troubleshooting Mode.', 'health-check' ); ?>
+									<?php esc_html_e( 'Plugin actions, such as activating and deactivating, are not available while in Troubleshooting Mode.', 'simply-schedule-appointments' ); ?>
 								</p>
 							</div>
 						<?php endif; ?>
@@ -906,7 +910,7 @@ class TD_Health_Check_Troubleshooting_MU {
 								esc_url( add_query_arg( array(
 									'health-check-dismiss-notices' => true,
 								) ) ),
-								esc_html__( 'Dismiss notices', 'health-check' )
+								esc_html__( 'Dismiss notices', 'simply-schedule-appointments' )
 							);
 						}
 						?>
@@ -917,7 +921,7 @@ class TD_Health_Check_Troubleshooting_MU {
 							<?php if ( 'plugins' !== $screen->id ) : ?>
 								<h3>
 									<span class="dashicons dashicons-admin-plugins"></span>
-									<?php esc_html_e( 'Available Plugins', 'health-check' ); ?>
+									<?php esc_html_e( 'Available Plugins', 'simply-schedule-appointments' ); ?>
 								</h3>
 
 								<ul id="health-check-plugins">
@@ -947,11 +951,11 @@ class TD_Health_Check_Troubleshooting_MU {
 												esc_attr(
 													sprintf(
 														// translators: %s: Plugin name.
-														__( 'Disable the plugin, %s, while troubleshooting.', 'health-check' ),
+														__( 'Disable the plugin, %s, while troubleshooting.', 'simply-schedule-appointments' ),
 														$plugin_data['Name']
 													)
 												),
-												esc_html__( 'Disable', 'health-check' )
+												esc_html__( 'Disable', 'simply-schedule-appointments' )
 											);
 										} else {
 											$actions[] = sprintf(
@@ -962,11 +966,11 @@ class TD_Health_Check_Troubleshooting_MU {
 												esc_attr(
 													sprintf(
 														// translators: %s: Plugin name.
-														__( 'Enable the plugin, %s, while troubleshooting.', 'health-check' ),
+														__( 'Enable the plugin, %s, while troubleshooting.', 'simply-schedule-appointments' ),
 														$plugin_data['Name']
 													)
 												),
-												esc_html__( 'Enable', 'health-check' )
+												esc_html__( 'Enable', 'simply-schedule-appointments' )
 											);
 										}
 
@@ -975,7 +979,7 @@ class TD_Health_Check_Troubleshooting_MU {
 											( ! $plugin_is_visible ? 'toggle-visibility' : '' ),
 											( ! $plugin_is_visible ? 'true' : 'false' ),
 											esc_html( $plugin_data['Name'] ),
-											implode( ' | ', $actions )
+											implode( ' | ', $actions ) // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- each $actions entry is built from esc_url()/esc_attr()/esc_html__() and is intentional anchor markup.
 										);
 									}
 									?>
@@ -984,11 +988,11 @@ class TD_Health_Check_Troubleshooting_MU {
 								<?php if ( count( $this->active_plugins ) > 5 ) : ?>
 								<p>
 									<button type="button" class="button button-link health-check-toggle-visibility toggle-visibility visible" aria-hidden="false" data-element="health-check-plugins">
-										<?php esc_html_e( 'Show all plugins', 'health-check' ); ?>
+										<?php esc_html_e( 'Show all plugins', 'simply-schedule-appointments' ); ?>
 									</button>
 
 									<button type="button" class="button button-link health-check-toggle-visibility toggle-visibility" aria-hidden="true" data-element="health-check-plugins">
-										<?php esc_html_e( 'Show fewer plugins', 'health-check' ); ?>
+										<?php esc_html_e( 'Show fewer plugins', 'simply-schedule-appointments' ); ?>
 									</button>
 								</p>
 								<?php endif; ?>
@@ -999,7 +1003,7 @@ class TD_Health_Check_Troubleshooting_MU {
 							<?php if ( 'plugins' !== $screen->id ) : ?>
 								<h3>
 									<span class="dashicons dashicons-admin-appearance"></span>
-									<?php esc_html_e( 'Available Themes', 'health-check' ); ?>
+									<?php esc_html_e( 'Available Themes', 'simply-schedule-appointments' ); ?>
 								</h3>
 
 								<ul id="health-check-themes">
@@ -1022,18 +1026,18 @@ class TD_Health_Check_Troubleshooting_MU {
 											esc_attr(
 												sprintf(
 													// translators: %s: Theme name.
-													__( 'Switch the active theme to %s', 'health-check' ),
+													__( 'Switch the active theme to %s', 'simply-schedule-appointments' ),
 													$theme['name']
 												)
 											),
-											esc_html__( 'Switch to this theme', 'health-check' )
+											esc_html__( 'Switch to this theme', 'simply-schedule-appointments' )
 										);
 
 										$plugin_label = sprintf(
 											'%s %s',
 											// translators: Prefix for the active theme in a listing.
-											( $theme['active'] ? esc_html__( 'Active:', 'health-check' ) : '' ),
-											$theme['name']
+											( $theme['active'] ? esc_html__( 'Active:', 'simply-schedule-appointments' ) : '' ),
+											esc_html( $theme['name'] )
 										);
 
 										if ( ! $theme['active'] ) {
@@ -1044,7 +1048,7 @@ class TD_Health_Check_Troubleshooting_MU {
 											'<li class="%s" aria-hidden="%s">%s</li>',
 											( $theme_is_visible ? '' : 'toggle-visibility' ),
 											( $theme_is_visible ? 'false' : 'true' ),
-											$plugin_label
+											$plugin_label // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- composed only of esc_html__(), esc_html( $theme['name'] ) and a pre-escaped anchor string ($actions built via esc_url/esc_attr/esc_html__).
 										);
 									}
 									?>
@@ -1053,11 +1057,11 @@ class TD_Health_Check_Troubleshooting_MU {
 								<?php if ( count( $themes ) > 5 ) : ?>
 									<p>
 										<button type="button" class="button button-link health-check-toggle-visibility toggle-visibility visible" aria-hidden="false" data-element="health-check-themes">
-											<?php esc_html_e( 'Show all themes', 'health-check' ); ?>
+											<?php esc_html_e( 'Show all themes', 'simply-schedule-appointments' ); ?>
 										</button>
 
 										<button type="button" class="button button-link health-check-toggle-visibility toggle-visibility" aria-hidden="true">
-											<?php esc_html_e( 'Show fewer themes', 'health-check' ); ?>
+											<?php esc_html_e( 'Show fewer themes', 'simply-schedule-appointments' ); ?>
 										</button>
 									</p>
 								<?php endif; ?>
@@ -1071,7 +1075,7 @@ class TD_Health_Check_Troubleshooting_MU {
 								esc_url( add_query_arg( array(
 									'health-check-disable-troubleshooting' => true,
 								) ) ),
-								esc_html__( 'Disable Troubleshooting Mode', 'health-check' )
+								esc_html__( 'Disable Troubleshooting Mode', 'simply-schedule-appointments' )
 							);
 							?>
 						</div>

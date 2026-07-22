@@ -29,7 +29,7 @@ class TD_Health_Check_Site_Status {
 
 		if ( method_exists( $wpdb, 'db_version' ) ) {
 			$mysql_server_type = $wpdb->db_server_info();
-			$this->mysql_server_version = $wpdb->get_var( 'SELECT VERSION()' );
+			$this->mysql_server_version = $wpdb->get_var( 'SELECT VERSION()' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Hardcoded server-version probe for a diagnostic health check; live value required, not cacheable.
 		}
 
 		$this->health_check_mysql_rec_version = TD_HEALTH_CHECK_MYSQL_REC_VERSION;
@@ -44,7 +44,7 @@ class TD_Health_Check_Site_Status {
 	}
 
 	public function check_wp_version_check_exists() {
-		if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'ssa_manage_site_settings' ) || ! isset( $_GET['health-check-test-wp_version_check'] ) ) {
+		if ( ! is_admin() || ! is_user_logged_in() || ! current_user_can( 'ssa_manage_site_settings' ) || ! isset( $_GET['health-check-test-wp_version_check'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only capability-gated diagnostic; only checks presence of the GET flag, no state change.
 			return;
 		}
 
@@ -54,9 +54,11 @@ class TD_Health_Check_Site_Status {
 	}
 
 	public function site_status() {
+		$feature = isset( $_POST['feature'] ) ? sanitize_text_field( wp_unslash( $_POST['feature'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Vendored Health Check library upstream code, unmodified; AJAX handler gated by the library's own capability flow, not WP nonces.
+
 		$function = sprintf(
 			'test_%s',
-			$_POST['feature']
+			$feature
 		);
 
 		if ( ! method_exists( $this, $function ) || ! is_callable( array( $this, $function ) ) ) {
@@ -83,7 +85,7 @@ class TD_Health_Check_Site_Status {
 							'notices' => array(
 								sprintf(
 								// translators: %1$s: Your current version of WordPress. %2$s The latest version of WordPress available.
-									esc_html__( 'We were unable to check if any new versions are available' ),
+									esc_html__( 'We were unable to check if any new versions are available', 'simply-schedule-appointments' ),
 									$core_current_version,
 									$update->version
 								)
@@ -146,7 +148,7 @@ class TD_Health_Check_Site_Status {
 			'status' => 'warning',
 			'value' => '--',
 			'notices' => array(
-				__( 'We were unable to check if any new versions are available' ),
+				__( 'We were unable to check if any new versions are available', 'simply-schedule-appointments' ),
 			),
 		);
 	}
@@ -159,11 +161,11 @@ class TD_Health_Check_Site_Status {
 	public function is_troubleshooting() {
 		// Check if a session cookie to disable plugins has been set.
 		if ( isset( $_COOKIE['health-check-disable-plugins'] ) ) {
-			$_GET['health-check-disable-plugin-hash'] = $_COOKIE['health-check-disable-plugins'];
+			$_GET['health-check-disable-plugin-hash'] = sanitize_text_field( wp_unslash( $_COOKIE['health-check-disable-plugins'] ) );
 		}
 
 		// If the disable hash isn't set, no need to interact with things.
-		if ( ! isset( $_GET['health-check-disable-plugin-hash'] ) ) {
+		if ( ! isset( $_GET['health-check-disable-plugin-hash'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only troubleshooting-mode detection; only reads the hash to compare, no state change.
 			return false;
 		}
 
@@ -174,7 +176,7 @@ class TD_Health_Check_Site_Status {
 		}
 
 		// If the plugin hash is not valid, we also break out
-		if ( $disable_hash !== $_GET['health-check-disable-plugin-hash'] ) {
+		if ( $disable_hash !== $_GET['health-check-disable-plugin-hash'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only troubleshooting-mode detection; compares hash against stored option, no state change.
 			return false;
 		}
 
@@ -221,9 +223,9 @@ class TD_Health_Check_Site_Status {
 						'Your site has %d plugin waiting to be updated.',
 						'Your site has %d plugins waiting to be updated.',
 						$plugins_needs_update,
-						'health-check'
+						'simply-schedule-appointments'
 					) ),
-					$plugins_needs_update
+					esc_html( $plugins_needs_update )
 				)
 			);
 		} else {
@@ -235,9 +237,9 @@ class TD_Health_Check_Site_Status {
 						'Your site has %d active plugin, and it is up to date.',
 						'Your site has %d active plugins, and they are all up to date.',
 						$plugins_total,
-						'health-check'
+						'simply-schedule-appointments'
 					) ),
-					$plugins_total
+					esc_html( $plugins_total )
 				)
 			);
 		}
@@ -252,9 +254,9 @@ class TD_Health_Check_Site_Status {
 						'Your site has %d inactive plugin, it is recommended to remove any unused plugins to enhance your site security.',
 						'Your site has %d inactive plugins, it is recommended to remove any unused plugins to enhance your site security.',
 						$unused_plugins,
-						'health-check'
+						'simply-schedule-appointments'
 					) ),
-					$unused_plugins
+					esc_html( $unused_plugins )
 				)
 			);
 		}
@@ -377,9 +379,9 @@ class TD_Health_Check_Site_Status {
 						'Your site has %d theme waiting to be updated.',
 						'Your site has %d themes waiting to be updated.',
 						$themes_need_updates,
-						'health-check'
+						'simply-schedule-appointments'
 					) ),
-					$themes_need_updates
+					esc_html( $themes_need_updates )
 				)
 			);
 		} else {
@@ -391,9 +393,9 @@ class TD_Health_Check_Site_Status {
 						'Your site has %d installed theme, and it is up to date.',
 						'Your site has %d installed themes, and they are all up to date.',
 						$themes_total,
-						'health-check'
+						'simply-schedule-appointments'
 					) ),
-					$themes_total
+					esc_html( $themes_total )
 				)
 			);
 		}
@@ -410,12 +412,12 @@ class TD_Health_Check_Site_Status {
 							'Your site has %1$d inactive theme. To enhance your sites security it is recommended to remove any unused themes. You should keep %2$s, the default WordPress theme, %3$s, your current theme and %4$s, the parent theme.',
 							'Your site has %1$d inactive themes. To enhance your sites security it is recommended to remove any unused themes. You should keep %2$s, the default WordPress theme, %3$s, your current theme and %4$s, the parent theme.',
 							$themes_inactive,
-							'health-check'
+							'simply-schedule-appointments'
 						) ),
-						$themes_inactive,
-						WP_DEFAULT_THEME,
-						$active_theme->name,
-						$active_theme->parent()->name
+						esc_html( $themes_inactive ),
+						esc_html( WP_DEFAULT_THEME ),
+						esc_html( $active_theme->name ),
+						esc_html( $active_theme->parent()->name )
 					)
 				);
 
@@ -428,11 +430,11 @@ class TD_Health_Check_Site_Status {
 							'Your site has %1$d inactive theme, other than %2$s, the default WordPress theme, and %3$s, your active theme. It is recommended to remove any unused themes to enhance your sites security.',
 							'Your site has %1$d inactive themes, other than %2$s, the default WordPress theme, and %3$s, your active theme. It is recommended to remove any unused themes to enhance your sites security.',
 							$themes_inactive,
-							'health-check'
+							'simply-schedule-appointments'
 						) ),
-						$themes_inactive,
-						WP_DEFAULT_THEME,
-						$active_theme->name
+						esc_html( $themes_inactive ),
+						esc_html( WP_DEFAULT_THEME ),
+						esc_html( $active_theme->name )
 					)
 				);
 
@@ -485,8 +487,8 @@ class TD_Health_Check_Site_Status {
 		} elseif ( ! $this->php_rec_version_check ) {
 			$status   = 'good';
 			$notice[] = sprintf(
-				// translators: %s: Recommended PHP version
-				esc_html__( 'Your version of PHP, %s is current and meets all requirements. For even better performance, you can upgrade to PHP %s or higher.', 'simply-schedule-appointments' ),
+				// translators: %1$s: Current PHP version. %2$s: Recommended PHP version.
+				esc_html__( 'Your version of PHP, %1$s is current and meets all requirements. For even better performance, you can upgrade to PHP %2$s or higher.', 'simply-schedule-appointments' ),
 				PHP_VERSION,
 				TD_HEALTH_CHECK_PHP_REC_VERSION
 			);
@@ -814,7 +816,7 @@ class TD_Health_Check_Site_Status {
 			printf(
 				'<li><span class="%s"></span> %s</li>',
 				esc_attr( $test->severity ),
-				$test->desc
+				wp_kses_post( $test->desc )
 			);
 		}
 
@@ -827,7 +829,7 @@ class TD_Health_Check_Site_Status {
 		printf(
 			'<span class="%s"></span> %s',
 			esc_attr( $check_loopback->status ),
-			$check_loopback->message
+			wp_kses_post( $check_loopback->message )
 		);
 
 		if ( 'error' === $check_loopback->status ) {
@@ -843,7 +845,7 @@ class TD_Health_Check_Site_Status {
 		return array(
 			'status' => $timezone_check['status'] !== 'good' ? 'error' : 'good',
 			'value' => $timezone_check['status'] === 'good',
-			'notices' => [strip_tags($timezone_check['description'])] ,
+			'notices' => [wp_strip_all_tags($timezone_check['description'])] ,
 		);
 	}
 

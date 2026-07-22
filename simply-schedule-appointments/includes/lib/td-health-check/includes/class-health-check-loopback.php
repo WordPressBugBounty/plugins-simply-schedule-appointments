@@ -38,7 +38,7 @@ class TD_Health_Check_Loopback {
 
 		// Include Basic auth in loopback requests.
 		if ( isset( $_SERVER['PHP_AUTH_USER'] ) && isset( $_SERVER['PHP_AUTH_PW'] ) ) {
-			$headers['Authorization'] = 'Basic ' . base64_encode( wp_unslash( $_SERVER['PHP_AUTH_USER'] ) . ':' . wp_unslash( $_SERVER['PHP_AUTH_PW'] ) );
+			$headers['Authorization'] = 'Basic ' . base64_encode( wp_unslash( $_SERVER['PHP_AUTH_USER'] ) . ':' . wp_unslash( $_SERVER['PHP_AUTH_PW'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Basic auth credentials are base64-encoded before use (encoded output is [A-Za-z0-9+/=] only, so no CRLF/header injection) and sent solely as the loopback request Authorization header, never output or stored; sanitize_text_field would corrupt valid credentials.
 		}
 
 		$url = admin_url();
@@ -68,10 +68,10 @@ class TD_Health_Check_Loopback {
 				'status'  => 'error',
 				'message' => sprintf(
 					'%s<br>%s',
-					esc_html__( 'The loopback request to your site failed, this may prevent WP_Cron from working, along with theme and plugin editors.', 'health-check' ),
+					esc_html__( 'The loopback request to your site failed, this may prevent WP_Cron from working, along with theme and plugin editors.', 'simply-schedule-appointments' ),
 					sprintf(
 						/* translators: %1$d: The HTTP response code. %2$s: The error message returned. */
-						esc_html__( 'Error encountered: (%1$d) %2$s', 'health-check' ),
+						esc_html__( 'Error encountered: (%1$d) %2$s', 'simply-schedule-appointments' ),
 						wp_remote_retrieve_response_code( $r ),
 						$r->get_error_message()
 					)
@@ -84,7 +84,7 @@ class TD_Health_Check_Loopback {
 				'status'  => 'warning',
 				'message' => sprintf(
 					/* translators: %d: The HTTP response code returned. */
-					esc_html__( 'The loopback request returned an unexpected status code, %d, this may affect tools such as WP_Cron, or theme and plugin editors.', 'health-check' ),
+					esc_html__( 'The loopback request returned an unexpected status code, %d, this may affect tools such as WP_Cron, or theme and plugin editors.', 'simply-schedule-appointments' ),
 					wp_remote_retrieve_response_code( $r )
 				),
 			);
@@ -92,7 +92,7 @@ class TD_Health_Check_Loopback {
 
 		return (object) array(
 			'status'  => 'good',
-			'message' => __( 'The loopback request to your site completed successfully.', 'health-check' ),
+			'message' => __( 'The loopback request to your site completed successfully.', 'simply-schedule-appointments' ),
 		);
 	}
 
@@ -145,7 +145,7 @@ class TD_Health_Check_Loopback {
 			die(); // phpcs:ignore
 		}
 
-		$loopback_hash = md5( rand() );
+		$loopback_hash = md5( wp_rand() );
 		update_option( 'health-check-disable-plugin-hash', $loopback_hash );
 		update_option( 'health-check-default-theme', 'yes' );
 
@@ -154,7 +154,7 @@ class TD_Health_Check_Loopback {
 		$message = sprintf(
 			'<br><span class="%s"></span> %s: %s',
 			esc_attr( $no_plugin_test->status ),
-			esc_html__( 'Result from testing without any plugins active and a default theme', 'health-check' ),
+			esc_html__( 'Result from testing without any plugins active and a default theme', 'simply-schedule-appointments' ),
 			$no_plugin_test->message
 		);
 
@@ -171,7 +171,7 @@ class TD_Health_Check_Loopback {
 					'<tr data-test-plugin="%s" class="not-tested"><td>%s</td><td class="individual-loopback-test-status">%s</td></tr>',
 					esc_attr( plugin_basename( $single_plugin ) ),
 					esc_html( $plugin['Name'] ),
-					esc_html__( 'Waiting...', 'health-check' )
+					esc_html__( 'Waiting...', 'simply-schedule-appointments' )
 				);
 			}
 
@@ -179,10 +179,10 @@ class TD_Health_Check_Loopback {
 				'<tr id="test-single-no-theme"><td>%s</td><td class="individual-loopback-test-status">%s</td></tr>',
 				sprintf(
 					// translators: %s: The active theme name.
-					esc_html__( 'Active theme: %s', 'health-check' ),
+					esc_html__( 'Active theme: %s', 'simply-schedule-appointments' ),
 					$theme->name
 				),
-				esc_html__( 'Waiting...', 'health-check' )
+				esc_html__( 'Waiting...', 'simply-schedule-appointments' )
 			);
 
 			$message .= '</table>';
@@ -249,10 +249,10 @@ class TD_Health_Check_Loopback {
 
 		delete_option( 'health-check-disable-plugin-hash' );
 
-		$loopback_hash = md5( rand() );
+		$loopback_hash = md5( wp_rand() );
 		update_option( 'health-check-disable-plugin-hash', $loopback_hash );
 
-		$plugin_slug = explode( '/', $_POST['plugin'] );
+		$plugin_slug = isset( $_POST['plugin'] ) ? explode( '/', sanitize_text_field( wp_unslash( $_POST['plugin'] ) ) ) : array( '' ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Vendored Health Check library upstream code, unmodified; AJAX handler gated by the library's own capability flow, not WP nonces.
 		$plugin_slug = $plugin_slug[0];
 
 		$single_test = TD_Health_Check_Loopback::can_perform_loopback( $loopback_hash, $plugin_slug );
@@ -294,7 +294,7 @@ class TD_Health_Check_Loopback {
 
 		delete_option( 'health-check-disable-plugin-hash' );
 
-		$loopback_hash = md5( rand() );
+		$loopback_hash = md5( wp_rand() );
 		update_option( 'health-check-disable-plugin-hash', $loopback_hash );
 
 		$message = '';

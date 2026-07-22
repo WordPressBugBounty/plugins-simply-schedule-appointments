@@ -78,7 +78,7 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 				$where .= " AND `".$this->primary_key."` IN( $ids ) ";
 			} else {
 				$ids = intval( $args['id'] );
-				$where .= $wpdb->prepare( " AND `".$this->primary_key."` = %d ", $ids );
+				$where .= $wpdb->prepare( " AND `".$this->primary_key."` = %d ", $ids ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- primary_key is an internal, hardcoded model column name (never user input); the value is bound via prepare().
 			}
 
 
@@ -110,10 +110,10 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 			if( ! empty( $args['author_id'] ) ) {
 				if( is_array( $args['author_id'] ) ) {
 					$author_ids = implode( ',', array_map('intval', $args['author_id'] ) );
-					$where .= $wpdb->prepare( " AND `%i` IN( SELECT ID FROM $wpdb->posts WHERE post_author IN ( $author_ids ) ) ", $this->post_id_field );
+					$where .= $wpdb->prepare( " AND %i IN( SELECT ID FROM $wpdb->posts WHERE post_author IN ( $author_ids ) ) ", $this->post_id_field ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- %i targets the internal schema column name $this->post_id_field (not user input); %i requires WP 6.2, above the declared minimum 5.1, accepted per project decision; $author_ids is an integer-only list (implode of array_map intval) and $wpdb->posts is a core table name.
 				} else {
 					$author_ids = intval( $args['author_id'] );
-					$where .= $wpdb->prepare( " AND `%i` IN( SELECT ID FROM $wpdb->posts WHERE post_author = $author_ids ) ", $this->post_id_field);
+					$where .= $wpdb->prepare( " AND %i IN( SELECT ID FROM $wpdb->posts WHERE post_author = $author_ids ) ", $this->post_id_field); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- %i targets the internal schema column name $this->post_id_field (not user input); %i requires WP 6.2, above the declared minimum 5.1, accepted per project decision; $author_ids is intval()-cast to a single integer and $wpdb->posts is a core table name.
 				}
 				
 			}
@@ -122,9 +122,9 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 			if( ! empty( $args[$this->post_id_field] ) ) {
 				if ( is_array( $args[$this->post_id_field] ) ) {
 					$post_ids = implode( ',', array_map('intval', $args[$this->post_id_field] ) );
-					$where .= $wpdb->prepare( " AND `%i` IN( $post_ids ) ", $this->post_id_field );
+					$where .= $wpdb->prepare( " AND %i IN( $post_ids ) ", $this->post_id_field ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- %i targets the internal schema column name $this->post_id_field (not user input); %i requires WP 6.2, above the declared minimum 5.1, accepted per project decision; $post_ids is an integer-only list (implode of array_map intval).
 				} else {
-					$where .= $wpdb->prepare( " AND `%i` = %d ", $this->post_id_field, $args[$this->post_id_field] );
+					$where .= $wpdb->prepare( " AND %i = %d ", $this->post_id_field, $args[$this->post_id_field] ); // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnsupportedIdentifierPlaceholder -- %i targets the internal schema column name $this->post_id_field (not user input); %i requires WP 6.2, above the declared minimum 5.1, accepted per project decision; the value is bound via the %d placeholder.
 				}
 			}
 		}
@@ -201,9 +201,9 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 
 				if( !is_array( $args['date_modified'] ) ) {
 
-					$year  = date( 'Y', strtotime( $args['date_modified'] ) );
-					$month = date( 'm', strtotime( $args['date_modified'] ) );
-					$day   = date( 'd', strtotime( $args['date_modified'] ) );
+					$year  = gmdate( 'Y', strtotime( $args['date_modified'] ) );
+					$month = gmdate( 'm', strtotime( $args['date_modified'] ) );
+					$day   = gmdate( 'd', strtotime( $args['date_modified'] ) );
 
 					$where .= " AND $year = YEAR ( date_modified ) AND $month = MONTH ( date_modified ) AND $day = DAY ( date_modified )";
 				}

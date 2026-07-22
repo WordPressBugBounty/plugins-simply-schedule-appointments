@@ -70,11 +70,15 @@ class SSA_Block_Booking {
 		wp_register_script(
 			'ssa-booking-block-js',
 			$this->plugin->url( 'assets/js/block-booking.js' ),
-			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-editor' )
+			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-editor' ),
+			Simply_Schedule_Appointments::VERSION,
+			false
 		);
 		wp_register_style(
 			'ssa-booking-block-css',
-			$this->plugin->url( 'assets/css/block-booking.css' )
+			$this->plugin->url( 'assets/css/block-booking.css' ),
+			array(),
+			Simply_Schedule_Appointments::VERSION
 		);
 
 		$appointment_types = $this->plugin->appointment_type_model->query( array(

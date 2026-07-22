@@ -48,7 +48,7 @@ class TD_Health_Check_WP_Cron {
 		$cron_tasks = _get_cron_array();
 
 		if ( empty( $cron_tasks ) ) {
-			$this->crons = new WP_Error( 'no_tasks', __( 'No scheduled events exist on this site.', 'health-check' ) );
+			$this->crons = new WP_Error( 'no_tasks', __( 'No scheduled events exist on this site.', 'simply-schedule-appointments' ) );
 			return;
 		}
 

@@ -114,30 +114,32 @@ class SSA_Wp_Admin {
 	}
 
 	public function maybe_redirect() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only page-slug check that only issues an internal admin redirect; no state change.
 		if ( !empty( $_GET['page'] ) && $_GET['page'] === 'simply-schedule-appointments-settings' ) {
-			wp_redirect( $this->url( '/ssa/settings/all' ) );
+			wp_safe_redirect( $this->url( '/ssa/settings/all' ) );
 			exit;
 		}
 
 		if ( !empty( $_GET['page'] ) && $_GET['page'] === 'simply-schedule-appointments-types' ) {
-			wp_redirect( $this->url( '/ssa/appointment-types/all' ) );
+			wp_safe_redirect( $this->url( '/ssa/appointment-types/all' ) );
 			exit;
 		}
 
 		if ( !empty( $_GET['page'] ) && $_GET['page'] === 'simply-schedule-appointments-support' ) {
-			wp_redirect( $this->url( '/ssa/support' ) );
+			wp_safe_redirect( $this->url( '/ssa/support' ) );
 			exit;
 		}
 
 		if ( !empty( $_GET['page'] ) && $_GET['page'] === 'simply-schedule-appointments-team' ) {
-			wp_redirect( $this->url( '/ssa/settings/staff/all' ) );
+			wp_safe_redirect( $this->url( '/ssa/settings/staff/all' ) );
 			exit;
 		}
 
 		if ( !empty( $_GET['page'] ) && $_GET['page'] === 'simply-schedule-appointments-ssa-support-admin' ) {
-			wp_redirect( admin_url( 'admin.php?page=simply-schedule-appointments&ssa-support-admin=1' ) );
+			wp_safe_redirect( admin_url( 'admin.php?page=simply-schedule-appointments&ssa-support-admin=1' ) );
 			exit;
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 	}
 
 	public function url( $path='' ) {
@@ -170,7 +172,7 @@ class SSA_Wp_Admin {
 	}
 
 	public function is_admin_page() {
-		if ( empty( $_GET['page'] ) || strpos( $_GET['page'], 'simply-schedule-appointments' ) === false ) {
+		if ( empty( $_GET['page'] ) || strpos( sanitize_text_field( wp_unslash( $_GET['page'] ) ), 'simply-schedule-appointments' ) === false ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin-page detection, no state change.
 			return false;
 		}
 
@@ -341,7 +343,7 @@ class SSA_Wp_Admin {
 	
 	public function render_admin_page() {
 		if ( $this->should_restrict_access_to_admin_page() ) {
-			wp_die( __( 'Please ask your administrator to link your account to an active team member.', 'simply-schedule-appointments' ), __( 'Permission Denied', 'simply-schedule-appointments' ) );
+			wp_die( esc_html__( 'Please ask your administrator to link your account to an active team member.', 'simply-schedule-appointments' ), esc_html__( 'Permission Denied', 'simply-schedule-appointments' ) );
 		}
 		
 		remove_filter( 'script_loader_tag', 'mesmerize_defer_js_scripts', 11 ); // remove bug with 3rd party "Mesmerize" theme
@@ -354,7 +356,7 @@ class SSA_Wp_Admin {
 		wp_enqueue_style( 'ssa-unsupported-style', $this->plugin->url('assets/css/unsupported.css'), array(), Simply_Schedule_Appointments::VERSION );
 		wp_enqueue_style( 'ssa-admin-style-custom', $this->plugin->templates->locate_template_url('admin-app/custom.css'), array(), Simply_Schedule_Appointments::VERSION );
 
-		wp_enqueue_script( 'ssa-unsupported-script', $this->plugin->url('assets/js/unsupported.js'), array(), Simply_Schedule_Appointments::VERSION);
+		wp_enqueue_script( 'ssa-unsupported-script', $this->plugin->url('assets/js/unsupported.js'), array(), Simply_Schedule_Appointments::VERSION, false );
 
 		wp_enqueue_script( 'ssa-admin-manifest', $this->plugin->url('admin-app/dist/static/js/manifest.js'), array(), Simply_Schedule_Appointments::VERSION, true );
 		wp_enqueue_script( 'ssa-admin-vendor', $this->plugin->url('admin-app/dist/static/js/chunk-vendors.js'), array( 'ssa-admin-manifest' ), Simply_Schedule_Appointments::VERSION, true );
@@ -402,9 +404,9 @@ class SSA_Wp_Admin {
 			<noscript>
 				<div class="unsupported">
 					<div class="unsupported-container">
-						<img class="unsupported-icon" src="' . $this->plugin->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') . '"/>
-						<h1 class="unsupported-label">' . __('Simply Schedule Appointments requires JavaScript', 'simply-schedule-appointments') . '</h1>
-						<p class="unsupported-description">' . __('Please make sure you enable JavaScript in your browser.', 'simply-schedule-appointments') . '</p>
+						<img class="unsupported-icon" src="' . esc_url( $this->plugin->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') ) . '"/>
+						<h1 class="unsupported-label">' . esc_html__('Simply Schedule Appointments requires JavaScript', 'simply-schedule-appointments') . '</h1>
+						<p class="unsupported-description">' . esc_html__('Please make sure you enable JavaScript in your browser.', 'simply-schedule-appointments') . '</p>
 					</div>
 				</div>
 			</noscript>
@@ -412,9 +414,9 @@ class SSA_Wp_Admin {
 		<div id="ssa-unsupported" style="display:none;">
 				<div class="unsupported">
 					<div class="unsupported-container">
-						<img class="unsupported-icon" src="' . $this->plugin->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') . '"/>
-						<h1 class="unsupported-label">' . __('Unsupported Browser', 'simply-schedule-appointments') . '</h1>
-						<p class="unsupported-description">' . __('Please update your browser to something more modern. We recommend Firefox or Chrome.', 'simply-schedule-appointments') . '</p>
+						<img class="unsupported-icon" src="' . esc_url( $this->plugin->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') ) . '"/>
+						<h1 class="unsupported-label">' . esc_html__('Unsupported Browser', 'simply-schedule-appointments') . '</h1>
+						<p class="unsupported-description">' . esc_html__('Please update your browser to something more modern. We recommend Firefox or Chrome.', 'simply-schedule-appointments') . '</p>
 					</div>
 				</div>
 		</div>

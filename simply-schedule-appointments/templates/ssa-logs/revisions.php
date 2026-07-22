@@ -1,3 +1,4 @@
+<?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
 <style>
 
 .table-wrapper {
@@ -36,7 +37,7 @@ th {
 					<tr>
             <?php foreach (array_keys($revisions[0]) as $key => $header): ?>
                 <th <?php if (strtolower($header) == "stack_trace") echo 'style="min-width: 150em;"'; ?> >
-                  <?php echo htmlspecialchars($header); ?>
+                  <?php echo esc_html($header); ?>
                 </th>
             <?php endforeach; ?>
 					</tr>
@@ -57,11 +58,11 @@ th {
 														}
 												}
 
-												echo nl2br($formattedOutput);
+												echo nl2br(esc_html($formattedOutput));
 											} else if (is_array($value)) {
-													echo htmlspecialchars(json_encode($value));
+													echo esc_html(json_encode($value));
 											} else {
-													echo htmlspecialchars($value);
+													echo esc_html($value);
 											}
 										?>
 										</td>

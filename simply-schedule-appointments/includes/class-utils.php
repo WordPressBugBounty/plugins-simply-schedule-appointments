@@ -7,6 +7,10 @@
  */
 use League\Period\Period;
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 /**
  * Simply Schedule Appointments Utils.
  *
@@ -79,7 +83,7 @@ class SSA_Utils {
 		// We see this as the only way to co-exist with these problematic plugins and simplify
 		// life for the user. If there is a better approach, please get in touch.
 		// We'd love to remove this code :)
-		date_default_timezone_set( 'UTC' );
+		date_default_timezone_set( 'UTC' ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.timezone_change_date_default_timezone_set -- Deliberate defensive reset to UTC so SSA's UTC-based logic works even when another plugin changed the server default timezone; the original value is captured here and restored by defensive_timezone_reset().
 	}
 	public function defensive_timezone_reset() {
 		if ( empty( $this->server_default_timezone_before_ssa ) || 'UTC' === $this->server_default_timezone_before_ssa ) {
@@ -88,7 +92,7 @@ class SSA_Utils {
 
 		// We know that setting the default_timezone on a server is bad practice
 		// ^^^ See note above in defensive_timezone_fix() ^^^
-		date_default_timezone_set( $this->server_default_timezone_before_ssa );
+		date_default_timezone_set( $this->server_default_timezone_before_ssa ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.timezone_change_date_default_timezone_set -- Deliberate restore of the server's pre-SSA default timezone, paired with defensive_timezone_fix() above.
 	}
 
 	public static function site_unique_hash( $string ) {
@@ -259,7 +263,9 @@ class SSA_Utils {
 				}
 			}
 
-			error_log( 'SSA get_safe_timezone_string: unresolvable timezone "' . $timezone_string . '", falling back to UTC.' );
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'SSA get_safe_timezone_string: unresolvable timezone "' . $timezone_string . '", falling back to UTC.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Diagnostic notice emitted only when WP_DEBUG is enabled.
+			}
 			return 'UTC';
 		}
 	}
@@ -311,7 +317,7 @@ class SSA_Utils {
 		$local_timezone = $this->get_datetimezone( $appointment_type_id, $staff_id, $location_id );
 
 		if ( empty( $local_timezone ) || ! ( $local_timezone instanceof DateTimeZone ) ) {
-			throw new SSA_Exception( __( 'No $local_timezone defined' ), 500 );
+			throw new SSA_Exception( esc_html__( 'No $local_timezone defined', 'simply-schedule-appointments' ), 500 );
 		}
 
 		if ( $datetime instanceof DateTime ) {
@@ -330,9 +336,9 @@ class SSA_Utils {
 
 	public function get_datetimezone( $appointment_type_id = 0, $staff_id = 0, $location_id = 0 ) {
 		if ( !empty( $staff_id ) ) {
-			throw new SSA_Exception( __( 'Staff members are not supported yet' ), 500 );
+			throw new SSA_Exception( esc_html__( 'Staff members are not supported yet', 'simply-schedule-appointments' ), 500 );
 		} elseif ( !empty( $location_id ) ) {
-			throw new SSA_Exception( __( 'Locations are not supported yet' ), 500 );
+			throw new SSA_Exception( esc_html__( 'Locations are not supported yet', 'simply-schedule-appointments' ), 500 );
 		} else {
 			$local_timezone = $this->plugin->settings_global->get_datetimezone();
 		}
@@ -383,6 +389,7 @@ class SSA_Utils {
 	}
 
 	public static function localize_default_date_strings( $php_date_format ) {
+		// phpcs:disable WordPress.WP.I18n.TextDomainMismatch -- Intentionally uses WordPress core's 'default' text domain to reuse core translations of these standard PHP date-format strings.
 		if ( 'F j, Y' === $php_date_format ) {
 			$php_date_format = __( 'F j, Y', 'default' );	
 		} else if ( 'g:i a' === $php_date_format ) {
@@ -390,6 +397,7 @@ class SSA_Utils {
 		} else if ( 'F j, Y g:i a' === $php_date_format ) {
 			$php_date_format = __( 'F j, Y g:i a', 'default' );	
 		}
+		// phpcs:enable WordPress.WP.I18n.TextDomainMismatch
 
 		return $php_date_format;
 	}
@@ -443,6 +451,7 @@ class SSA_Utils {
 		}
 		
 		if(empty($translations)){
+			// phpcs:disable WordPress.WP.I18n.MissingArgDomain -- Intentionally omits the text domain to reuse WordPress core's 'default'-domain translations of these standard month and weekday names.
 			$translations = array(
 				'January' => __( 'January' ),
 				'February' => __( 'February' ),
@@ -465,6 +474,7 @@ class SSA_Utils {
 				'Saturday' => __( 'Saturday' ),
 				'Sunday' => __( 'Sunday' ),
 			);
+			// phpcs:enable WordPress.WP.I18n.MissingArgDomain
 		}
 		
 		return str_replace( array_keys( $translations ), array_values( $translations ), $formatted_date );
@@ -524,9 +534,11 @@ class SSA_Utils {
 
 	    $moment_format = strtr($php_date_format, $replacements);
 		
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only date-format helper; $_GET['ssa_locale'] only selects a display locale for the moment.js format string, no state change.
 		if( isset( $_GET["ssa_locale"] )){
-			$moment_format = apply_filters( 'ssa/moment_format', $moment_format, $_GET["ssa_locale"] );
+			$moment_format = apply_filters( 'ssa/moment_format', $moment_format, sanitize_text_field( wp_unslash( $_GET["ssa_locale"] ) ) );
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 	    return $moment_format;
 	}
@@ -635,7 +647,7 @@ function ssa_debug_log( $var, $debug_level = 1, $label = '', $file = 'debug' ) {
 	}
 	
 	// Store backtrace early for PHP 7.0+ compatibility (before using parameters)
-	$backtrace = debug_backtrace();
+	$backtrace = debug_backtrace(); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Deliberate file-based debug logger (ssa_debug_log); captures caller context, gated upstream by the SSA_DEBUG_LOG constant and the ssa_debug_level option.
 	
 	$ssa_debug_level = get_option( 'ssa_debug_level', 10 );
 	if ( $debug_level < $ssa_debug_level ) {
@@ -653,31 +665,31 @@ function ssa_debug_log( $var, $debug_level = 1, $label = '', $file = 'debug' ) {
 	// Validate indices before access (PHP 8.0+ compatibility)
 
 	if ( isset( $backtrace[1]['function'] ) ) {
-		error_log( PHP_EOL . 'The following is logged from ' . $backtrace[1]['function'] . '()' . PHP_EOL, 3, $path );
+		error_log( PHP_EOL . 'The following is logged from ' . $backtrace[1]['function'] . '()' . PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	}
 	if ( isset( $backtrace[0]['file'], $backtrace[0]['line'] ) ) {
-		error_log( 'in ' . $backtrace[0]['file'] . ' line ' . $backtrace[0]['line'] . ':' . PHP_EOL, 3, $path );
+		error_log( 'in ' . $backtrace[0]['file'] . ' line ' . $backtrace[0]['line'] . ':' . PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	}
 
 	if ( isset( $backtrace[2]['function'] ) ) {
-		error_log( PHP_EOL . '... ' . $backtrace[2]['function'] . '()' . PHP_EOL, 3, $path );
+		error_log( PHP_EOL . '... ' . $backtrace[2]['function'] . '()' . PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	}
 	if ( isset( $backtrace[1]['file'], $backtrace[1]['line'] ) ) {
-		error_log( 'in ' . $backtrace[1]['file'] . ' line ' . $backtrace[1]['line'] . ':' . PHP_EOL, 3, $path );
+		error_log( 'in ' . $backtrace[1]['file'] . ' line ' . $backtrace[1]['line'] . ':' . PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	}
 
 	if ( isset( $backtrace[3]['function'] ) ) {
-		error_log( PHP_EOL . '...... ' . $backtrace[3]['function'] . '()' . PHP_EOL, 3, $path );
+		error_log( PHP_EOL . '...... ' . $backtrace[3]['function'] . '()' . PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	}
 	if ( isset( $backtrace[2]['file'], $backtrace[2]['line'] ) ) {
-		error_log( 'in ' . $backtrace[2]['file'] . ' line ' . $backtrace[2]['line'] . ':' . PHP_EOL, 3, $path );
+		error_log( 'in ' . $backtrace[2]['file'] . ' line ' . $backtrace[2]['line'] . ':' . PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	}
 
 	if ( ! empty( $label ) ) {
-		error_log( $log_prefix.$label.PHP_EOL, 3, $path );
+		error_log( $log_prefix.$label.PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	}
 	if ( is_string( $var ) ) {
-		error_log( $log_prefix.$var.PHP_EOL, 3, $path );
+		error_log( $log_prefix.$var.PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	} else {
 		// error_log( $log_prefix.print_r( $var, true ).PHP_EOL, 3, $path );
 	}
@@ -1136,7 +1148,7 @@ function ssa_evaluate_merge_tag ( $appointment_id, $modifier ) {
 
 function ssa_get_stack_trace() {
 	ob_start();
-	debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+	debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_print_backtrace -- Intentional diagnostic helper; captures the call stack into a string consumed by SSA's file-based logger ssa_debug_log().
 	$trace = ob_get_contents();
 	ob_end_clean();
 	return $trace;
@@ -1196,11 +1208,12 @@ function ssa_sanitize_color_input($color) {
 function ssa_is_json_request() {
 	// wp_is_json_request checks for the headers - not helpful here
 	// so we check if /wp-json/ is in the request URI
-	return strpos( $_SERVER['REQUEST_URI'], '/wp-json/' ) !== false && strpos( $_SERVER['REQUEST_URI'], '/block-renderer/ssa') === false;
+	$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+	return strpos( $request_uri, '/wp-json/' ) !== false && strpos( $request_uri, '/block-renderer/ssa') === false;
 }
 
 function ssa_is_file_request() {
-    $request_uri = $_SERVER['REQUEST_URI'];
+    $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
     $file_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico', 'css', 'js', 'woff', 'woff2', 'ttf', 'eot', 'otf', 'svg', 'webp', 'map'];
     $path_info = pathinfo($request_uri);
 

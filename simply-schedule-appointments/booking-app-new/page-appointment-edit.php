@@ -1,9 +1,10 @@
+<?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo apply_filters( 'ssa_appointment_edit_page_title', __( 'Edit Appointment', 'simply-schedule-appointments' ) ); ?></title>
+    <title><?php echo esc_html( apply_filters( 'ssa_appointment_edit_page_title', __( 'Edit Appointment', 'simply-schedule-appointments' ) ) ); ?></title>
     <?php wp_head(); ?>
   </head>
   <body <?php body_class(); ?> data-iframe-height>
@@ -13,7 +14,7 @@
       die( __( 'No appointment found, please check the URL', 'simply-schedule-appointments' ) ); // phpcs:ignore
     }
     $shortcode = '[ssa_booking edit="'.$ssa_current_appointment_id.'"';
-    if ( ! empty( $_GET['paypal_success'] ) || ! empty( $_GET['paypal_cancel'] ) ) {
+    if ( ! empty( $_GET['paypal_success'] ) || ! empty( $_GET['paypal_cancel'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only render: values only presence-checked to pick the confirm_payment view after a PayPal redirect, no state change.
       $shortcode .= ' view="confirm_payment"';
     }
     $appointment = new SSA_Appointment_Object( $ssa_current_appointment_id );

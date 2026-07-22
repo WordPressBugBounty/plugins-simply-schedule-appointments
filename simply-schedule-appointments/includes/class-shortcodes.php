@@ -85,7 +85,7 @@ class SSA_Shortcodes {
 	 * 
 	 */
 	public function prevent_breakdance_conflict_with_appointment_edit_url(){
-		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) {
+		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only render guard for the public appointment-edit link; only removes another plugin's template filter, no state change
 			return;
 		}
 
@@ -95,7 +95,7 @@ class SSA_Shortcodes {
 	}
 	
 	public function prevent_thrive_themes_conflict_with_appointment_edit_url() {
-		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) {
+		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only render guard for the public appointment-edit link; only removes another plugin's template hook, no state change
 			return;
 		}
 
@@ -186,7 +186,7 @@ class SSA_Shortcodes {
 		if ( ! empty( $query_var ) ) {
 			return true;
 		}
-		if ( ! empty( $_GET['ssa_embed'] ) ) {
+		if ( ! empty( $_GET['ssa_embed'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only; only detects the public embed view to pick a template
 			return true;
 		}
 
@@ -247,7 +247,7 @@ class SSA_Shortcodes {
 
 	public function hijack_appointment_edit_url( $template ) {
 		// If Appointment Action is not edit
-		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) {
+		if ( empty( $_GET['appointment_action'] ) || 'edit' !== $_GET['appointment_action'] || empty( $_GET['appointment_token'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only template_include decision for the token-verified appointment-edit page, no state change
 			return $template;
 		}
 
@@ -255,7 +255,7 @@ class SSA_Shortcodes {
 		 * Prevent hijacking the PAGE if this is a Gravity Forms custom confirmation
 		 * The URL is already hijacked by now
 		 */
-		if( ! empty( $_GET['ssa_gf_custom_confirmation'] ) ) {
+		if( ! empty( $_GET['ssa_gf_custom_confirmation'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only template_include decision on the token-verified appointment-edit page, no state change
 			return $template;
 		}
 
@@ -271,7 +271,7 @@ class SSA_Shortcodes {
 				 * Allow hijacking the page if the admin is editing as customer from within SSA admin app
 				 * @see admin-app/src/components/Appointment/Appointment.vue
 				 */
-				if ( empty( $_GET['redirect_from'] ) || $_GET['redirect_from'] !== 'ssa_admin' ) {
+				if ( empty( $_GET['redirect_from'] ) || $_GET['redirect_from'] !== 'ssa_admin' ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only template_include decision on the token-verified appointment-edit page, no state change
 					return $template;
 				}
 			}
@@ -281,15 +281,15 @@ class SSA_Shortcodes {
 
 		$this->disable_third_party_scripts = true;
 		$this->disable_third_party_styles  = true;
-		$appointment_token                 = sanitize_text_field( $_GET['appointment_token'] );
+		$appointment_token                 = sanitize_text_field( wp_unslash( $_GET['appointment_token'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only template_include decision on the token-verified appointment-edit page, no state change
 		$provided_hash                     = substr( $appointment_token, 0, 32 );
 		$appointment_id                    = substr( $appointment_token, 32 );
 
 		if ( ! $this->plugin->appointment_model->verify_id_token(  $appointment_id, $provided_hash ) ) {
 			die( 'An error occurred, please check the URL' ); // phpcs:ignore
 		}
-		if ( isset( $_GET['admin'] ) && current_user_can( 'ssa_manage_site_settings' ) ) {
-			wp_redirect( ssa()->appointment_model->get_admin_edit_url( $appointment_id ), 302 );
+		if ( isset( $_GET['admin'] ) && current_user_can( 'ssa_manage_site_settings' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only capability-gated branch that redirects to the admin edit URL, no state change
+			wp_safe_redirect( ssa()->appointment_model->get_admin_edit_url( $appointment_id ), 302 );
 			exit;
 		}
 
@@ -312,7 +312,7 @@ class SSA_Shortcodes {
 		wp_register_script( 'ssa-iframe-outer', $this->plugin->url( 'assets/js/iframe-outer.js' ), array(), Simply_Schedule_Appointments::VERSION, true );
 		wp_register_script( 'ssa-tracking', $this->plugin->url( 'assets/js/ssa-tracking.js' ), array(), Simply_Schedule_Appointments::VERSION, true );
 		wp_register_script( 'ssa-form-embed', $this->plugin->url( 'assets/js/ssa-form-embed.js' ), array( 'jquery' ), Simply_Schedule_Appointments::VERSION, true );
-		wp_register_script( 'ssa-unsupported-script', $this->plugin->url( 'assets/js/unsupported.js' ), array(), Simply_Schedule_Appointments::VERSION );
+		wp_register_script( 'ssa-unsupported-script', $this->plugin->url( 'assets/js/unsupported.js' ), array(), Simply_Schedule_Appointments::VERSION, false );
 	}
 
 	public function register_styles() {
@@ -425,7 +425,7 @@ class SSA_Shortcodes {
 
 	public function get_passed_args() {
 		$passed_args = array_diff_key(
-			$_GET,
+			$_GET, // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only; collects extra query args to build the public booking iframe URL
 			$this->get_ssa_booking_arg_defaults()
 		);
 
@@ -433,10 +433,10 @@ class SSA_Shortcodes {
 	}
 
 	public function ssa_confirmation() {
-		$appointment_token = isset($_GET['appointment_token']) ? esc_attr($_GET['appointment_token']): (isset($_POST["appointment_token"]) ? esc_attr( $_POST["appointment_token"]): '');
+		$appointment_token = isset($_GET['appointment_token']) ? sanitize_text_field( wp_unslash( $_GET['appointment_token'] ) ): (isset($_POST["appointment_token"]) ? sanitize_text_field( wp_unslash( $_POST["appointment_token"] ) ): ''); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing -- read-only public booking-confirmation render; auth is by signed appointment token, not nonce
 		$error_message = '';
-		$paypal_success = isset($_GET['paypal_success']) ? esc_attr($_GET['paypal_success']): '';
-		$paypal_cancel = isset($_GET['paypal_cancel']) ? esc_attr($_GET['paypal_cancel']): '';
+		$paypal_success = isset($_GET['paypal_success']) ? sanitize_text_field( wp_unslash( $_GET['paypal_success'] ) ): ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public booking-confirmation render; payment-return flag only selects a display view
+		$paypal_cancel = isset($_GET['paypal_cancel']) ? sanitize_text_field( wp_unslash( $_GET['paypal_cancel'] ) ): ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public booking-confirmation render; payment-return flag only selects a display view
 
 		if(empty($appointment_token)) {
 			if ( current_user_can( 'ssa_manage_site_settings' ) ) {
@@ -474,8 +474,8 @@ class SSA_Shortcodes {
 		}
 
 		
-		if( isset( $_GET['stripe_payment'] ) && $_GET['stripe_payment'] === 0 ){
-			if( isset( $_GET['redirect_status'] ) && $_GET['redirect_status'] === "failed" ){
+		if( isset( $_GET['stripe_payment'] ) && $_GET['stripe_payment'] === 0 ){ // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public booking-confirmation render; only reads a payment-return flag to pick a view
+			if( isset( $_GET['redirect_status'] ) && $_GET['redirect_status'] === "failed" ){ // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public booking-confirmation render; only reads a payment-return flag to pick a view
 				$atts = array_merge(array( 'view' => "canceled_payment", 'payment_provider' => 'stripe' ), $atts);
 			} else {
 				// Here we assume $_GET['redirect_status'] is "success"
@@ -501,10 +501,10 @@ class SSA_Shortcodes {
 		$atts = apply_filters( 'ssa_booking_shortcode_atts', $atts );
 		// escape JS
 		$atts = array_map( 'esc_attr', $atts );
-		$paypal_payment = isset($_GET['paypal_payment']) ? esc_attr($_GET['paypal_payment']): '';
-		$stripe_payment = isset($_GET['stripe_payment']) ? esc_attr($_GET['stripe_payment']): '';
+		$paypal_payment = isset($_GET['paypal_payment']) ? sanitize_text_field( wp_unslash( $_GET['paypal_payment'] ) ): ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public booking render; payment-return flag only selects a display view
+		$stripe_payment = isset($_GET['stripe_payment']) ? sanitize_text_field( wp_unslash( $_GET['stripe_payment'] ) ): ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public booking render; payment-return flag only selects a display view
 		
-		if(isset($_GET["paypal_cancel"]) && "1" === $_GET["paypal_cancel"]){
+		if(isset($_GET["paypal_cancel"]) && "1" === $_GET["paypal_cancel"]){ // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public booking render; only reads a payment-return flag to pick a view
 			$_GET["paypal_cancel"] = true;
 			return $this->ssa_confirmation();
 		}
@@ -537,7 +537,7 @@ class SSA_Shortcodes {
 
 				$error_message = '<h3>' . __('Sorry, no appointment types available, please check back later.', 'simply-schedule-appointments') . '</h3>';
 				if ( current_user_can( 'ssa_manage_site_settings' ) ) {
-					$error_message .= '<code>' . sprintf( __('The specified appointment types \'%1$s\' can\'t be found %2$s (this message is only viewable to site administrators)', 'simply-schedule-appointments'),
+					$error_message .= '<code>' . sprintf( /* translators: 1: requested appointment type list, 2: closing HTML tag */ __('The specified appointment types \'%1$s\' can\'t be found %2$s (this message is only viewable to site administrators)', 'simply-schedule-appointments'),
 														$types,
 														'</code>' );
 				}
@@ -556,7 +556,7 @@ class SSA_Shortcodes {
 
 				$error_message = '<h3>' . __('Sorry, no appointment types available for this label, please check back later.', 'simply-schedule-appointments') . '</h3>';
 				if ( current_user_can( 'ssa_manage_site_settings' ) ) {
-					$error_message .= '<code>' . sprintf( __('The specified appointment type label \'%1$s\' can\'t be found, or has no appointment types available %2$s (this message only viewable to site administrators)', 'simply-schedule-appointments'),
+					$error_message .= '<code>' . sprintf( /* translators: 1: requested appointment type label, 2: closing HTML tag */ __('The specified appointment type label \'%1$s\' can\'t be found, or has no appointment types available %2$s (this message only viewable to site administrators)', 'simply-schedule-appointments'),
 														$label,
 														'</code>' );
 				}
@@ -591,7 +591,7 @@ class SSA_Shortcodes {
 
 					$error_message = '<h3>' . __('Sorry this appointment type isn\'t available, please check back later', 'simply-schedule-appointments') . '</h3>';
 					if ( current_user_can( 'ssa_manage_site_settings' ) ) {
-						$error_message .= '<code>' . sprintf( __('The specified appointment type \'%1$s\' can\'t be found %2$s (this message only viewable to site administrators)', 'simply-schedule-appointments'),
+						$error_message .= '<code>' . sprintf( /* translators: 1: requested appointment type, 2: closing HTML tag */ __('The specified appointment type \'%1$s\' can\'t be found %2$s (this message only viewable to site administrators)', 'simply-schedule-appointments'),
 															$type,
 															'</code>' );
 					}
@@ -924,7 +924,7 @@ class SSA_Shortcodes {
 		);
 
 		// Check if we have a 'ssa_state' url parameter on the current page. If so, we need to add it to the iframe src as a url hash.
-		$ssa_state = isset( $_GET['ssa_state'] ) ? sanitize_text_field( esc_attr( $_GET['ssa_state'] ) ) : '';
+		$ssa_state = isset( $_GET['ssa_state'] ) ? sanitize_text_field( wp_unslash( $_GET['ssa_state'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin display; the ssa_admin shortcode is gated by current_user_can( 'ssa_manage_appointments' )
 		if ( ! empty( $ssa_state ) ) {
 			// sanitize to avoid reflected xss
 			$link = $link . '#' . $ssa_state;
@@ -932,7 +932,7 @@ class SSA_Shortcodes {
 
 		$link = SSA_Bootstrap::maybe_fix_protocol( $link );
 
-		return '<iframe src="' . $link . '" height="400px" width="100%" name="ssa_admin" loading="eager" frameborder="0" data-skip-lazy="1" class="ssa_booking_iframe skip-lazy"></iframe>';
+		return '<iframe src="' . esc_url( $link ) . '" height="400px" width="100%" name="ssa_admin" loading="eager" frameborder="0" data-skip-lazy="1" class="ssa_booking_iframe skip-lazy"></iframe>';
 	}
 
 	public function get_translations() {
@@ -1256,7 +1256,7 @@ class SSA_Shortcodes {
 		$output = '';
 		if ( count( $bookable_memberships ) > 1 ) {
 			// Let add a title in this case so users can tell which iframe for which 
-			$booking_title = apply_filters( 'ssa/mepr/shortcode/booking_title', __('Booking for %s Membership', 'simply-schedule-appointments' ) );
+			$booking_title = apply_filters( 'ssa/mepr/shortcode/booking_title', /* translators: %s: membership name */ __('Booking for %s Membership', 'simply-schedule-appointments' ) );
 			foreach ($bookable_memberships as $membership) {
         $output .= '<h3 class="ssa_mepr_shortcode_msg ssa_mepr_shortcode__booking_title" >' . sprintf( $booking_title, $membership->get_title() ) . '</h3>';
         $atts = array(

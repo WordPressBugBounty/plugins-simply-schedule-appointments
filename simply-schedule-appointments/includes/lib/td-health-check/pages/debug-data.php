@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 TD_Health_Check_Debug_Data::check_for_updates();
 
 $info = TD_Health_Check_Debug_Data::debug_data();
+// phpcs:disable WordPress.WP.I18n.TextDomainMismatch, WordPress.WP.DeprecatedFunctions._get_path_to_translationFound -- Vendored Health Check library: its strings are keyed to the bundled "health-check" text domain (with its own .mo files) and it calls _get_path_to_translation() to load them; realigning the domain or replacing that call would break the library's upstream translations. Maintained upstream.
 ?>
 
 
@@ -48,7 +49,7 @@ $info = TD_Health_Check_Debug_Data::debug_data();
 
 							printf(
 								"### %s%s ###\n\n",
-								$details['label'],
+								esc_html( $details['label'] ),
 								( isset( $details['show_count'] ) && $details['show_count'] ? sprintf( ' (%d)', count( $details['fields'] ) ) : '' )
 							);
 
@@ -72,8 +73,8 @@ $info = TD_Health_Check_Debug_Data::debug_data();
 
 								printf(
 									"%s: %s\n",
-									$field['label'],
-									$values
+									esc_html( $field['label'] ),
+									esc_html( $values )
 								);
 							}
 							echo "\n";
@@ -100,7 +101,7 @@ $info = TD_Health_Check_Debug_Data::debug_data();
 
 					printf(
 						"### %s%s ###\n\n",
-						$details['label'],
+						esc_html( $details['label'] ),
 						( isset( $details['show_count'] ) && $details['show_count'] ? sprintf( ' (%d)', count( $details['fields'] ) ) : '' )
 					);
 
@@ -124,8 +125,8 @@ $info = TD_Health_Check_Debug_Data::debug_data();
 
 						printf(
 							"%s: %s\n",
-							$field['label'],
-							$values
+							esc_html( $field['label'] ),
+							esc_html( $values )
 						);
 					}
 					echo "\n";
@@ -159,7 +160,7 @@ $info = TD_Health_Check_Debug_Data::debug_data();
 			);
 		}
 
-		echo implode( ' | ', $toc );
+		echo implode( ' | ', $toc ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $toc items are pre-escaped where built above (esc_attr on the anchor href, esc_html on the label); intentional anchor-tag HTML must not be double-escaped.
 		?>
 	</div>
 
@@ -209,7 +210,7 @@ foreach ( $info as $section => $details ) {
 			printf(
 				'<tr><td>%s</td><td>%s</td></tr>',
 				esc_html( $field['label'] ),
-				$values
+				$values // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $values is pre-escaped where built above (esc_html on each name/value, or esc_html on the scalar value); intentional <li> HTML must not be double-escaped.
 			);
 		}
 		?>
@@ -220,3 +221,4 @@ foreach ( $info as $section => $details ) {
 	</span>
 	<?php
 }
+// phpcs:enable WordPress.WP.I18n.TextDomainMismatch, WordPress.WP.DeprecatedFunctions._get_path_to_translationFound

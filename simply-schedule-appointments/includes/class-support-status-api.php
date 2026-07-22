@@ -13,6 +13,18 @@
  */
 class SSA_Support_Status_Api extends WP_REST_Controller {
 	/**
+	 * Widest window the external-events viewer will read in one request, in seconds.
+	 * The viewer renders a 6-week grid plus a day of padding on each side.
+	 */
+	const EXTERNAL_EVENTS_MAX_RANGE = 62 * DAY_IN_SECONDS;
+
+	/**
+	 * Hard cap on rows returned by the external-events viewer. Bounds the read so a
+	 * calendar with a pathological number of events cannot exhaust memory.
+	 */
+	const EXTERNAL_EVENTS_MAX_EVENTS = 2000;
+
+	/**
 	 * Parent plugin class
 	 *
 	 * @var   class
@@ -150,6 +162,25 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 			),
 		) );
 
+		register_rest_route( $namespace, '/' . 'support/external_events', array(
+			array(
+				'methods'         => WP_REST_Server::READABLE,
+				'callback'        => array( $this, 'get_external_events' ),
+				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'args'            => array(
+					'appointment_type_id' => array(
+						'required' => true,
+					),
+					'start' => array(
+						'required' => true,
+					),
+					'end' => array(
+						'required' => true,
+					),
+				),
+			),
+		) );
+
 		register_rest_route(
 			$namespace,
 			'/fetch-guides',
@@ -252,6 +283,335 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 		return current_user_can( 'ssa_manage_site_settings' );
 	}
 
+	/**
+	 * Return the cached external (Google) calendar events overlapping a date range,
+	 * for the calendars a single appointment type actually checks.
+	 *
+	 * Reads only the availability_external cache table, which exists on every
+	 * edition. Times are stored and returned in UTC.
+	 */
+	public function get_external_events( $request ) {
+		$params = $request->get_params();
+
+		$start = isset( $params['start'] ) ? sanitize_text_field( $params['start'] ) : '';
+		$end   = isset( $params['end'] ) ? sanitize_text_field( $params['end'] ) : '';
+
+		$appointment_type_id = isset( $params['appointment_type_id'] ) ? absint( $params['appointment_type_id'] ) : 0;
+		if ( empty( $appointment_type_id ) ) {
+			return new WP_Error(
+				'ssa_external_events_missing_appointment_type',
+				__( 'An appointment type is required.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$appointment_type = $this->plugin->appointment_type_model->get( $appointment_type_id );
+		if ( empty( $appointment_type['id'] ) ) {
+			return new WP_Error(
+				'ssa_external_events_invalid_appointment_type',
+				__( 'That appointment type could not be found.', 'simply-schedule-appointments' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		$period = $this->build_external_events_period( $start, $end );
+		if ( is_wp_error( $period ) ) {
+			return $period;
+		}
+
+		$scope = $this->get_calendars_for_appointment_type( $appointment_type_id );
+		if ( empty( $scope ) ) {
+			return array(
+				'response_code'    => 200,
+				'count'            => 0,
+				'total'            => 0,
+				'truncated'        => false,
+				'complete_through' => '',
+				'events'           => array(),
+				'calendars'        => array(),
+			);
+		}
+
+		// Fetch one row past the cap purely as a probe: at exactly the cap a `>=` test
+		// cannot tell "the window ended here" from "we ran out of room", and guessing
+		// truncation greys out a swath of days the viewer had, in fact, fully loaded.
+		$rows = $this->plugin->availability_external_model->query( array(
+			'number'              => self::EXTERNAL_EVENTS_MAX_EVENTS + 1,
+			'orderby'             => 'start_date',
+			'order'               => 'ASC',
+			'calendar_id_hash_IN' => array_map( 'ssa_int_hash', array_keys( $scope ) ),
+			'intersects_period'   => $period,
+		) );
+		if ( ! is_array( $rows ) ) {
+			$rows = array();
+		}
+
+		$truncated = count( $rows ) > self::EXTERNAL_EVENTS_MAX_EVENTS;
+		if ( $truncated ) {
+			array_pop( $rows );
+		}
+
+		$events = array();
+		foreach ( $rows as $row ) {
+			// calendar_id_hash is a crc32, so the query can match a colliding calendar.
+			if ( empty( $row['calendar_id'] ) || ! isset( $scope[ $row['calendar_id'] ] ) ) {
+				continue;
+			}
+
+			$events[] = array(
+				'id'           => isset( $row['id'] ) ? (int) $row['id'] : 0,
+				'service'      => isset( $row['service'] ) ? $row['service'] : '',
+				'staff_id'     => isset( $row['staff_id'] ) ? (int) $row['staff_id'] : 0,
+				'calendar_id'  => isset( $row['calendar_id'] ) ? $row['calendar_id'] : '',
+				'start_date'   => isset( $row['start_date'] ) ? $row['start_date'] : '',
+				'end_date'     => isset( $row['end_date'] ) ? $row['end_date'] : '',
+				'is_all_day'   => ! empty( $row['is_all_day'] ) ? 1 : 0,
+				'is_available' => ! empty( $row['is_available'] ) ? 1 : 0,
+				'transparency' => isset( $row['transparency'] ) ? $row['transparency'] : '',
+				'status'       => isset( $row['status'] ) ? $row['status'] : '',
+				'event_id'     => isset( $row['event_id'] ) ? $row['event_id'] : '',
+				'date_modified' => isset( $row['date_modified'] ) ? $row['date_modified'] : '',
+			);
+		}
+
+		$calendars = $this->get_external_calendar_summary( $scope, $period );
+
+		$total = 0;
+		foreach ( $calendars as $calendar ) {
+			$total += (int) $calendar['count'];
+		}
+
+		// The cap is applied after ORDER BY start_date ASC, so what gets dropped is always
+		// the tail of the window. Report the last start_date we actually reached: without it
+		// the viewer draws the dropped days as empty, which reads as "nothing blocks these
+		// days" -- the opposite of the truth. Events sharing that start_date can straddle the
+		// cap, so the boundary itself is only "possibly incomplete", not "complete".
+		$complete_through = '';
+		if ( $truncated && ! empty( $rows ) ) {
+			$last_row         = end( $rows );
+			$complete_through = isset( $last_row['start_date'] ) ? $last_row['start_date'] : '';
+		}
+
+		return array(
+			'response_code'    => 200,
+			'count'            => count( $events ),
+			'total'            => $total,
+			'truncated'        => $truncated,
+			'complete_through' => $complete_through,
+			'events'           => $events,
+			'calendars'        => $calendars,
+		);
+	}
+
+	/**
+	 * Validate the requested window and turn it into a Period, or a WP_Error.
+	 */
+	protected function build_external_events_period( $start, $end ) {
+		if ( ! class_exists( 'League\Period\Period' ) ) {
+			return new WP_Error(
+				'ssa_external_events_unavailable',
+				__( 'External event lookup is unavailable on this site.', 'simply-schedule-appointments' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		$start_timestamp = ! empty( $start ) ? strtotime( $start ) : false;
+		$end_timestamp   = ! empty( $end ) ? strtotime( $end ) : false;
+
+		if ( empty( $start_timestamp ) || empty( $end_timestamp ) ) {
+			return new WP_Error(
+				'ssa_external_events_invalid_range',
+				__( 'A valid start and end date are required.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( $end_timestamp <= $start_timestamp ) {
+			return new WP_Error(
+				'ssa_external_events_invalid_range',
+				__( 'The end date must be after the start date.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( ( $end_timestamp - $start_timestamp ) > self::EXTERNAL_EVENTS_MAX_RANGE ) {
+			return new WP_Error(
+				'ssa_external_events_range_too_large',
+				__( 'The requested date range is too large.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Build from the timestamps validated above, not the raw strings: Period runs
+		// FILTER_VALIDATE_INT on its arguments first, so a bare numeric string would be
+		// read as a unix timestamp and silently shift (or invert) the queried window.
+		return new \League\Period\Period(
+			gmdate( 'Y-m-d H:i:s', $start_timestamp ),
+			gmdate( 'Y-m-d H:i:s', $end_timestamp )
+		);
+	}
+
+	/**
+	 * Resolve the set of external calendars an appointment type actually checks:
+	 * its site-level excluded calendars plus (Business only) the excluded
+	 * calendars of every staff member assigned to it.
+	 *
+	 * The same calendar can be excluded at both levels, so `owner` can be `both`
+	 * and `staff_names` can hold more than one name.
+	 *
+	 * Returns calendar_id => array( owner, staff_ids, staff_names ).
+	 */
+	protected function get_calendars_for_appointment_type( $appointment_type_id ) {
+		$scope = array();
+		if ( empty( $appointment_type_id ) ) {
+			return $scope;
+		}
+
+		$appointment_type = SSA_Appointment_Type_Object::instance( $appointment_type_id );
+
+		$site_calendars = $appointment_type->google_calendars_availability;
+		if ( ! empty( $site_calendars ) && is_array( $site_calendars ) ) {
+			foreach ( $site_calendars as $calendar_id ) {
+				$scope[ $calendar_id ] = array(
+					'owner'       => 'site',
+					'staff_ids'   => array(),
+					'staff_names' => array(),
+				);
+			}
+		}
+
+		if ( ! $this->plugin->settings_installed->is_enabled( 'staff' ) ) {
+			return $scope;
+		}
+
+		$staff_members = $this->plugin->staff_appointment_type_model->get_staff_for_appointment_type( $appointment_type );
+		if ( empty( $staff_members ) || ! is_array( $staff_members ) ) {
+			return $scope;
+		}
+
+		foreach ( $staff_members as $staff ) {
+			$staff_calendars = $staff->get_google_excluded_calendars();
+			if ( empty( $staff_calendars ) || ! is_array( $staff_calendars ) ) {
+				continue;
+			}
+
+			foreach ( $staff_calendars as $calendar_id ) {
+				if ( ! isset( $scope[ $calendar_id ] ) ) {
+					$scope[ $calendar_id ] = array(
+						'owner'       => 'staff',
+						'staff_ids'   => array(),
+						'staff_names' => array(),
+					);
+				} elseif ( 'site' === $scope[ $calendar_id ]['owner'] ) {
+					$scope[ $calendar_id ]['owner'] = 'both';
+				}
+
+				$scope[ $calendar_id ]['staff_ids'][]   = (int) $staff->id;
+				$scope[ $calendar_id ]['staff_names'][] = $staff->get_name();
+			}
+		}
+
+		return $scope;
+	}
+
+	/**
+	 * Flatten the per-account calendar-name cache written by
+	 * SSA_Google_Calendar::get_calendar_list() into calendar_id => name.
+	 */
+	protected function get_cached_calendar_names() {
+		$accounts = get_option( 'ssa_gcal_calendar_names', array() );
+		if ( ! is_array( $accounts ) ) {
+			return array();
+		}
+
+		$names = array();
+		foreach ( $accounts as $account_names ) {
+			if ( is_array( $account_names ) ) {
+				$names = array_merge( $names, $account_names );
+			}
+		}
+
+		return $names;
+	}
+
+	/**
+	 * Per-calendar summary for the external-events cache: how many cached events
+	 * fall inside the requested window, and when the calendar's events last changed.
+	 *
+	 * `last_updated` is NOT the last sync time. A sync that finds no change leaves the
+	 * rows untouched (see SSA_Google_Calendar::refresh_external_events_for_appointment_type()
+	 * and SSA_Staff_Object, which both bail on an unchanged event hash), so date_modified
+	 * only advances when SSA actually rewrote the calendar. A healthy calendar that has not
+	 * changed in months reports months ago -- surface it as "last changed", never as
+	 * "last synced", or support reads a working sync as a broken one.
+	 *
+	 * `count` is window-scoped so it agrees with the events the viewer renders;
+	 * `last_updated` is the MAX over all of the calendar's rows, because a sync
+	 * rewrites a calendar as a unit and is not tied to the window being viewed.
+	 */
+	protected function get_external_calendar_summary( $scope, $period ) {
+		if ( empty( $scope ) ) {
+			return array();
+		}
+
+		global $wpdb;
+
+		$calendar_names = $this->get_cached_calendar_names();
+
+		$calendars  = array();
+		$hash_to_id = array();
+		foreach ( $scope as $calendar_id => $meta ) {
+			$hash_to_id[ ssa_int_hash( $calendar_id ) ] = $calendar_id;
+
+			// Seeded so a calendar with zero cached events still appears.
+			$calendars[ $calendar_id ] = array(
+				'calendar_id'  => $calendar_id,
+				'service'      => 'google',
+				'name'         => isset( $calendar_names[ $calendar_id ] ) ? $calendar_names[ $calendar_id ] : '',
+				'owner'        => isset( $meta['owner'] ) ? $meta['owner'] : 'site',
+				'staff_names'  => isset( $meta['staff_names'] ) ? array_values( array_unique( $meta['staff_names'] ) ) : array(),
+				'count'        => 0,
+				'last_updated' => '',
+			);
+		}
+
+		$table_name           = $this->plugin->availability_external_model->get_table_name();
+		$calendar_id_hash_csv = implode( ',', array_map( 'intval', array_keys( $hash_to_id ) ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Direct read of the plugin's own availability-external custom table (no core API, not object-cacheable); $table_name is the model's internal get_table_name() identifier and $calendar_id_hash_csv is built above via implode of array_map( 'intval', ... ), so it is a list of integers only; the user-supplied date range is bound with %s placeholders in prepare().
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT calendar_id, calendar_id_hash,
+					SUM( CASE WHEN start_date <= %s AND end_date >= %s THEN 1 ELSE 0 END ) AS event_count,
+					MAX(date_modified) AS last_updated
+				FROM {$table_name}
+				WHERE calendar_id_hash IN ( {$calendar_id_hash_csv} )
+				GROUP BY calendar_id, calendar_id_hash",
+				$period->getEndDate()->format( 'Y-m-d H:i:s' ),
+				$period->getStartDate()->format( 'Y-m-d H:i:s' )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( ! is_array( $rows ) ) {
+			return array_values( $calendars );
+		}
+
+		foreach ( $rows as $row ) {
+			// calendar_id_hash is a crc32, so group by the real id and ignore collisions.
+			$calendar_id = isset( $row['calendar_id'] ) ? $row['calendar_id'] : '';
+			if ( ! isset( $calendars[ $calendar_id ] ) ) {
+				continue;
+			}
+
+			$calendars[ $calendar_id ]['count']        = isset( $row['event_count'] ) ? (int) $row['event_count'] : 0;
+			$calendars[ $calendar_id ]['last_updated'] = isset( $row['last_updated'] ) ? (string) $row['last_updated'] : '';
+		}
+
+		return array_values( $calendars );
+	}
+
 	public function get_items( $request ) {
 		$params = $request->get_params();
 
@@ -275,11 +635,11 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 		if( $developer_settings && isset( $developer_settings['debug_mode'] ) && $developer_settings['debug_mode'] ) {
 			$path = ini_get('error_log');
 			// return $path;
-			if ( file_exists( $path ) && is_writeable( $path ) ) {
+			if ( file_exists( $path ) && is_writeable( $path ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writeable -- Pre-flight writability probe on a specific path; WP_Filesystem offers no equivalent non-destructive probe, and this reads no file itself.
 				$content = file_get_contents( $path );
 
 				return new WP_REST_Response( $content, 200 );
-			} 
+			}
 		}
 
 		return new WP_REST_Response( "", 200 );
@@ -294,12 +654,12 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 	 */
 	public function empty_wp_debug_log_content( WP_REST_Request $request ) {
 		$path = ini_get('error_log');
-		if ( file_exists( $path ) && is_writeable( $path ) ) {
-			unlink( $path );
+		if ( file_exists( $path ) && is_writeable( $path ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writeable -- Pre-flight writability probe on a specific path; WP_Filesystem offers no equivalent non-destructive probe, and deletion below uses wp_delete_file().
+			wp_delete_file( $path );
 
-			return new WP_REST_Response( __( 'Debug Log file successfully cleared.' ), 200 );
+			return new WP_REST_Response( __( 'Debug Log file successfully cleared.', 'simply-schedule-appointments' ), 200 );
 		} else {
-			return new WP_REST_Response( __( 'Debug Log file not found.' ), 200 );
+			return new WP_REST_Response( __( 'Debug Log file not found.', 'simply-schedule-appointments' ), 200 );
 		}
 	}
 
@@ -331,12 +691,12 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 	 */
 	public function empty_ssa_debug_log_content( WP_REST_Request $request ) {
 		$path = $this->plugin->support_status->get_log_file_path( 'debug' );
-		if ( file_exists( $path ) && is_writeable( $path ) ) {
-			unlink( $path );
+		if ( file_exists( $path ) && is_writeable( $path ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writeable -- Pre-flight writability probe on a specific path; WP_Filesystem offers no equivalent non-destructive probe, and deletion below uses wp_delete_file().
+			wp_delete_file( $path );
 
-			return new WP_REST_Response( __( 'Debug Log file successfully cleared.' ), 200 );
+			return new WP_REST_Response( __( 'Debug Log file successfully cleared.', 'simply-schedule-appointments' ), 200 );
 		} else {
-			return new WP_REST_Response( __( 'Debug Log file not found or could not be removed.' ), 200 );
+			return new WP_REST_Response( __( 'Debug Log file not found or could not be removed.', 'simply-schedule-appointments' ), 200 );
 		}
 
 	}
@@ -541,11 +901,11 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 		$decoded = json_decode( $json, true );
 
 		if ( ! is_object( $decoded ) && ! is_array( $decoded ) ) {
-			return new WP_REST_Response( __( 'Invalid data format.'), 500 );
+			return new WP_REST_Response( __( 'Invalid data format.', 'simply-schedule-appointments' ), 500 );
 		}
 
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
-			return new WP_REST_Response( __( 'Invalid data format.'), 500 );
+			return new WP_REST_Response( __( 'Invalid data format.', 'simply-schedule-appointments' ), 500 );
 		}
 
 		$import = $this->plugin->support_status->import_data( $decoded );
@@ -594,7 +954,7 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 
 			// check if the response is valid.
 			if ( strpos( $response['body'], 'rest_forbidden' ) !== false ) {
-				return new WP_REST_Response( __( 'Invalid data format.' ), 500 );
+				return new WP_REST_Response( __( 'Invalid data format.', 'simply-schedule-appointments' ), 500 );
 			}
 
 			$cached_response = json_decode( $response['body'], true );

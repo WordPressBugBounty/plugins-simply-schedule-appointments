@@ -28,55 +28,55 @@ $date_options = array(
 // Start Section
 echo '<section class="ssa-mepr__past-appointments" id="ssa-mepr__past-appointments-section">';
 
-echo '<h2>'. __('Past Appointments', 'simply-schedule-appointments') .'</h2>';
+echo '<h2>'. esc_html__('Past Appointments', 'simply-schedule-appointments') .'</h2>';
 
 // Start the form
 echo '<form id="appointments-filter-form">';
 
 // Membership select
 echo '<div class="ssa_mepr_inner-filter-container">';
-echo '<label for="ssa_mepr_select_membership">'. __('Membership', 'simply-schedule-appointments') .'</label>';
+echo '<label for="ssa_mepr_select_membership">'. esc_html__('Membership', 'simply-schedule-appointments') .'</label>';
 echo '<br>';
 echo '<select id="ssa_mepr_select_membership" name="membership">';
-echo '<option value="any">'. __('Any', 'simply-schedule-appointments') .'</option>';
+echo '<option value="any">'. esc_html__('Any', 'simply-schedule-appointments') .'</option>';
 foreach ($memberships as $membership) {
-    echo '<option value="'.$membership['id'].'">'.$membership['title'].'</option>';
+    echo '<option value="'.esc_attr($membership['id']).'">'.esc_html($membership['title']).'</option>';
 }
 echo '</select>';
 echo '</div>';
 
 // Appointment type select
 echo '<div class="ssa_mepr_inner-filter-container">';
-echo '<label for="ssa_mepr_select_appointment_types">'. __('Appointment Type', 'simply-schedule-appointments') .'</label>';
+echo '<label for="ssa_mepr_select_appointment_types">'. esc_html__('Appointment Type', 'simply-schedule-appointments') .'</label>';
 echo '<br>';
 echo '<select id="ssa_mepr_select_appointment_types" name="appointment_type">';
-echo '<option value="any">'. __('Any', 'simply-schedule-appointments') .'</option>';
+echo '<option value="any">'. esc_html__('Any', 'simply-schedule-appointments') .'</option>';
 foreach ($appointment_types as $appointmentType) {
-    echo '<option value="'.$appointmentType['id'].'">'.$appointmentType['title'].'</option>';
+    echo '<option value="'.esc_attr($appointmentType['id']).'">'.esc_html($appointmentType['title']).'</option>';
 }
 echo '</select>';
 echo '</div>';
 
 // Date options
 echo '<div class="ssa_mepr_inner-filter-container">';
-echo '<label for="ssa_mepr_select_date">'. __('Date', 'simply-schedule-appointments') .'</label>';
+echo '<label for="ssa_mepr_select_date">'. esc_html__('Date', 'simply-schedule-appointments') .'</label>';
 echo '<br>';
 echo '<select id="ssa_mepr_select_date" name="date">';
 foreach ($date_options as $key => $date_option) {
-    echo '<option value="'.$key.'">'.$date_option.'</option>';
+    echo '<option value="'.esc_attr($key).'">'.esc_html($date_option).'</option>';
 }
 echo '</select>';
 echo '</div>';
 
 // Status select
 echo '<div class="ssa_mepr_inner-filter-container">';
-echo '<label for="ssa_mepr_select_status">'. __('Status', 'simply-schedule-appointments') .'</label>';
+echo '<label for="ssa_mepr_select_status">'. esc_html__('Status', 'simply-schedule-appointments') .'</label>';
 echo '<br>';
 echo '<select id="ssa_mepr_select_status" name="status">';
-echo '<option value="any">'. __('Any', 'simply-schedule-appointments') .'</option>';
+echo '<option value="any">'. esc_html__('Any', 'simply-schedule-appointments') .'</option>';
 foreach ( $statuses as $key => $status ) {
     $selected = ($key === 'booked') ? 'selected' : '';
-    echo '<option value="'.$key.'" '.$selected.'>'.$status.'</option>';
+    echo '<option value="'.esc_attr($key).'" '.esc_attr($selected).'>'.esc_html($status).'</option>';
 }
 echo '</select>';
 echo '</div>';

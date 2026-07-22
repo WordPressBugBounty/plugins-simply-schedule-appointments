@@ -175,16 +175,19 @@ class SSA_Error_Notices {
 
 	}
     
+	private $staff_reconnect_count_memo = null;
+
 	/**
 	 * Prepare and return the error notices based on what we have stored in db
 	 *
 	 * @since  6.3.1
-	 * 
+	 *
 	 * @return array
 	 */
 	public function get_error_notices(){
+		$this->staff_reconnect_count_memo = null;
 		$output = array();
-		
+
 		$temporary_error_notices = $this->get_temporary_error_notices();
 		if( ! empty( $temporary_error_notices ) ){
 			array_push( $output, $temporary_error_notices );
@@ -217,7 +220,23 @@ class SSA_Error_Notices {
 			}
 			
 			$notice = $schema[ $key ];
-			
+
+			if ( 'missing_gcal_refresh_token_for_staff' === $key ) {
+				$reconnect_count = $this->get_staff_reconnect_count();
+				if ( $reconnect_count > 0 ) {
+					$notice['message'] = sprintf(
+						// translators: %d is the number of team members that need to reconnect their Google Calendar.
+						_n(
+							'%d team member needs to reconnect their Google Calendar. Until they do, SSA cannot check their calendar for conflicts, so they may be double-booked. Reconnect (or remove) them in the Team settings.',
+							'%d team members need to reconnect their Google Calendar. Until they do, SSA cannot check their calendars for conflicts, so they may be double-booked. Reconnect (or remove) them in the Team settings.',
+							$reconnect_count,
+							'simply-schedule-appointments'
+						),
+						$reconnect_count
+					);
+				}
+			}
+
 			if( ! empty( $value['staff_id'] ) ) {
 				$notice['staff_id'] = $value['staff_id'];
 				$name = SSA_Staff_Model::get_staff_name_by_id( $value['staff_id'] );
@@ -232,13 +251,15 @@ class SSA_Error_Notices {
 
 	public function get_temporary_error_notices(){
 		// only on admin ssa page for now
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only admin display: query args are only read to render a notice, no state change.
 		if( isset( $_GET['error'] ) && isset( $_GET['page'] ) && $_GET['page'] === "simply-schedule-appointments" ){
 			return array(
 				'id' => 'temporary_error_notice',
 				'type' => 'warning',
-				'message' => sanitize_text_field( $_GET['error'] ),
+				'message' => sanitize_text_field( wp_unslash( $_GET['error'] ) ),
 			);
 		}
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$transient_message = get_transient( 'ssa_temporary_error_notice' );
 		if ( ! empty( $transient_message ) ) {
@@ -351,7 +372,8 @@ class SSA_Error_Notices {
 					$name = SSA_Staff_Model::get_staff_name_by_id( $staff_id );
 					$title = __( 'SSA Staff Calendar Disconnected', 'simply-schedule-appointments' );
 					$message = sprintf( 
-						__( 'SSA on <strong>%1$s</strong> failed to get Google Calendar events for <strong>%2$s</strong>. Please disconnect and reconnect Google Calendar in the settings and contact support if this error message persists.', 'simply-schedule-appointments' ), 
+						/* translators: 1: site name, 2: staff member name */
+					__( 'SSA on <strong>%1$s</strong> failed to get Google Calendar events for <strong>%2$s</strong>. Please disconnect and reconnect Google Calendar in the settings and contact support if this error message persists.', 'simply-schedule-appointments' ),
 						get_bloginfo( 'name' ),
 						$name 
 					);
@@ -423,7 +445,7 @@ class SSA_Error_Notices {
 				'id'			=> 'missing_gcal_refresh_token_globally',
 				'type'			=> 'error',
 				'priority' 		=> 1,
-				'message'		=> __( 'Lost connection to Google Calendar. Please disconnect and reconnect Google Calendar in the settings and contact support if this error message persists.', 'simply-schedule-appointments' ),
+				'message'		=> __( 'SSA lost its connection to your Google Calendar and needs to be reconnected. Until then, new appointments will not sync and your Google Calendar events will not block availability.', 'simply-schedule-appointments' ),
 				'link'			=>  '/ssa/settings/google-calendar',
 				'link_message' 	=> __( 'Go to settings', 'simply-schedule-appointments' ),
 				'callback'	=> 'confirm_gcal_refresh_token_not_missing_globally'
@@ -432,7 +454,7 @@ class SSA_Error_Notices {
 				'id'			=> 'missing_gcal_refresh_token_for_staff',
 				'type'			=> 'error',
 				'priority' 		=> 1,
-				'message'		=> __( 'One or more of your team members needs to reauthorize their Google Calendar. Please disconnect and reconnect their calendar in the team settings and contact support if this error message persists.', 'simply-schedule-appointments' ),
+				'message'		=> __( 'One or more team members need to reconnect their Google Calendar. Until they do, SSA cannot check their calendars for conflicts, so they may be double-booked. Reconnect (or remove) them in the Team settings.', 'simply-schedule-appointments' ),
 				'link'			=>  '/ssa/settings/staff/all',
 				'link_message' 	=> __( 'Go to Team settings', 'simply-schedule-appointments' ),
 				'callback'	=> 'confirm_gcal_refresh_token_not_missing_for_team'
@@ -572,7 +594,7 @@ class SSA_Error_Notices {
 				'id'			=> 'stripe_test_mode_active',
 				'type'			=> 'warning',
 				'priority' 		=> 10,
-				'message'		=> __( 'Stripe is in test mode! Remember to switch to live mode when ready to receive payments.' ),
+				'message'		=> __( 'Stripe is in test mode! Remember to switch to live mode when ready to receive payments.', 'simply-schedule-appointments' ),
 				'link'			=>  '/ssa/settings/payments/stripe',
 				'link_message' 	=> 'Go to Stripe Settings',
 				'callback'	=> 'confirm_stripe_live_mode_active'
@@ -734,12 +756,22 @@ class SSA_Error_Notices {
 			$this->delete_error_notice( $id );
 		}
 
-		$lost_staff_calendar_refresh_tokens = $this->plugin->staff_model->count_lost_staff_gcal_refresh_tokens();
+		$lost_staff_calendar_refresh_tokens = $this->get_staff_reconnect_count();
 
 		if( empty( $lost_staff_calendar_refresh_tokens ) ) {
 			$this->delete_error_notice( $id );
 		}
 
+	}
+
+	// Staff "needs reconnect" count, memoized per get_error_notices() pass (one query shared by scan, clear-callback, message).
+	private function get_staff_reconnect_count() {
+		if ( null === $this->staff_reconnect_count_memo ) {
+			$this->staff_reconnect_count_memo = ( ! empty( $this->plugin->staff_model ) && ! ( $this->plugin->staff_model instanceof SSA_Missing ) )
+				? (int) $this->plugin->staff_model->count_lost_staff_gcal_refresh_tokens()
+				: 0;
+		}
+		return $this->staff_reconnect_count_memo;
 	}
 
 	public function check_gcal_missing_refresh_token() {
@@ -763,7 +795,7 @@ class SSA_Error_Notices {
 			return;
 		}
 
-		$lost_staff_calendar_refresh_tokens = $this->plugin->staff_model->count_lost_staff_gcal_refresh_tokens();
+		$lost_staff_calendar_refresh_tokens = $this->get_staff_reconnect_count();
 
 		if( ! empty( $lost_staff_calendar_refresh_tokens ) ) {
 			$this->add_error_notice('missing_gcal_refresh_token_for_staff');

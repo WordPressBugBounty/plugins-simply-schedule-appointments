@@ -121,11 +121,13 @@ class SSA_Availability_Cache {
 
 		global $wpdb;
 		$sql = 'SELECT cache_key FROM '.$this->plugin->availability_model->get_table_name().' WHERE cache_args_hash=%d ORDER BY cache_key DESC LIMIT 1';
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name from internal get_table_name(); cache_args_hash bound via %d in prepare(); custom cache table needs a direct query; row cached via ssa_cache_set() below.
 		$sql = $wpdb->prepare(
 			$sql,
 			$args['cache_args_hash']
 		);
 		$latest_cache_key = $wpdb->get_row( $sql, ARRAY_A );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$latest_cache_key = $latest_cache_key['cache_key'];
 		ssa_cache_set( $obj_cache_key, $latest_cache_key );
 
@@ -270,7 +272,7 @@ class SSA_Availability_Cache {
 		)"; // same as intersects_period, except we use < rather than <= (so we don't delete the neighboring availability). This will delete any availability cache that starts in the period OR ends in the period OR contains the entire period
 
 		$sql = $wpdb->prepare(
-			$sql, array(
+			$sql, array( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- interpolation is the internal model table name from get_table_name() plus DateTime::format-produced boundary strings ($start_date_string/$end_date_string, L263-264, no user input); the only external value ($cache_args_hash) uses the %d placeholder.
 				$cache_args_hash,
 			)
 		);
@@ -283,10 +285,12 @@ class SSA_Availability_Cache {
 		$this->wpdb_query_while_preventing_deadlock($sql);
 
 		$sql = 'DELETE FROM '.$this->plugin->availability_model->get_table_name().' WHERE id=%d';
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- Table name from internal get_table_name(); id bound via %d in prepare().
 		$sql = $wpdb->prepare(
 			$sql,
 			$below_this_cache_key
 		);
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 		$this->wpdb_query_while_preventing_deadlock( $sql );
 	}
 
@@ -296,7 +300,7 @@ class SSA_Availability_Cache {
 		// high concurrency, in which case DB will abort the query which has done less work to resolve deadlock.
 		// We will try up to 3 times before giving up.
 		for ($count = 0; $count < 10; $count++) {
-			$result = $wpdb->query( $sql ); // WPCS: unprepared SQL ok.
+			$result = $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $sql is built with $wpdb->prepare() by every caller (delete_schedule); DELETE on the custom availability cache table needs a direct query and has nothing to cache.
 			if ( false !== $result ) {
 				if( $count > 0 ) {
 					ssa_debug_log("Deadlock successfully resolved after trying " . ( $count + 1 ) . " times");
@@ -304,7 +308,7 @@ class SSA_Availability_Cache {
 				break;
 			}
 			// sleep 0, 1 or 2 seconds randomly
-			sleep( rand( 0, 2 ) );
+			sleep( wp_rand( 0, 2 ) );
 		}
 		if ( false === $result ) {
 			ssa_debug_log("Deadlock could not be resolved after trying 10 times. Query: " . $sql);
@@ -415,6 +419,7 @@ class SSA_Availability_Cache {
 			return;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct DELETE purging expired SSA transients from WP core tables; bulk cleanup write, nothing to cache, args bound via $wpdb->prepare().
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE a, b FROM {$wpdb->options} a, {$wpdb->options} b
@@ -430,6 +435,7 @@ class SSA_Availability_Cache {
 
 		if ( ! is_multisite() ) {
 			// Single site stores site transients in the options table.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct DELETE purging expired SSA site transients from the options table; bulk cleanup write, nothing to cache, args bound via $wpdb->prepare().
 			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE a, b FROM {$wpdb->options} a, {$wpdb->options} b
@@ -444,6 +450,7 @@ class SSA_Availability_Cache {
 			);
 		} elseif ( is_multisite() && is_main_site() && is_main_network() ) {
 			// Multisite stores site transients in the sitemeta table.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct DELETE purging expired SSA site transients from the sitemeta table; bulk cleanup write, nothing to cache, args bound via $wpdb->prepare().
 			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE a, b FROM {$wpdb->sitemeta} a, {$wpdb->sitemeta} b
@@ -466,6 +473,7 @@ class SSA_Availability_Cache {
 			return;
 		}
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct DELETE purging SSA transients from WP core tables; bulk cleanup write, nothing to cache, args bound via $wpdb->prepare().
 		$wpdb->query(
 			$wpdb->prepare(
 				"DELETE a FROM {$wpdb->options} a
@@ -478,6 +486,7 @@ class SSA_Availability_Cache {
 
 		if ( ! is_multisite() ) {
 			// Single site stores site transients in the options table.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct DELETE purging all SSA site transients from the options table; bulk cleanup write, nothing to cache, args bound via $wpdb->prepare().
 			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE a FROM {$wpdb->options} a
@@ -489,6 +498,7 @@ class SSA_Availability_Cache {
 			);
 		} elseif ( is_multisite() && is_main_site() && is_main_network() ) {
 			// Multisite stores site transients in the sitemeta table.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct DELETE purging all SSA site transients from the sitemeta table; bulk cleanup write, nothing to cache, args bound via $wpdb->prepare().
 			$wpdb->query(
 				$wpdb->prepare(
 					"DELETE a FROM {$wpdb->sitemeta} a

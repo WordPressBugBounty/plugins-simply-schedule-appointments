@@ -75,7 +75,7 @@ class SSA_Revision_Meta_Model extends SSA_Db_Model {
 			'mysql_extra'      => '',
 			'cache_key'        => false,
 		),
-		'meta_key'          => array(
+		'meta_key'          => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Custom DB table column definition in $schema, not a WP_Query meta_key argument; no query runs here.
 			'field'            => 'meta_key',
 			'label'            => 'Meta Key',
 			'default_value'    => '',
@@ -101,7 +101,7 @@ class SSA_Revision_Meta_Model extends SSA_Db_Model {
 			'cache_key'        => false,
 			'encoder'          => 'json_serialize',
 		),
-		'meta_value'        => array(
+		'meta_value'        => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- Custom DB table column definition in $schema, not a WP_Query meta_value argument; no query runs here.
 			'field'            => 'meta_value',
 			'label'            => 'Meta Value',
 			'default_value'    => '',
@@ -118,7 +118,7 @@ class SSA_Revision_Meta_Model extends SSA_Db_Model {
 
 	public $indexes = array(
 		'revision_id' => array( 'revision_id' ),
-		'meta_key'    => array( 'meta_key' ),
+		'meta_key'    => array( 'meta_key' ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Index on a custom DB table column, not a WP_Query meta_key argument; no query runs here.
 	);
 
 	public function filter_where_conditions( $where, $args ) {

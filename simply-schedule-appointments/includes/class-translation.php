@@ -75,11 +75,11 @@ class SSA_Translation {
 	}
 
 	public static function is_rtl() {
-		if ( ! isset( $_GET['ssa_is_rtl'] ) ) {
+		if ( ! isset( $_GET['ssa_is_rtl'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only RTL detection for rendering, no state change.
 			return is_rtl();
 		}
 
-		$is_rtl = ( empty( $_GET['ssa_is_rtl'] ) ) ? false : true;
+		$is_rtl = ( empty( $_GET['ssa_is_rtl'] ) ) ? false : true; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only RTL detection for rendering, no state change.
 		return $is_rtl;
 	}
 
@@ -87,7 +87,7 @@ class SSA_Translation {
 		if ( ! empty( ssa()->translation->programmatic_locale ) ) {
 			return ssa()->translation->programmatic_locale;
 		}
-		if ( ! isset( $_GET['ssa_locale'] ) ) {
+		if ( ! isset( $_GET['ssa_locale'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only locale detection for rendering, no state change.
 			if ( empty( $return_default ) ) {
 				return; // prevent infinite loop
 			}
@@ -105,7 +105,7 @@ class SSA_Translation {
 			return $locale;
 		}
 
-		$lang = ( empty( $_GET['ssa_locale'] ) ) ? 'en_US' : esc_attr( $_GET['ssa_locale'] );
+		$lang = ( empty( $_GET['ssa_locale'] ) ) ? 'en_US' : sanitize_text_field( wp_unslash( $_GET['ssa_locale'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only locale detection for rendering, no state change.
 
 		return $lang;
 	}
@@ -279,7 +279,8 @@ class SSA_Translation {
 		if ( !is_array( $response )
 			|| $response['headers']['content-type'] !== 'application/octet-stream' ) {
 			return new WP_Error( 'ssa-translation-source-not-found', sprintf(
-				__( 'Cannot get source file: %s', 'simply-schedule-appointments' ),
+				/* translators: %s: source file URL */
+			__( 'Cannot get source file: %s', 'simply-schedule-appointments' ),
 				'<b>' . esc_html( $source ) . '</b>'
 			) );
 		}

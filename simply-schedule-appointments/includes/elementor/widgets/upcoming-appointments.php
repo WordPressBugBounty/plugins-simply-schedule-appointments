@@ -234,10 +234,10 @@ class SSA_Elementor_Upcoming_Appointments_Widget extends \Elementor\Widget_Base 
 		$this->add_control(
 			'appointmentDisplay',
 			[
-				'label' => esc_html__( $display_option[$default_display_option], 'textdomain' ),
+				'label' => esc_html( $display_option[$default_display_option] ),
 				'type' => \Elementor\Controls_Manager::SWITCHER,
-				'label_on' => esc_html__( 'Show', 'textdomain' ),
-				'label_off' => esc_html__( 'Hide', 'textdomain' ),
+				'label_on' => esc_html__( 'Show', 'simply-schedule-appointments' ),
+				'label_off' => esc_html__( 'Hide', 'simply-schedule-appointments' ),
 				'return_value' => $default_display_option,
 				'default' => '',
 			]
@@ -264,7 +264,7 @@ class SSA_Elementor_Upcoming_Appointments_Widget extends \Elementor\Widget_Base 
 			$this->add_control(
 				'disable_resources',
 				[
-					'label' => esc_html__( $default_resource_display_setting, 'simply-schedule-appointments'),
+					'label' => esc_html__( 'Disable', 'simply-schedule-appointments'),
 					'type' => \Elementor\Controls_Manager::SWITCHER,
 					'label_on' => esc_html__('Hide', 'simply-schedule-appointments'),
 					'label_off' => esc_html__('Show', 'simply-schedule-appointments'),
@@ -282,7 +282,7 @@ class SSA_Elementor_Upcoming_Appointments_Widget extends \Elementor\Widget_Base 
 			$this->add_control(
 				'all_resources',
 				[
-					'label' => esc_html__( $default_all_display_setting, 'simply-schedule-appointments'),
+					'label' => esc_html__( 'All', 'simply-schedule-appointments'),
 					'type' => \Elementor\Controls_Manager::SWITCHER,
 					'label_on' => esc_html__('Show', 'simply-schedule-appointments'),
 					'label_off' => esc_html__('Hide', 'simply-schedule-appointments'),
@@ -340,7 +340,7 @@ class SSA_Elementor_Upcoming_Appointments_Widget extends \Elementor\Widget_Base 
 			$this->add_control(
 				'disable_member_info',
 				[
-					'label' => esc_html__( $default_member_information_setting, 'simply-schedule-appointments'),
+					'label' => esc_html__( 'Disable', 'simply-schedule-appointments'),
 					'type' => \Elementor\Controls_Manager::SWITCHER,
 					'label_on' => esc_html__('Hide', 'simply-schedule-appointments'),
 					'label_off' => esc_html__('Show', 'simply-schedule-appointments'),
@@ -429,11 +429,15 @@ class SSA_Elementor_Upcoming_Appointments_Widget extends \Elementor\Widget_Base 
 		}
 		?>
 		<div class="elementor-ssa-upcoming-appointments-wrapper">
-			<div <?php echo $this->get_render_attribute_string( 'upcoming_appointments' ); ?>>
+			<div <?php echo $this->get_render_attribute_string( 'upcoming_appointments' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor's get_render_attribute_string() returns attribute values escaped via esc_attr(). ?>>
 				<div class="ssa-upcoming-appointments">
-					<?php echo ssa()->shortcodes->ssa_upcoming_appointments( array(
+					<?php
+					// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- ssa_upcoming_appointments() returns plugin-generated HTML markup rendered from templates/customer/upcoming-appointments.php via output buffering; escaping would corrupt it and its dynamic values are escaped inside the template.
+					echo ssa()->shortcodes->ssa_upcoming_appointments( array(
 						'block_settings' => $attrs
-					) ); ?>
+					) );
+					// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+					?>
 				</div>
 			</div>
 		</div>

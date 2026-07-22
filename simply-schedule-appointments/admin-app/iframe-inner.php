@@ -1,3 +1,4 @@
+<?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
 <!DOCTYPE html>
 <?php
 $ssa = ssa();
@@ -26,24 +27,24 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
   return $output;
 }
 ?>
-<html <?php echo ssa_get_language_attributes(); ?>>
+<html <?php echo ssa_get_language_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Returns only a hardcoded dir="rtl" literal and an esc_attr()-escaped lang value assembled in ssa_get_language_attributes() above; already escaped. ?>>
   <head>
     <meta charset="utf-8">
     <title><?php the_title(); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow" />
 
-    <link rel='stylesheet' id='ssa-admin-material-icons-css' href='<?php echo $ssa->url( 'assets/css/material-icons.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel='stylesheet' id='ssa-unsupported-style' href='<?php echo $ssa->url( 'assets/css/unsupported.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel='stylesheet' id='ssa-admin-roboto-font-css' href='<?php echo $ssa->url( 'assets/css/roboto-font.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel='stylesheet' id='ssa-admin-style-css' href='<?php echo $ssa->url( 'admin-app/dist/static/css/chunk-vendors.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel='stylesheet' id='ssa-admin-style-css' href='<?php echo $ssa->url( 'admin-app/dist/static/css/app.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel="stylesheet" href='<?php echo $ssa->url( 'assets/css/iframe-inner.css?ver='.$ssa::VERSION ); ?>'>
-    <link rel='https://api.w.org/' href='<?php echo home_url( 'wp-json/' ); ?>' />
-    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="<?php echo home_url( 'xmlrpc.php?rsd' ); ?>" />
-    <link rel="wlwmanifest" type="application/wlwmanifest+xml" href="<?php echo home_url( 'wp-includes/wlwmanifest.xml' ); ?>" />
-    <link rel="alternate" type="application/json+oembed" href="<?php echo home_url( 'wp-json/oembed/1.0/embed' ); ?>" />
-    <link rel="alternate" type="text/xml+oembed" href="<?php echo home_url( 'wp-json/oembed/1.0/embed' ); ?>" />
+    <link rel='stylesheet' id='ssa-admin-material-icons-css' href='<?php echo esc_url( $ssa->url( 'assets/css/material-icons.css?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone iframe document; wp_head() is not invoked here, stylesheet emitted directly by design. ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-unsupported-style' href='<?php echo esc_url( $ssa->url( 'assets/css/unsupported.css?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone iframe document; wp_head() is not invoked here, stylesheet emitted directly by design. ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-admin-roboto-font-css' href='<?php echo esc_url( $ssa->url( 'assets/css/roboto-font.css?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone iframe document; wp_head() is not invoked here, stylesheet emitted directly by design. ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-admin-style-css' href='<?php echo esc_url( $ssa->url( 'admin-app/dist/static/css/chunk-vendors.css?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone iframe document; wp_head() is not invoked here, stylesheet emitted directly by design. ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-admin-style-css' href='<?php echo esc_url( $ssa->url( 'admin-app/dist/static/css/app.css?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone iframe document; wp_head() is not invoked here, stylesheet emitted directly by design. ?>' type='text/css' media='all' />
+    <link rel="stylesheet" href='<?php echo esc_url( $ssa->url( 'assets/css/iframe-inner.css?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone iframe document; wp_head() is not invoked here, stylesheet emitted directly by design. ?>'>
+    <link rel='https://api.w.org/' href='<?php echo esc_url( home_url( 'wp-json/' ) ); ?>' />
+    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="<?php echo esc_url( home_url( 'xmlrpc.php?rsd' ) ); ?>" />
+    <link rel="wlwmanifest" type="application/wlwmanifest+xml" href="<?php echo esc_url( home_url( 'wp-includes/wlwmanifest.xml' ) ); ?>" />
+    <link rel="alternate" type="application/json+oembed" href="<?php echo esc_url( home_url( 'wp-json/oembed/1.0/embed' ) ); ?>" />
+    <link rel="alternate" type="text/xml+oembed" href="<?php echo esc_url( home_url( 'wp-json/oembed/1.0/embed' ) ); ?>" />
 
     <style>
       .ssa-admin-app #wpadminbar,
@@ -59,7 +60,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     </style>
 
     <?php $admin_css_url = $ssa->templates->locate_template_url( 'admin-app/custom.css' ); ?>
-    <link rel='stylesheet' id='ssa-admin-custom-css'  href='<?php echo $admin_css_url; ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-admin-custom-css'  href='<?php echo esc_url( $admin_css_url ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone iframe document; wp_head() is not invoked here, stylesheet emitted directly by design. ?>' type='text/css' media='all' />
     <?php do_action( 'ssa_admin_head' ); ?>
   </head>
   <body <?php body_class(); ?> data-iframe-height>
@@ -67,9 +68,9 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
 			<noscript>
 				<div class="unsupported">
 					<div class="unsupported-container">
-						<img class="unsupported-icon" src="' . $ssa->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') . '"/>
-						<h1 class="unsupported-label">' . __('Simply Schedule Appointments requires JavaScript', 'simply-schedule-appointments') . '</h1>
-						<p class="unsupported-description">' . __('Please make sure you enable JavaScript in your browser.', 'simply-schedule-appointments') . '</p>
+						<img class="unsupported-icon" src="' . esc_url( $ssa->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') ) . '"/>
+						<h1 class="unsupported-label">' . esc_html__('Simply Schedule Appointments requires JavaScript', 'simply-schedule-appointments') . '</h1>
+						<p class="unsupported-description">' . esc_html__('Please make sure you enable JavaScript in your browser.', 'simply-schedule-appointments') . '</p>
 					</div>
 				</div>
 			</noscript>
@@ -77,9 +78,9 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
 		<div id="ssa-unsupported" style="display:none;">
 				<div class="unsupported">
 					<div class="unsupported-container">
-						<img class="unsupported-icon" src="' . $ssa->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') . '"/>
-						<h1 class="unsupported-label">' . __('Unsupported Browser', 'simply-schedule-appointments') . '</h1>
-						<p class="unsupported-description">' . __('Please update your browser to something more modern. We recommend Firefox or Chrome.', 'simply-schedule-appointments') . '</p>
+						<img class="unsupported-icon" src="' . esc_url( $ssa->url('admin-app/dist/static/images/foxes/fox-sleeping.svg') ) . '"/>
+						<h1 class="unsupported-label">' . esc_html__('Unsupported Browser', 'simply-schedule-appointments') . '</h1>
+						<p class="unsupported-description">' . esc_html__('Please update your browser to something more modern. We recommend Firefox or Chrome.', 'simply-schedule-appointments') . '</p>
 					</div>
 				</div>
 		</div>' ?>
@@ -95,11 +96,11 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     var ssa_is_embed = true;
   </script>
 
-  <script type='text/javascript' src='<?php echo $ssa->url( 'assets/js/unsupported-min.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' src='<?php echo $ssa->url( 'admin-app/dist/static/js/manifest.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' src='<?php echo $ssa->url( 'admin-app/dist/static/js/chunk-vendors.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' src='<?php echo $ssa->url( 'admin-app/dist/static/js/app.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' data-cfasync='false' src='<?php echo $ssa->url( 'assets/js/iframe-inner.js?ver='.$ssa::VERSION ); ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'assets/js/unsupported-min.js?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone iframe document; wp_footer() is not invoked here, script emitted directly by design. ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'admin-app/dist/static/js/manifest.js?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone iframe document; wp_footer() is not invoked here, script emitted directly by design. ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'admin-app/dist/static/js/chunk-vendors.js?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone iframe document; wp_footer() is not invoked here, script emitted directly by design. ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'admin-app/dist/static/js/app.js?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone iframe document; wp_footer() is not invoked here, script emitted directly by design. ?>'></script>
+  <script type='text/javascript' data-cfasync='false' src='<?php echo esc_url( $ssa->url( 'assets/js/iframe-inner.js?ver='.$ssa::VERSION ) ); // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone iframe document; wp_footer() is not invoked here, script emitted directly by design. ?>'></script>
   <?php do_action( 'ssa_admin_footer' ); ?>
   </body>
 </html>

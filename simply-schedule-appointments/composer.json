@@ -1,0 +1,31 @@
+{
+    "config": {
+        "platform": {
+            "php": "7.4"
+        }
+    },
+    "require": {
+        "league/period": "4.12.0",
+        "twig/twig": "^3.11",
+        "twilio/sdk": "^5.33",
+        "stripe/stripe-php": "^16.2",
+        "woocommerce/action-scheduler": "^3.6"
+    },
+    "scripts": {
+        "wpcs-setup": [
+            "composer require --dev wp-coding-standards/wpcs",
+            "@php ./vendor/bin/phpcs --config-set installed_paths vendor/wp-coding-standards/wpcs"
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-0": {
+          "NSquared\\SSA\\Vendor\\": "includes/third-party/"
+        }
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^7.5",
+        "wp-coding-standards/wpcs": "^2.3"
+    }
+}

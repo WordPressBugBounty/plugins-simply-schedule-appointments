@@ -17,17 +17,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 } ?>
 {% if Appointment.web_meeting_url %}
-<?php _e( "This event has a web meeting:", 'simply-schedule-appointments' ) ?>
+<?php esc_html_e( "This event has a web meeting:", 'simply-schedule-appointments' ) ?>
 {{Appointment.web_meeting_url}}
 {% endif %}
 
 {% if instructions %}
-<?php echo sprintf( __( 'Instructions: %s', 'simply-schedule-appointments' ), '{{ instructions|raw }}' ); ?> 
+<?php
+/* translators: %s: appointment instructions */
+echo esc_html( sprintf( __( 'Instructions: %s', 'simply-schedule-appointments' ), '{{ instructions|raw }}' ) ); ?> 
 {% endif %}
 
 {% if Appointment.AppointmentType.description %}
 {{ Appointment.AppointmentType.description }}
 {% endif %}
 
-<?php _e('Need to make changes to this event?', 'simply-schedule-appointments') ?> 
+<?php esc_html_e('Need to make changes to this event?', 'simply-schedule-appointments') ?> 
 {{Appointment.public_edit_url}}

@@ -83,7 +83,7 @@ class SSA_Appointment_Meta_Model extends SSA_Db_Model {
 			'mysql_extra' => '',
 			'cache_key' => false,
 		),
-		'meta_key' => array(
+		'meta_key' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- array key naming a column in this custom appointment_meta table's schema definition, not a WP_Query meta_key parameter
 			'field' => 'meta_key',
 			'label' => 'Meta Key',
 			'default_value' => false,
@@ -95,7 +95,7 @@ class SSA_Appointment_Meta_Model extends SSA_Db_Model {
 			'mysql_extra' => '',
 			'cache_key' => false,
 		),
-		'meta_value' => array(
+		'meta_value' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- array key naming a column in this custom appointment_meta table's schema definition, not a WP_Query meta_value parameter
 			'field' => 'meta_value',
 			'label' => 'Meta Value',
 			'default_value' => false,
@@ -112,7 +112,7 @@ class SSA_Appointment_Meta_Model extends SSA_Db_Model {
 
 	public $indexes = array(
 		'appointment_id' => [ 'appointment_id' ],
-		'meta_key' => [ 'meta_key' ],
+		'meta_key' => [ 'meta_key' ], // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- index definition for this custom appointment_meta table's meta_key column, not a WP_Query meta_key parameter
 	);
 
 	public function filter_where_conditions( $where, $args ) {

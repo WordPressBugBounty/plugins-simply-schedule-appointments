@@ -1,3 +1,4 @@
+<?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
 <!DOCTYPE html>
 <?php
 $ssa = ssa();
@@ -30,16 +31,17 @@ foreach ($ssa_appointment_types as $appointment_type_key => $appointment_type) {
 }
 
 // Override availability window
+// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Public read-only booking page render; request params only customize the displayed availability and appointment types. No form processing or state change occurs, and no nonce is available on the public booking iframe.
 foreach ($ssa_appointment_types as $appointment_type_key => $appointment_type) {
   if ( ! empty( $_GET['availability_start_date'] ) ) {
-    $ssa_appointment_types[$appointment_type_key]['availability_start_date'] = esc_attr( $_GET['availability_start_date'] );
+    $ssa_appointment_types[$appointment_type_key]['availability_start_date'] = sanitize_text_field( wp_unslash( $_GET['availability_start_date'] ) );
   }
   if ( ! empty( $_GET['availability_end_date'] ) ) {
-    $ssa_appointment_types[$appointment_type_key]['availability_end_date'] = esc_attr( $_GET['availability_end_date'] );
+    $ssa_appointment_types[$appointment_type_key]['availability_end_date'] = sanitize_text_field( wp_unslash( $_GET['availability_end_date'] ) );
   }
 
   if ( ! empty( $_GET['suggest_first_available_within_minutes'] ) && $ssa->settings_installed->is_installed( 'booking_flows' ) ) {
-    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available_within_minutes'] = (int) esc_attr( $_GET['suggest_first_available_within_minutes'] );
+    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['suggest_first_available_within_minutes'] = absint( wp_unslash( $_GET['suggest_first_available_within_minutes'] ) );
   }
 
   if ( ! empty( $_GET['flow'] ) && $ssa->settings_installed->is_installed( 'booking_flows' ) ) {
@@ -53,11 +55,11 @@ foreach ($ssa_appointment_types as $appointment_type_key => $appointment_type) {
   }
 
   if ( ! empty( $_GET['fallback_flow'] ) && $ssa->settings_installed->is_installed( 'booking_flows' )  ) {
-    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['fallback_booking_flow'] = esc_attr( $_GET['fallback_flow'] );
+    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['fallback_booking_flow'] = sanitize_text_field( wp_unslash( $_GET['fallback_flow'] ) );
   }
 
   if ( ! empty( $_GET['date_view'] ) ) {
-    $date_view = esc_attr( $_GET['date_view']);
+    $date_view = sanitize_text_field( wp_unslash( $_GET['date_view'] ) );
     if( $ssa->settings_installed->is_installed( 'booking_flows' ) ) {
       $ssa_appointment_types[$appointment_type_key]['booking_layout'] = $date_view;
     } elseif ( $date_view === "month" || $date_view === "week" ){
@@ -66,18 +68,20 @@ foreach ($ssa_appointment_types as $appointment_type_key => $appointment_type) {
   }
   
   if ( ! empty( $_GET['time_view'] ) && $ssa->settings_installed->is_installed( 'booking_flows' )  ) {
-    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['time_view'] = esc_attr( $_GET['time_view'] );
+    $ssa_appointment_types[$appointment_type_key]['booking_flow_settings']['time_view'] = sanitize_text_field( wp_unslash( $_GET['time_view'] ) );
   }
 }
 
 // Check for $_GET['label'] if set, and convert it to $_GET['types']
 if( ! empty( $_GET['label'] ) ) {
-    $label = sanitize_text_field( esc_attr( $_GET['label'] ) );
+    $label = sanitize_text_field( wp_unslash( $_GET['label'] ) );
     $ids = $ssa->shortcodes->convert_label_to_appt_types_ids( $label );
     if ( empty( $ids ) ) {
         $error_message = '<h3>' . __('Sorry, no appointment types available for this label, please check back later.', 'simply-schedule-appointments') . '</h3>';
         if( current_user_can( 'ssa_manage_site_settings' ) ) {
-        $error_message .= '<code>' . sprintf( __('The specified appointment type label \'%1$s\' can\'t be found, or has no appointment types available %2$s (this message only viewable to site administrators)', 'simply-schedule-appointments'),
+        $error_message .= '<code>' . sprintf(
+                          /* translators: 1: requested appointment type label, 2: closing HTML tag */
+                          __('The specified appointment type label \'%1$s\' can\'t be found, or has no appointment types available %2$s (this message only viewable to site administrators)', 'simply-schedule-appointments'),
                           $label,
                           '</code>' );
         }
@@ -89,7 +93,7 @@ if( ! empty( $_GET['label'] ) ) {
 }
 
 if ( ! empty( $_GET['types'] ) ) {
-  $params_types = esc_attr( $_GET['types'] );
+  $params_types = sanitize_text_field( wp_unslash( $_GET['types'] ) );
 } else if ( ! empty( $params['types'] ) ) {
   $params_types = $params['types'];
 }
@@ -125,13 +129,13 @@ $ssa_booking_url_settings = array(
 );
 
 if( isset( $_GET['booking_url'] ) ) {
-  $ssa_booking_url_settings['booking_url'] = esc_attr( $_GET['booking_url'] );
+  $ssa_booking_url_settings['booking_url'] = sanitize_text_field( wp_unslash( $_GET['booking_url'] ) );
 }
 if( isset( $_GET['booking_post_id'] ) ) {
-  $ssa_booking_url_settings['booking_post_id'] = esc_attr( $_GET['booking_post_id'] );
+  $ssa_booking_url_settings['booking_post_id'] = sanitize_text_field( wp_unslash( $_GET['booking_post_id'] ) );
 }
 if( isset( $_GET['booking_title'] ) ) {
-  $ssa_booking_url_settings['booking_title'] = html_entity_decode( urldecode( esc_attr( $_GET['booking_title'] ) ) );
+  $ssa_booking_url_settings['booking_title'] = html_entity_decode( urldecode( sanitize_text_field( wp_unslash( $_GET['booking_title'] ) ) ) );
 }
 
 
@@ -153,22 +157,23 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
   return $output;
 }
 ?>
-<html <?php echo ssa_get_language_attributes(); ?>>
+<html <?php echo ssa_get_language_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built internally from a fixed dir token and an esc_attr()'d lang value; the whole attribute list cannot be re-escaped as one string. ?>>
   <head>
     <meta charset="utf-8">
     <title><?php the_title(); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow" />
-    <link rel='stylesheet' id='ssa-unsupported-style'  href='<?php echo $ssa->url( 'assets/css/unsupported.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel='stylesheet' id='ssa-booking-material-icons-css'  href='<?php echo $ssa->url( 'assets/css/material-icons.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel='stylesheet' id='ssa-booking-roboto-font-css'  href='<?php echo $ssa->url( 'assets/css/roboto-font.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel='stylesheet' id='ssa-booking-style-css'  href='<?php echo $ssa->url( 'booking-app-new/dist/static/css/app.css?ver='.$ssa::VERSION ); ?>' type='text/css' media='all' />
-    <link rel="stylesheet" href='<?php echo $ssa->url( 'assets/css/iframe-inner.css?ver='.$ssa::VERSION ); ?>'>
-    <link rel='https://api.w.org/' href='<?php echo home_url( 'wp-json/' ); ?>' />
-    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="<?php echo home_url( 'xmlrpc.php?rsd' ); ?>" />
-    <link rel="wlwmanifest" type="application/wlwmanifest+xml" href="<?php echo home_url( 'wp-includes/wlwmanifest.xml' ); ?>" />
-    <link rel="alternate" type="application/json+oembed" href="<?php echo home_url( 'wp-json/oembed/1.0/embed?url=http%3A%2F%2Fssa.dev%2Fbooking-test%2F' ); ?>" />
-    <link rel="alternate" type="text/xml+oembed" href="<?php echo home_url( 'wp-json/oembed/1.0/embed?url=http%3A%2F%2Fssa.dev%2Fbooking-test%2F&#038;format=xml' ); ?>" />
+    <?php // phpcs:disable WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- Standalone booking iframe renders its own <head> without wp_head(); these assets are hand-emitted rather than enqueued via wp_enqueue_style(). ?>
+    <link rel='stylesheet' id='ssa-unsupported-style'  href='<?php echo esc_url( $ssa->url( 'assets/css/unsupported.css?ver='.$ssa::VERSION ) ); ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-booking-material-icons-css'  href='<?php echo esc_url( $ssa->url( 'assets/css/material-icons.css?ver='.$ssa::VERSION ) ); ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-booking-roboto-font-css'  href='<?php echo esc_url( $ssa->url( 'assets/css/roboto-font.css?ver='.$ssa::VERSION ) ); ?>' type='text/css' media='all' />
+    <link rel='stylesheet' id='ssa-booking-style-css'  href='<?php echo esc_url( $ssa->url( 'booking-app-new/dist/static/css/app.css?ver='.$ssa::VERSION ) ); ?>' type='text/css' media='all' />
+    <link rel="stylesheet" href='<?php echo esc_url( $ssa->url( 'assets/css/iframe-inner.css?ver='.$ssa::VERSION ) ); ?>'>
+    <link rel='https://api.w.org/' href='<?php echo esc_url( home_url( 'wp-json/' ) ); ?>' />
+    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="<?php echo esc_url( home_url( 'xmlrpc.php?rsd' ) ); ?>" />
+    <link rel="wlwmanifest" type="application/wlwmanifest+xml" href="<?php echo esc_url( home_url( 'wp-includes/wlwmanifest.xml' ) ); ?>" />
+    <link rel="alternate" type="application/json+oembed" href="<?php echo esc_url( home_url( 'wp-json/oembed/1.0/embed?url=http%3A%2F%2Fssa.dev%2Fbooking-test%2F' ) ); ?>" />
+    <link rel="alternate" type="text/xml+oembed" href="<?php echo esc_url( home_url( 'wp-json/oembed/1.0/embed?url=http%3A%2F%2Fssa.dev%2Fbooking-test%2F&#038;format=xml' ) ); ?>" />
 
     <?php $booking_css_url = $ssa->templates->locate_template_url( 'booking-app/custom.css' ); ?>
     <?php $booking_css_path = $ssa->templates->locate_template('booking-app/custom.css'); ?>
@@ -182,7 +187,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
 	  
 	  // accent_color possible value patterns: ffffff or rgba(255,255,255,1)
       if( isset( $_GET['accent_color'] ) && ! empty( $_GET['accent_color'] ) ) {
-		$accent_color = ssa_sanitize_color_input( $_GET['accent_color'] );
+		$accent_color = ssa_sanitize_color_input( sanitize_text_field( wp_unslash( $_GET['accent_color'] ) ) );
 		$accent_color = $ssa->styles->hex_to_rgba( '#' . $accent_color );
 		
         if( $accent_color ) {
@@ -192,7 +197,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
 
 	  // background possible value patterns: ffffff or rgba(255,255,255,1)
       if( isset( $_GET['background'] ) && ! empty( $_GET['background'] ) ) {
-		$background = ssa_sanitize_color_input( $_GET['background'] );
+		$background = ssa_sanitize_color_input( sanitize_text_field( wp_unslash( $_GET['background'] ) ) );
         $background = $ssa->styles->hex_to_rgba( '#' . $background );
         if( $background ) {
           $styles_params['background'] = $background;
@@ -200,11 +205,11 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       }
 
       if( isset( $_GET['font'] ) && ! empty( $_GET['font'] ) ) {
-        $styles_params['font'] = esc_attr( $_GET['font'] );
+        $styles_params['font'] = sanitize_text_field( wp_unslash( $_GET['font'] ) );
       }
 
       if( isset( $_GET['padding'] ) && ! empty( $_GET['padding'] ) ) {
-        $styles_params['padding'] = esc_attr( $_GET['padding'] );
+        $styles_params['padding'] = sanitize_text_field( wp_unslash( $_GET['padding'] ) );
       }
 
       $ssa_styles = wp_parse_args( $styles_params, $ssa_styles );
@@ -246,26 +251,26 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
 
       if ( !$is_system_font ) : ?>
         <link rel='dns-prefetch' href='//fonts.googleapis.com' />
-        <link href="https://fonts.googleapis.com/css?family=<?php echo $ssa_styles['font']; ?>" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css?family=<?php echo esc_attr( $ssa_styles['font'] ); ?>" rel="stylesheet">
       <?php endif; ?>
     <style>
       :root {
         /* Colors */
-        --mdc-theme-primary: <?php echo $ssa_styles['accent_color']; ?>;
-        --mdc-theme-on-primary: <?php echo $ssa_styles['accent_contrast']; ?>;
-        --mdc-theme-secondary: <?php echo $ssa_styles['accent_color']; ?>;
-        --mdc-theme-on-secondary: <?php echo $ssa_styles['accent_contrast']; ?>;
-        --mdc-ripple-color: <?php echo $ssa_styles['accent_color']; ?>;
+        --mdc-theme-primary: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
+        --mdc-theme-on-primary: <?php echo esc_attr( $ssa_styles['accent_contrast'] ); ?>;
+        --mdc-theme-secondary: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
+        --mdc-theme-on-secondary: <?php echo esc_attr( $ssa_styles['accent_contrast'] ); ?>;
+        --mdc-ripple-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
         /* Typography */
-        --mdc-typography-font-family: <?php echo $ssa_styles['font']; ?>;
-        --mdc-typography-headline6-font-family: <?php echo $ssa_styles['font']; ?>;
+        --mdc-typography-font-family: <?php echo esc_attr( $ssa_styles['font'] ); ?>;
+        --mdc-typography-headline6-font-family: <?php echo esc_attr( $ssa_styles['font'] ); ?>;
       }
 
       /* Background color */
       html body,
       html body.md-theme-default {
-        background: <?php echo $ssa_styles['background']; ?>;
-        padding: <?php echo $padding_atts['value'] . $padding_atts['unit']; ?>
+        background: <?php echo esc_attr( $ssa_styles['background'] ); ?>;
+        padding: <?php echo esc_attr( $padding_atts['value'] . $padding_atts['unit'] ); ?>
       }
 
       html .mdc-card {
@@ -284,7 +289,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       html .md-theme-default.md-radio.md-primary .md-ink-ripple,
       html .md-theme-default.md-radio.md-primary.md-checked .md-ink-ripple,
       html .mdc-theme-name--default.mdc-icon-button:not(:disabled) {
-        color: <?php echo $ssa_styles['accent_color']; ?>;
+        color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
       }
       html legend.md-subheading .md-icon.md-theme-default {
         color: rgba(0,0,0,0.54);
@@ -305,33 +310,33 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       html .md-theme-default.md-input-container.md-input-focused:after,
       html .md-theme-default.time-select.md-button:not([disabled]).md-raised:not(.md-icon-button):hover,
       html .md-theme-default.time-select.md-button:not([disabled]).md-raised:not(.md-icon-button):focus {
-        background-color: <?php echo $ssa_styles['accent_color']; ?>;
-        color: <?php echo $ssa_styles['accent_contrast']; ?>;
+        background-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
+        color: <?php echo esc_attr( $ssa_styles['accent_contrast'] ); ?>;
       }
       html .md-card.selectable.light-green,
       html .md-card.selectable.mdc-theme-name--default {
-        border-left-color: <?php echo $ssa_styles['accent_color']; ?>;
+        border-left-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
       }
       html .select2-search--dropdown .select2-search__field:focus {
-        border-bottom-color: <?php echo $ssa_styles['accent_color']; ?>;
+        border-bottom-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
       }
       html .md-theme-default.md-spinner .md-spinner-path {
-        stroke: <?php echo $ssa_styles['accent_color']; ?>;
+        stroke: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
       }
 
       /* Checkboxes and Radios */
       html .md-theme-default.md-checkbox.md-primary.md-checked .md-checkbox-container {
-        background-color: <?php echo $ssa_styles['accent_color']; ?>;
-        border-color: <?php echo $ssa_styles['accent_color']; ?>;
+        background-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
+        border-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
       }
       html .md-theme-default.md-checkbox.md-primary.md-checked .md-checkbox-container:after {
-        border-color: <?php echo $ssa_styles['accent_contrast']; ?>;
+        border-color: <?php echo esc_attr( $ssa_styles['accent_contrast'] ); ?>;
       }
       html .md-theme-default.md-radio.md-primary .md-radio-container:after {
-        background-color: <?php echo $ssa_styles['accent_color']; ?>;
+        background-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
       }
       html .md-theme-default.md-radio.md-primary.md-checked .md-radio-container {
-        border-color: <?php echo $ssa_styles['accent_color']; ?>;
+        border-color: <?php echo esc_attr( $ssa_styles['accent_color'] ); ?>;
       }
 
       /* New booking app initial loading spinner */
@@ -380,7 +385,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       html .book-day button.md-whiteframe.disabled,
       html .book-day button.md-whiteframe.selectable,
       html .book-day button.md-whiteframe.disabled {
-        font-family: <?php echo $ssa_styles['font']; ?>;
+        font-family: <?php echo esc_attr( $ssa_styles['font'] ); ?>;
       }
 
       <?php if ($is_dark) : ?>
@@ -395,10 +400,11 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     </style>
 
     <style>
-      <?php echo strip_tags( $ssa_styles['css'] ); ?>
+      <?php echo wp_strip_all_tags( $ssa_styles['css'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Admin-only custom CSS from styles settings (not request input); tags are stripped and it must be emitted as raw CSS, which HTML escaping would corrupt. ?>
     </style>
 
     <link rel='stylesheet' id='ssa-booking-custom-css' href='<?php echo esc_url($booking_css_url . '?v=' . $booking_css_version); ?>' type='text/css' media='all' />
+    <?php // phpcs:enable WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet ?>
     <?php
 
     // BEGIN: Deprecated
@@ -426,8 +432,8 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
         <noscript>
           <div class="unsupported">
             <div class="unsupported-container">
-              <h1 class="unsupported-label">' . __('Simply Schedule Appointments requires JavaScript', 'simply-schedule-appointments') . '</h1>
-              <p class="unsupported-description">' . __('To book an appointment, please make sure you enable JavaScript in your browser.', 'simply-schedule-appointments') . '</p>
+              <h1 class="unsupported-label">' . esc_html__('Simply Schedule Appointments requires JavaScript', 'simply-schedule-appointments') . '</h1>
+              <p class="unsupported-description">' . esc_html__('To book an appointment, please make sure you enable JavaScript in your browser.', 'simply-schedule-appointments') . '</p>
             </div>
           </div>
         </noscript>
@@ -435,8 +441,8 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
       <div id="ssa-unsupported" style="display:none;">
           <div class="unsupported">
             <div class="unsupported-container">
-              <h1 class="unsupported-label">' . __('Unsupported Browser', 'simply-schedule-appointments') . '</h1>
-              <p class="unsupported-description">' . __('To book an appointment, please update your browser to something more modern. We recommend Firefox or Chrome.', 'simply-schedule-appointments') . '</p>
+              <h1 class="unsupported-label">' . esc_html__('Unsupported Browser', 'simply-schedule-appointments') . '</h1>
+              <p class="unsupported-description">' . esc_html__('To book an appointment, please update your browser to something more modern. We recommend Firefox or Chrome.', 'simply-schedule-appointments') . '</p>
             </div>
           </div>
       </div>'; ?>
@@ -447,24 +453,27 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     var ssa_translations = <?php echo json_encode( $ssa->shortcodes->get_translations() ); ?>;
     var ssa_customer_information_defaults = <?php echo json_encode( $ssa->customer_information->get_defaults() ); ?>;
     var ssa_booking_url_settings = <?php echo json_encode( $ssa_booking_url_settings ) ?>;
-    var ssa_token = '<?php echo isset( $_GET['token'] ) ? esc_attr( $_GET['token'] ) : '' ?>'
-    var ssa_embed_settings = <?php echo json_encode(array("redirect_post_id" => isset($_GET['redirect_post_id'])? esc_attr($_GET['redirect_post_id']): '', "redirect_url" => isset($_GET['redirect_post_id'])? get_permalink(esc_attr($_GET['redirect_post_id'])): '')); ?>;
-    var ssa_availability_edge_cache_timestamp = <?php echo json_encode(date("Y-m-d H:i:s")) ?>;
+    var ssa_token = '<?php echo isset( $_GET['token'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['token'] ) ) ) : '' ?>'
+    var ssa_embed_settings = <?php echo json_encode(array("redirect_post_id" => isset($_GET['redirect_post_id'])? sanitize_text_field( wp_unslash( $_GET['redirect_post_id'] ) ): '', "redirect_url" => isset($_GET['redirect_post_id'])? get_permalink(sanitize_text_field( wp_unslash( $_GET['redirect_post_id'] ) )): '')); ?>;
+    var ssa_availability_edge_cache_timestamp = <?php echo json_encode(gmdate("Y-m-d H:i:s")) ?>;
     var ssa_availability_edge_cache = <?php echo json_encode( ssa_cache_get( 'booking_app_availability_edge_cache' ) ); ?>;
     var ssa_availability_query_args = <?php echo json_encode( SSA_Availability_Query::get_default_args() ); ?>;
     var ssa_defer_init = <?php echo ! empty( $_GET['defer'] ) ? 'true' : 'false'; ?>;
     var ssa_hide_header = <?php echo ! empty( $_GET['hide_header'] ) ? 'true' : 'false'; ?>;
   </script>
+  <?php // phpcs:enable WordPress.Security.NonceVerification.Recommended ?>
 
+  <?php // phpcs:disable WordPress.WP.EnqueuedResources.NonEnqueuedScript -- Standalone booking iframe emits its own footer scripts without wp_footer(); these are hand-emitted rather than enqueued via wp_enqueue_script(). ?>
   <?php if ( $ssa->settings_installed->is_activated( 'stripe' ) ): ?>
     <script src="https://js.stripe.com/v3/"></script>
   <?php endif ?>
 
-  <script type='text/javascript' src='<?php echo $ssa->url( 'assets/js/unsupported-min.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' src='<?php echo $ssa->url( 'booking-app-new/dist/static/js/manifest.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' src='<?php echo $ssa->url( 'booking-app-new/dist/static/js/chunk-vendors.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' src='<?php echo $ssa->url( 'booking-app-new/dist/static/js/app.js?ver='.$ssa::VERSION ); ?>'></script>
-  <script type='text/javascript' data-cfasync='false' src='<?php echo $ssa->url( 'assets/js/iframe-inner.js?ver='.$ssa::VERSION ); ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'assets/js/unsupported-min.js?ver='.$ssa::VERSION ) ); ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'booking-app-new/dist/static/js/manifest.js?ver='.$ssa::VERSION ) ); ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'booking-app-new/dist/static/js/chunk-vendors.js?ver='.$ssa::VERSION ) ); ?>'></script>
+  <script type='text/javascript' src='<?php echo esc_url( $ssa->url( 'booking-app-new/dist/static/js/app.js?ver='.$ssa::VERSION ) ); ?>'></script>
+  <script type='text/javascript' data-cfasync='false' src='<?php echo esc_url( $ssa->url( 'assets/js/iframe-inner.js?ver='.$ssa::VERSION ) ); ?>'></script>
+  <?php // phpcs:enable WordPress.WP.EnqueuedResources.NonEnqueuedScript ?>
   <?php do_action( 'ssa_booking_footer' ); ?>
   </body>
 </html>

@@ -46,7 +46,7 @@ class SSA_Availability_Block_Factory extends SSA_Availability_Block {
 	}	
 
 	public static function create_random( array $data = array() ) {
-		$start_time = time() + rand(1,1000) * 3600;
+		$start_time = time() + wp_rand(1,1000) * 3600;
 
 		$data = array_merge( array(
 			'capacity_available' => SSA_Constants::CAPACITY_MAX,
@@ -60,7 +60,7 @@ class SSA_Availability_Block_Factory extends SSA_Availability_Block {
 
 			'period' => new Period(
 				gmdate( 'Y-m-d H:00:00', $start_time ),
-				gmdate( 'Y-m-d H:00:00', $start_time + rand( 1, 1000 ) * 3600 )
+				gmdate( 'Y-m-d H:00:00', $start_time + wp_rand( 1, 1000 ) * 3600 )
 			),
 		), $data );
 

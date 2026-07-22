@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 
 /**
  * This file should be used to render each module instance.
@@ -40,6 +44,6 @@ if ( isset( $settings->defer ) && $settings->defer === 'yes' ) {
 
 <div class="fl-module-ssa-booking-wrapper">
 	<div class="ssa-booking">
-		<?php echo ssa()->shortcodes->ssa_booking( $attrs ); ?>
+		<?php echo ssa()->shortcodes->ssa_booking( $attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ssa_booking() returns the plugin's booking-widget HTML markup (shortcode output); escaping it as text would break the widget. ?>
 	</div>
 </div>

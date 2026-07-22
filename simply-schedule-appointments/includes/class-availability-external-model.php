@@ -373,6 +373,7 @@ class SSA_Availability_External_Model extends SSA_Db_Model {
 			$response = $this->insert( $availability_period_row );
 		}
 
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- table name internal via get_table_name(); every user value bound through $wpdb->prepare() placeholders; custom availability cache table, direct delete required and not cacheable (cache-invalidation write).
 		$query = "DELETE FROM {$this->get_table_name()} WHERE 1=1";
 		$query = $wpdb->prepare( $query .= " AND cache_key < %d", $args['cache_key'] );
 		$query = $wpdb->prepare( $query .= " AND start_date >= %s", $args['start_date_min'] );
@@ -381,6 +382,7 @@ class SSA_Availability_External_Model extends SSA_Db_Model {
 		$query = $wpdb->prepare( $query .= " AND subtype = %s", $args['subtype'] );
 		$query = $wpdb->prepare( $query .= " AND service = %s", $args['service'] );
 		$result = $wpdb->query( $query );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 	}
 

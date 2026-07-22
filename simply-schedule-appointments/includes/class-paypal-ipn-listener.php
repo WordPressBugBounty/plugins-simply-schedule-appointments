@@ -23,7 +23,7 @@ class SSA_Paypal_Ipn_Listener {
 	 *  @package    PHP-PayPal-IPN
 	 *  @author     Micah Carrick
 	 *  @copyright  (c) 2011 - Micah Carrick
-	 *  @version    1.6.12.11
+	 *  @version    1.6.12.13
 	 *  @license    http://opensource.org/licenses/gpl-3.0.html
 	 */
 
@@ -96,8 +96,9 @@ class SSA_Paypal_Ipn_Listener {
 			$this->post_uri = $uri;
 		}
 		
+		// phpcs:disable WordPress.WP.AlternativeFunctions.curl_curl_init,WordPress.WP.AlternativeFunctions.curl_curl_setopt,WordPress.WP.AlternativeFunctions.curl_curl_exec,WordPress.WP.AlternativeFunctions.curl_curl_getinfo,WordPress.WP.AlternativeFunctions.curl_curl_errno,WordPress.WP.AlternativeFunctions.curl_curl_error -- PayPal IPN verification posts the exact received payload back to PayPal and reads the raw HTTP response (headers + body) to confirm "VERIFIED"; wp_remote_post() does not guarantee the byte-exact postback this documented PayPal IPN pattern requires.
 		$ch = curl_init();
-		
+
 		curl_setopt($ch, CURLOPT_URL, $uri);
 		curl_setopt($ch, CURLOPT_POST, true);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $encoded_data);
@@ -105,19 +106,20 @@ class SSA_Paypal_Ipn_Listener {
 		curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_HEADER, true);
-		
+
 		if ($this->force_ssl_v3) {
 			curl_setopt($ch, CURLOPT_SSLVERSION, 3);
 		}
-		
+
 		$this->response = curl_exec($ch);
 		$this->response_status = strval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
-		
+
 		if ($this->response === false || $this->response_status == '0') {
 			$errno = curl_errno($ch);
 			$errstr = curl_error($ch);
-			throw new Exception("cURL error: [$errno] $errstr");
+			throw new Exception(esc_html("cURL error: [$errno] $errstr"));
 		}
+		// phpcs:enable WordPress.WP.AlternativeFunctions.curl_curl_init,WordPress.WP.AlternativeFunctions.curl_curl_setopt,WordPress.WP.AlternativeFunctions.curl_curl_exec,WordPress.WP.AlternativeFunctions.curl_curl_getinfo,WordPress.WP.AlternativeFunctions.curl_curl_errno,WordPress.WP.AlternativeFunctions.curl_curl_error
 	}
 	
 	/**
@@ -142,11 +144,12 @@ class SSA_Paypal_Ipn_Listener {
 			$this->post_uri = 'http://'.$uri.'/cgi-bin/webscr';
 		}
 
+		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fsockopen,WordPress.WP.AlternativeFunctions.file_system_operations_fputs,WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- These are network socket operations to PayPal (not local filesystem access) forming the fsockopen fallback of the PayPal IPN postback; the raw request/response bytes must be sent and read verbatim, which WP_Filesystem cannot do.
 		$fp = fsockopen($uri, $port, $errno, $errstr, $this->timeout);
 		
 		if (!$fp) { 
 			// fsockopen error
-			throw new Exception("fsockopen error: [$errno] $errstr");
+			throw new Exception(esc_html("fsockopen error: [$errno] $errstr"));
 		} 
 
 		$header .= "POST /cgi-bin/webscr HTTP/1.0\r\n";
@@ -167,6 +170,7 @@ class SSA_Paypal_Ipn_Listener {
 		} 
 		
 		fclose($fp);
+		// phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fsockopen,WordPress.WP.AlternativeFunctions.file_system_operations_fputs,WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 	}
 	
 	private function getPaypalHost() {
@@ -226,7 +230,7 @@ class SSA_Paypal_Ipn_Listener {
 		
 		// date and POST url
 		for ($i=0; $i<80; $i++) { $r .= '-'; }
-		$r .= "\n[".date('m/d/Y g:i A').'] - '.$this->getPostUri();
+		$r .= "\n[".date('m/d/Y g:i A').'] - '.$this->getPostUri(); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date -- Human-readable local-time stamp for a plain-text IPN debug report (12-hour AM/PM); server-local time is the intended display, gmdate() would misrepresent it as UTC.
 		if ($this->use_curl) $r .= " (curl)\n";
 		else $r .= " (fsockopen)\n";
 		
@@ -264,9 +268,11 @@ class SSA_Paypal_Ipn_Listener {
 		
 		if ($post_data === null) { 
 			// use raw POST data 
+			// phpcs:disable WordPress.Security.NonceVerification.Missing -- PayPal IPN is a server-to-server callback with no browser session or WP nonce; authenticity is established by posting this exact payload back to PayPal and requiring a "VERIFIED" response (see curlPost/fsockPost + VERIFIED check below), not by a nonce.
 			if (!empty($_POST)) {
 				$this->post_data = $_POST;
 				$encoded_data .= '&'.file_get_contents('php://input');
+				// phpcs:enable WordPress.Security.NonceVerification.Missing
 			} else {
 				throw new Exception("No POST data found.");
 			}
@@ -283,7 +289,7 @@ class SSA_Paypal_Ipn_Listener {
 		else $this->fsockPost($encoded_data);
 		
 		if (strpos($this->response_status, '200') === false) {
-			throw new Exception("Invalid response status: ".$this->response_status);
+			throw new Exception(esc_html("Invalid response status: ".$this->response_status));
 		}
 		
 		if (strpos($this->response, "VERIFIED") !== false) {
@@ -303,7 +309,7 @@ class SSA_Paypal_Ipn_Listener {
 	 */    
 	public function requirePostMethod() {
 		// require POST requests
-		if ($_SERVER['REQUEST_METHOD'] && $_SERVER['REQUEST_METHOD'] != 'POST') {
+		if (!empty($_SERVER['REQUEST_METHOD']) && sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) != 'POST') {
 			header('Allow: POST', true, 405);
 			throw new Exception("Invalid HTTP request method.");
 		}

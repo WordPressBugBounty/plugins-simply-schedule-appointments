@@ -26,7 +26,7 @@ class SSA_Appointment_Factory extends SSA_Appointment_Object {
 		} catch ( Exception $e ) {
 			ssa_debug_log( 'empty duration for Appointment Type #' . $appointment_type->id, 10 );
 			$end_date = $start_date; // TODO: fix this to prevent unexpected behavior
-			wp_die( 'empty duration for Appointment Type #' . $appointment_type->id, 'Appointment Factory duration missing' );
+			wp_die( 'empty duration for Appointment Type #' . esc_html( $appointment_type->id ), 'Appointment Factory duration missing' );
 		}
 
 		$fixture_data = array (
@@ -75,9 +75,9 @@ class SSA_Appointment_Factory extends SSA_Appointment_Object {
 		$fixture_data = array (
 		  'title' => $title,
 		  'slug' => $slug,
-		  'buffer_before' => rand(0,8) * 30,
-		  'duration' => rand(0,12) * 15,
-		  'buffer_after' => rand(0,8) * 30,
+		  'buffer_before' => wp_rand(0,8) * 30,
+		  'duration' => wp_rand(0,12) * 15,
+		  'buffer_after' => wp_rand(0,8) * 30,
 		);
 
 		$data = array_merge( $fixture_data, $data );

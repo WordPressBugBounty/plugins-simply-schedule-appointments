@@ -17,12 +17,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 } ?>
 {% if Appointment.web_meeting_url %}
-<?php _e( "This event has a web meeting:", 'simply-schedule-appointments' ) ?>
+<?php esc_html_e( "This event has a web meeting:", 'simply-schedule-appointments' ) ?>
 {{Appointment.web_meeting_url}}
 {% endif %}
 
-<?php echo __( 'Your details:' ) ?> 
+<?php echo esc_html__( 'Your details:', 'simply-schedule-appointments' ) ?> 
 {{ Appointment.customer_information_summary }}
 
-<?php _e('Need to make changes to this event?', 'simply-schedule-appointments') ?> 
+<?php esc_html_e('Need to make changes to this event?', 'simply-schedule-appointments') ?> 
 {{Appointment.public_edit_url}}

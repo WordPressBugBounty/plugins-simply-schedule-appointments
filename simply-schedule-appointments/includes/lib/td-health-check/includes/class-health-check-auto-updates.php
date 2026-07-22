@@ -78,7 +78,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the constant used. */
-					esc_html__( 'The %s constant is defined and enabled.', 'health-check' ),
+					esc_html__( 'The %s constant is defined and enabled.', 'simply-schedule-appointments' ),
 					'<code>DISALLOW_FILE_MODS</code>'
 				),
 				'severity' => 'fail',
@@ -100,7 +100,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the constant used. */
-					esc_html__( 'The %s constant is defined and enabled.', 'health-check' ),
+					esc_html__( 'The %s constant is defined and enabled.', 'simply-schedule-appointments' ),
 					'<code>AUTOMATIC_UPDATER_DISABLED</code>'
 				),
 				'severity' => 'fail',
@@ -122,7 +122,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the constant used. */
-					esc_html__( 'The %s constant is defined and enabled.', 'health-check' ),
+					esc_html__( 'The %s constant is defined and enabled.', 'simply-schedule-appointments' ),
 					'<code>WP_AUTO_UPDATE_CORE</code>'
 				),
 				'severity' => 'fail',
@@ -148,7 +148,7 @@ class TD_Health_Check_Auto_Updates {
 
 		// Include Basic auth in loopback requests.
 		if ( isset( $_SERVER['PHP_AUTH_USER'] ) && isset( $_SERVER['PHP_AUTH_PW'] ) ) {
-			$headers['Authorization'] = 'Basic ' . base64_encode( wp_unslash( $_SERVER['PHP_AUTH_USER'] ) . ':' . wp_unslash( $_SERVER['PHP_AUTH_PW'] ) );
+			$headers['Authorization'] = 'Basic ' . base64_encode( wp_unslash( $_SERVER['PHP_AUTH_USER'] ) . ':' . wp_unslash( $_SERVER['PHP_AUTH_PW'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Basic auth credentials passed through unmodified to rebuild the Authorization header for an internal loopback request; base64-encoded, never output or used in SQL, and sanitizing would corrupt valid passwords.
 		}
 
 		$url = add_query_arg( array(
@@ -163,7 +163,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the filter used. */
-					esc_html__( 'A plugin has prevented updates by disabling %s.', 'health-check' ),
+					esc_html__( 'A plugin has prevented updates by disabling %s.', 'simply-schedule-appointments' ),
 					'<code>wp_version_check()</code>'
 				),
 				'severity' => 'fail',
@@ -185,7 +185,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the filter used. */
-					esc_html__( 'The %s filter is enabled.', 'health-check' ),
+					esc_html__( 'The %s filter is enabled.', 'simply-schedule-appointments' ),
 					'<code>automatic_updater_disabled</code>'
 				),
 				'severity' => 'fail',
@@ -210,12 +210,12 @@ class TD_Health_Check_Auto_Updates {
 		}
 
 		if ( ! empty( $failed['critical'] ) ) {
-			$desc  = esc_html__( 'A previous automatic background update ended with a critical failure, so updates are now disabled.', 'health-check' );
-			$desc .= ' ' . esc_html__( 'You would have received an email because of this.', 'health-check' );
-			$desc .= ' ' . esc_html__( "When you've been able to update using the \"Update Now\" button on Dashboard > Updates, we'll clear this error for future update attempts.", 'health-check' );
+			$desc  = esc_html__( 'A previous automatic background update ended with a critical failure, so updates are now disabled.', 'simply-schedule-appointments' );
+			$desc .= ' ' . esc_html__( 'You would have received an email because of this.', 'simply-schedule-appointments' );
+			$desc .= ' ' . esc_html__( "When you've been able to update using the \"Update Now\" button on Dashboard > Updates, we'll clear this error for future update attempts.", 'simply-schedule-appointments' );
 			$desc .= ' ' . sprintf(
 				/* translators: %s: Code of error shown. */
-				esc_html__( 'The error code was %s.', 'health-check' ),
+				esc_html__( 'The error code was %s.', 'simply-schedule-appointments' ),
 				'<code>' . $failed['error_code'] . '</code>'
 			);
 			return array(
@@ -224,15 +224,15 @@ class TD_Health_Check_Auto_Updates {
 			);
 		}
 
-		$desc = esc_html__( 'A previous automatic background update could not occur.', 'health-check' );
+		$desc = esc_html__( 'A previous automatic background update could not occur.', 'simply-schedule-appointments' );
 		if ( empty( $failed['retry'] ) ) {
-			$desc .= ' ' . esc_html__( 'You would have received an email because of this.', 'health-check' );
+			$desc .= ' ' . esc_html__( 'You would have received an email because of this.', 'simply-schedule-appointments' );
 		}
 
-		$desc .= ' ' . esc_html__( "We'll try again with the next release.", 'health-check' );
+		$desc .= ' ' . esc_html__( "We'll try again with the next release.", 'simply-schedule-appointments' );
 		$desc .= ' ' . sprintf(
 			/* translators: %s: Code of error shown. */
-			esc_html__( 'The error code was %s.', 'health-check' ),
+			esc_html__( 'The error code was %s.', 'simply-schedule-appointments' ),
 			'<code>' . $failed['error_code'] . '</code>'
 		);
 		return array(
@@ -291,7 +291,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					// translators: %1$s: Folder name. %2$s: Version control directory. %3$s: Filter name.
-					esc_html__( 'The folder %1$s was detected as being under version control (%2$s), but the %3$s filter is allowing updates.', 'health-check' ),
+					esc_html__( 'The folder %1$s was detected as being under version control (%2$s), but the %3$s filter is allowing updates.', 'simply-schedule-appointments' ),
 					'<code>' . $check_dir . '</code>',
 					"<code>$vcs_dir</code>",
 					'<code>automatic_updates_is_vcs_checkout</code>'
@@ -304,7 +304,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					// translators: %1$s: Folder name. %2$s: Version control directory.
-					esc_html__( 'The folder %1$s was detected as being under version control (%2$s).', 'health-check' ),
+					esc_html__( 'The folder %1$s was detected as being under version control (%2$s).', 'simply-schedule-appointments' ),
 					'<code>' . $check_dir . '</code>',
 					"<code>$vcs_dir</code>"
 				),
@@ -313,7 +313,7 @@ class TD_Health_Check_Auto_Updates {
 		}
 
 		return array(
-			'desc'     => esc_html__( 'No version control systems were detected.', 'health-check' ),
+			'desc'     => esc_html__( 'No version control systems were detected.', 'simply-schedule-appointments' ),
 			'severity' => 'pass',
 		);
 	}
@@ -344,8 +344,8 @@ class TD_Health_Check_Auto_Updates {
 		$success = $skin->request_filesystem_credentials( false, ABSPATH );
 
 		if ( ! $success ) {
-			$desc  = esc_html__( 'Your installation of WordPress prompts for FTP credentials to perform updates.', 'health-check' );
-			$desc .= ' ' . esc_html__( '(Your site is performing updates over FTP due to file ownership. Talk to your hosting company.)', 'health-check' );
+			$desc  = esc_html__( 'Your installation of WordPress prompts for FTP credentials to perform updates.', 'simply-schedule-appointments' );
+			$desc .= ' ' . esc_html__( '(Your site is performing updates over FTP due to file ownership. Talk to your hosting company.)', 'simply-schedule-appointments' );
 
 			return array(
 				'desc'     => $desc,
@@ -354,7 +354,7 @@ class TD_Health_Check_Auto_Updates {
 		}
 
 		return array(
-			'desc'     => esc_html__( "Your installation of WordPress doesn't require FTP credentials to perform updates.", 'health-check' ),
+			'desc'     => esc_html__( "Your installation of WordPress doesn't require FTP credentials to perform updates.", 'simply-schedule-appointments' ),
 			'severity' => 'pass',
 		);
 	}
@@ -414,10 +414,10 @@ class TD_Health_Check_Auto_Updates {
 		if ( ! $checksums ) {
 			$desc = sprintf(
 				// translators: %s: WordPress version
-				esc_html__( "Couldn't retrieve a list of the checksums for WordPress %s.", 'health-check' ),
+				esc_html__( "Couldn't retrieve a list of the checksums for WordPress %s.", 'simply-schedule-appointments' ),
 				$wp_version
 			);
-			$desc .= ' ' . esc_html__( 'This could mean that connections are failing to WordPress.org.', 'health-check' );
+			$desc .= ' ' . esc_html__( 'This could mean that connections are failing to WordPress.org.', 'simply-schedule-appointments' );
 			return array(
 				'desc'     => $desc,
 				'severity' => 'warning',
@@ -432,7 +432,7 @@ class TD_Health_Check_Auto_Updates {
 			if ( ! file_exists( ABSPATH . '/' . $file ) ) {
 				continue;
 			}
-			if ( ! is_writable( ABSPATH . '/' . $file ) ) {
+			if ( ! is_writable( ABSPATH . '/' . $file ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- Read-only writability probe; only reached when $wp_filesystem->method is 'direct' (guarded above), so native is_writable() matches the active filesystem method.
 				$unwritable_files[] = $file;
 			}
 		}
@@ -443,12 +443,12 @@ class TD_Health_Check_Auto_Updates {
 				$unwritable_files[] = '...';
 			}
 			return array(
-				'desc'     => esc_html__( 'Some files are not writable by WordPress:', 'health-check' ) . ' <ul><li>' . implode( '</li><li>', $unwritable_files ) . '</li></ul>',
+				'desc'     => esc_html__( 'Some files are not writable by WordPress:', 'simply-schedule-appointments' ) . ' <ul><li>' . implode( '</li><li>', $unwritable_files ) . '</li></ul>',
 				'severity' => 'fail',
 			);
 		} else {
 			return array(
-				'desc'     => esc_html__( 'All of your WordPress files are writable.', 'health-check' ),
+				'desc'     => esc_html__( 'All of your WordPress files are writable.', 'simply-schedule-appointments' ),
 				'severity' => 'pass',
 			);
 		}
@@ -476,7 +476,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the constant used. */
-					esc_html__( 'WordPress development updates are blocked by the %s constant.', 'health-check' ),
+					esc_html__( 'WordPress development updates are blocked by the %s constant.', 'simply-schedule-appointments' ),
 					'<code>WP_AUTO_UPDATE_CORE</code>'
 				),
 				'severity' => 'fail',
@@ -487,7 +487,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the filter used. */
-					esc_html__( 'WordPress development updates are blocked by the %s filter.', 'health-check' ),
+					esc_html__( 'WordPress development updates are blocked by the %s filter.', 'simply-schedule-appointments' ),
 					'<code>allow_dev_auto_core_updates</code>'
 				),
 				'severity' => 'fail',
@@ -510,7 +510,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the constant used. */
-					esc_html__( 'WordPress security and maintenance releases are blocked by %s.', 'health-check' ),
+					esc_html__( 'WordPress security and maintenance releases are blocked by %s.', 'simply-schedule-appointments' ),
 					"<code>define( 'WP_AUTO_UPDATE_CORE', false );</code>"
 				),
 				'severity' => 'fail',
@@ -521,7 +521,7 @@ class TD_Health_Check_Auto_Updates {
 			return array(
 				'desc'     => sprintf(
 					/* translators: %s: Name of the filter used. */
-					esc_html__( 'WordPress security and maintenance releases are blocked by the %s filter.', 'health-check' ),
+					esc_html__( 'WordPress security and maintenance releases are blocked by the %s filter.', 'simply-schedule-appointments' ),
 					'<code>allow_minor_auto_core_updates</code>'
 				),
 				'severity' => 'fail',

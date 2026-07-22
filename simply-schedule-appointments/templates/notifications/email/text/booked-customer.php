@@ -15,25 +15,34 @@
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
-} ?>
-<?php  echo sprintf( __( 'Hi %s,', 'simply-schedule-appointments' ), '{{ Appointment.customer_information.Name }}' ); ?> 
+}
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- plain-text email template; HTML escaping would corrupt the plain-text message body
+?>
+<?php  /* translators: %s: customer name */
+echo sprintf( __( 'Hi %s,', 'simply-schedule-appointments' ), '{{ Appointment.customer_information.Name }}' ); ?> 
 
-<?php  echo sprintf( __( 'This is a confirmation of the appointment you just booked on %s', 'simply-schedule-appointments' ), '{{ Global.site_url }}' ); ?> 
+<?php  /* translators: %s: site URL */
+echo sprintf( __( 'This is a confirmation of the appointment you just booked on %s', 'simply-schedule-appointments' ), '{{ Global.site_url }}' ); ?> 
 
-<?php echo sprintf( __( 'Appointment scheduled for %s', 'simply-schedule-appointments' ), '{{ Appointment.customer_start_date }}' );?> 
+<?php /* translators: %s: appointment date and time */
+echo sprintf( __( 'Appointment scheduled for %s', 'simply-schedule-appointments' ), '{{ Appointment.customer_start_date }}' );?> 
 
 {% if instructions %}
-<?php echo sprintf( __( 'Instructions: %s', 'simply-schedule-appointments' ), '{{ instructions|raw }}' ); ?> 
+<?php /* translators: %s: appointment instructions */
+echo sprintf( __( 'Instructions: %s', 'simply-schedule-appointments' ), '{{ instructions|raw }}' ); ?> 
 {% endif %}
 
 {% if Appointment.web_meeting_url %}
-<?php echo sprintf( __( 'At your appointment time, join the meeting using this link: %s' ), '{{ Appointment.web_meeting_url }}' ); ?>
+<?php /* translators: %s: web meeting link URL */
+echo sprintf( __( 'At your appointment time, join the meeting using this link: %s', 'simply-schedule-appointments' ), '{{ Appointment.web_meeting_url }}' ); ?>
 {% endif %}
 
-<?php echo sprintf( __( 'Type: %s', 'simply-schedule-appointments' ), '{{ Appointment.AppointmentType.title|raw }}' ); ?> 
+<?php /* translators: %s: appointment type name */
+echo sprintf( __( 'Type: %s', 'simply-schedule-appointments' ), '{{ Appointment.AppointmentType.title|raw }}' ); ?> 
 
-<?php echo __( 'Your details:' ) ?> 
+<?php echo __( 'Your details:', 'simply-schedule-appointments' ) ?> 
 {{ Appointment.customer_information_summary }}
 
 <?php echo __( 'If you need to cancel or change your appointment, you can do so by visiting this link:', 'simply-schedule-appointments' ); ?> 
+<?php // phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 {{ Appointment.public_edit_url }}

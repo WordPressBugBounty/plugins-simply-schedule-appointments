@@ -189,7 +189,7 @@ class SSA_Divi {
 			);
 			
 			// Enqueue in block editor OR Visual Builder
-			if ( is_admin() || ( function_exists( 'et_fb_is_enabled' ) && et_fb_is_enabled() ) || isset( $_GET['et_fb'] ) ) {
+			if ( is_admin() || ( function_exists( 'et_fb_is_enabled' ) && et_fb_is_enabled() ) || isset( $_GET['et_fb'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only enqueue decision; only detects presence of the Divi Visual Builder query flag, no state change and the value is not used.
 				wp_enqueue_script( 'ssa-divi5-booking-module' );
 			}
 		}

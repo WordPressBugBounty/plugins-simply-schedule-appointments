@@ -17,9 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 } ?>
 {% if Appointment.web_meeting_url %}
-<?php _e( "This event has a web meeting:", 'simply-schedule-appointments' ) ?>
+<?php esc_html_e( "This event has a web meeting:", 'simply-schedule-appointments' ) ?>
 {{Appointment.web_meeting_url}}
 {% endif %}
 
-<?php _e( "Attendees:", 'simply-schedule-appointments' ) ?>
+<?php esc_html_e( "Attendees:", 'simply-schedule-appointments' ) ?>
 {{ attendees_list }}

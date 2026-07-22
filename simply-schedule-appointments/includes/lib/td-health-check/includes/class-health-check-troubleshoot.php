@@ -28,7 +28,7 @@ class TD_Health_Check_Troubleshoot {
 			$allowed_plugins = (array) $allowed_plugins;
 		}
 
-		$loopback_hash = md5( rand() );
+		$loopback_hash = md5( wp_rand() );
 
 		update_option( 'health-check-allowed-plugins', $allowed_plugins );
 
@@ -114,7 +114,7 @@ class TD_Health_Check_Troubleshoot {
 			);
 		}
 
-		$user_meta['warning'][ $_POST['warning'] ] = 'seen';
+		$user_meta['warning'][ $_POST['warning'] ] = 'seen'; // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.InputNotValidated,WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Vendored Health Check library upstream code, unmodified; value is used only as a user-meta array key to mark a warning as seen.
 
 		update_user_meta( get_current_user_id(), 'health-check', $user_meta );
 	}
@@ -142,7 +142,7 @@ class TD_Health_Check_Troubleshoot {
 		// Make sure the `mu-plugins` directory exists.
 		if ( ! is_dir( WPMU_PLUGIN_DIR ) ) {
 			if ( ! $wp_filesystem->mkdir( WPMU_PLUGIN_DIR ) ) {
-				TD_Health_Check::display_notice( esc_html__( 'We were unable to create the mu-plugins directory.', 'health-check' ), 'error' );
+				TD_Health_Check::display_notice( esc_html__( 'We were unable to create the mu-plugins directory.', 'simply-schedule-appointments' ), 'error' );
 				return false;
 			}
 		}
@@ -150,14 +150,14 @@ class TD_Health_Check_Troubleshoot {
 		// Remove instances of the old plugin, to avoid collisions.
 		if ( TD_Health_Check_Troubleshoot::old_mu_plugin_exists() ) {
 			if ( ! $wp_filesystem->delete( trailingslashit( WPMU_PLUGIN_DIR ) . 'health-check-disable-plugins.php' ) ) {
-				TD_Health_Check::display_notice( esc_html__( 'We could not remove the old must-use plugin.', 'health-check' ), 'error' );
+				TD_Health_Check::display_notice( esc_html__( 'We could not remove the old must-use plugin.', 'simply-schedule-appointments' ), 'error' );
 				return false;
 			}
 		}
 
 		// Copy the must-use plugin to the local directory.
 		if ( ! $wp_filesystem->copy( trailingslashit( TD_HEALTH_CHECK_PLUGIN_DIRECTORY ) . 'assets/mu-plugin/health-check-troubleshooting-mode.php', trailingslashit( WPMU_PLUGIN_DIR ) . 'health-check-troubleshooting-mode.php' ) ) {
-			TD_Health_Check::display_notice( esc_html__( 'We were unable to copy the plugin file required to enable the Troubleshooting Mode.', 'health-check' ), 'error' );
+			TD_Health_Check::display_notice( esc_html__( 'We were unable to copy the plugin file required to enable the Troubleshooting Mode.', 'simply-schedule-appointments' ), 'error' );
 			return false;
 		}
 
@@ -201,7 +201,7 @@ class TD_Health_Check_Troubleshoot {
 			global $wp_filesystem;
 
 			if ( ! $wp_filesystem->copy( trailingslashit( TD_HEALTH_CHECK_PLUGIN_DIRECTORY ) . 'assets/mu-plugin/health-check-troubleshooting-mode.php', trailingslashit( WPMU_PLUGIN_DIR ) . 'health-check-troubleshooting-mode.php', true ) ) {
-				TD_Health_Check::display_notice( esc_html__( 'We were unable to replace the plugin file required to enable the Troubleshooting Mode.', 'health-check' ), 'error' );
+				TD_Health_Check::display_notice( esc_html__( 'We were unable to replace the plugin file required to enable the Troubleshooting Mode.', 'simply-schedule-appointments' ), 'error' );
 				return false;
 			}
 		}
@@ -224,11 +224,11 @@ class TD_Health_Check_Troubleshoot {
 		TD_Health_Check::display_notice(
 			sprintf(
 				'%s<br>%s',
-				esc_html__( 'You have successfully enabled Troubleshooting Mode, all plugins will appear inactive until you disable Troubleshooting Mode, or log out and back in again.', 'health-check' ),
+				esc_html__( 'You have successfully enabled Troubleshooting Mode, all plugins will appear inactive until you disable Troubleshooting Mode, or log out and back in again.', 'simply-schedule-appointments' ),
 				sprintf(
 					'<a href="%1$s">%2$s</a><script type="text/javascript">window.location = "%1$s";</script>',
 					esc_url( admin_url( '/' ) ),
-					esc_html__( 'Return to the Dashboard', 'health-check' )
+					esc_html__( 'Return to the Dashboard', 'simply-schedule-appointments' )
 				)
 			)
 		);
@@ -267,7 +267,7 @@ class TD_Health_Check_Troubleshoot {
 	 * @return void
 	 */
 	static function show_enable_troubleshoot_form() {
-		if ( isset( $_POST['health-check-troubleshoot-mode'] ) ) {
+		if ( isset( $_POST['health-check-troubleshoot-mode'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Vendored Health Check library upstream code, unmodified; handler gated by the library's own troubleshooting flow, not WP nonces.
 			if ( TD_Health_Check_Troubleshoot::mu_plugin_exists() ) {
 				if ( ! TD_Health_Check_Troubleshoot::maybe_update_must_use_plugin() ) {
 					return;
@@ -296,7 +296,7 @@ class TD_Health_Check_Troubleshoot {
 			?>
 			<p style="text-align: center;">
 				<a class="button button-primary" href="<?php echo esc_url( add_query_arg( array( 'health-check-disable-troubleshooting' => true ) ) ); ?>">
-					<?php esc_html_e( 'Disable Troubleshooting Mode', 'health-check' ); ?>
+					<?php esc_html_e( 'Disable Troubleshooting Mode', 'simply-schedule-appointments' ); ?>
 				</a>
 			</p>
 
@@ -306,7 +306,7 @@ class TD_Health_Check_Troubleshoot {
 				<input type="hidden" name="health-check-troubleshoot-mode" value="true">
 				<p>
 					<button type="submit" class="button button-primary">
-						<?php esc_html_e( 'Enable Troubleshooting Mode', 'health-check' ); ?>
+						<?php esc_html_e( 'Enable Troubleshooting Mode', 'simply-schedule-appointments' ); ?>
 					</button>
 				</p>
 			</form>

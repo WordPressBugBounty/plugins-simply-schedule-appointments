@@ -43,7 +43,7 @@ class SSA_Availability_Default {
 	}
 
 	public function debug() {
-		if ( empty( $_GET['debug_availability'] ) ) {
+		if ( empty( $_GET['debug_availability'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin debug check; the method only tests presence of this param and performs no state change.
 			return;
 		}
 

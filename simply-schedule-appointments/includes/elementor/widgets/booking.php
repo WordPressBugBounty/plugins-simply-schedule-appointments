@@ -498,7 +498,7 @@ class SSA_Elementor_Booking_Widget extends \Elementor\Widget_Base {
 		$this->start_controls_section(
 			'section_style',
 			[
-				'label' => __( 'Styles', 'elementor' ),
+				'label' => __( 'Styles', 'simply-schedule-appointments' ),
 				'tab' => \Elementor\Controls_Manager::TAB_STYLE,
 			]
 		);
@@ -714,9 +714,9 @@ class SSA_Elementor_Booking_Widget extends \Elementor\Widget_Base {
 		}
 		?>
 		<div class="elementor-ssa-booking-wrapper">
-			<div <?php echo $this->get_render_attribute_string( 'booking' ); ?>>
+			<div <?php echo $this->get_render_attribute_string( 'booking' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor's get_render_attribute_string() returns attribute values escaped via esc_attr(). ?>>
 				<div class="ssa-booking">
-					<?php echo ssa()->shortcodes->ssa_booking( $attrs ); ?>
+					<?php echo ssa()->shortcodes->ssa_booking( $attrs ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ssa_booking() returns plugin-generated HTML markup (iframe/noscript); escaping would corrupt it and its dynamic values are escaped inside the shortcode. ?>
 				</div>
 			</div>
 		</div>

@@ -17,8 +17,11 @@
 	private $redirect_uri = false;
 	
 	private $quotaUser = null;
-	
-	
+
+	// Set when Google rejects a refresh with error=invalid_grant (dead refresh token).
+	private $refresh_token_invalid = false;
+
+
 	/**
 	 * Parent plugin class.
 	 *
@@ -128,9 +131,14 @@
 		$access_token = $this->get_access_token_for_staff_id();
 		// throwing the exception here to avoid fatal error of accessing an offset on a non-array
 		if( empty( $access_token ) || !is_array( $access_token ) ) {
-			throw new Exception( 'Empty access token for staff id '.$this->staff_id );
+			throw new Exception( 'Empty access token for staff id '.esc_html( $this->staff_id ) );
 		}
-		
+
+		// Refresh token already rejected (invalid_grant); skip the blocking retry until reconnect.
+		if( ! empty( $access_token['ssa_invalid_grant'] ) ) {
+			throw new Exception( 'Google Calendar reconnect required for staff id '.esc_html( $this->staff_id ) );
+		}
+
 		if( $this->is_access_token_expired( $access_token ) ) {
 			$this->access_token = $this->refresh_access_token( $access_token );
 			$this->update_token_in_database();
@@ -557,12 +565,19 @@
 			);
 
 			if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
+				if ( ! is_wp_error( $response ) ) {
+					// invalid_grant = dead refresh token, not a transient failure.
+					$error_body = json_decode( wp_remote_retrieve_body( $response ), true );
+					if ( ! empty( $error_body['error'] ) && 'invalid_grant' === $error_body['error'] ) {
+						$this->refresh_token_invalid = true;
+					}
+				}
 				ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
 				return false;
 			}
 
 			$data = json_decode(wp_remote_retrieve_body($response), true);
-			
+
 			if( empty( $data['refresh_token'] ) ) {
 				// attach the refresh token to the access token
 				$data['refresh_token'] = $refresh_token;
@@ -588,13 +603,39 @@
 		$response = $this->exchange_refresh_token( $client_id, $client_secret, $refresh_token );
 		if( empty( $response ) || ! is_array( $response ) || empty( $response['access_token'] ) ) {
 			ssa_debug_log( 'Failed to refresh access token for staff id ' . (string) $this->staff_id . print_r($response, true), 10); // phpcs:ignore
+			if ( $this->refresh_token_invalid ) {
+				$this->mark_invalid_grant();
+			}
 			throw new Exception( 'Failed to refresh access token' );
 		}
 		// Local mint stamp for clock-drift-tolerant expiry — see is_access_token_expired().
 		$response['ssa_fetched_at'] = time();
 		return $response;
 	}
-	
+
+	// Stamp the stored token so it surfaces the "needs reconnect" notice and skips further
+	// retries. Lives inside access_token, so it clears when the token is replaced/emptied.
+	private function mark_invalid_grant() {
+		if ( empty( $this->staff_id ) ) {
+			$google_calendar_settings = $this->plugin->google_calendar_settings->get();
+			if ( ! empty( $google_calendar_settings['access_token'] ) && is_array( $google_calendar_settings['access_token'] ) ) {
+				$google_calendar_settings['access_token']['ssa_invalid_grant'] = time();
+				$this->plugin->google_calendar_settings->update( array( 'access_token' => $google_calendar_settings['access_token'] ) );
+			}
+			return;
+		}
+
+		if ( empty( $this->plugin->staff_model ) || $this->plugin->staff_model instanceof SSA_Missing ) {
+			return;
+		}
+
+		$staff = $this->plugin->staff_model->get( $this->staff_id );
+		if ( ! empty( $staff['google_access_token'] ) && is_array( $staff['google_access_token'] ) ) {
+			$staff['google_access_token']['ssa_invalid_grant'] = time();
+			$this->plugin->staff_model->update( $this->staff_id, array( 'google_access_token' => $staff['google_access_token'] ) );
+		}
+	}
+
 	private function update_token_in_database(){
 		$staff_id = $this->staff_id;
 		$access_token = $this->access_token;

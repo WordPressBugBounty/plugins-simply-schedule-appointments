@@ -79,12 +79,15 @@ class SSA_Block_Upcoming_Appointments {
 			'ssa-upcoming-appointments-block-js',
 			$this->plugin->url( 'assets/js/block-upcoming-appointments.js' ),
 			array( 'wp-blocks', 'wp-element', 'wp-components', 'wp-editor' ),
-			Simply_Schedule_Appointments::VERSION
+			Simply_Schedule_Appointments::VERSION,
+			false
 		);
 
 		wp_register_style(
 			'ssa-booking-block-css',
-			$this->plugin->url( 'assets/css/block-booking.css' )
+			$this->plugin->url( 'assets/css/block-booking.css' ),
+			array(),
+			Simply_Schedule_Appointments::VERSION
 		);
 
 		$is_resources_installed = $this->plugin->settings_installed->is_installed( 'resources' );

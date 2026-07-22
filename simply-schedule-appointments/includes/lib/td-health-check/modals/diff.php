@@ -1,3 +1,8 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+?>
 <div id="health-check-diff-modal">
 	<div id="health-check-diff-modal-content">
 		<a id="health-check-diff-modal-close-ref" href="#health-check-diff-modal-close"><span class="dashicons dashicons-no"></span></a>

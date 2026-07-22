@@ -149,7 +149,7 @@ class SSA_Appointment_Object {
 					return $this->data[$field];
 				}
 				
-				throw new Exception( 'Invalid ' . __CLASS__ . ' property: ' . $field );
+				throw new Exception( esc_html( 'Invalid ' . __CLASS__ . ' property: ' . $field ) );
 		}
 	}
 
@@ -176,7 +176,7 @@ class SSA_Appointment_Object {
 			$model_data = ssa()->appointment_model->get( $this->id, $recursive );
 			if ( empty( $model_data['id'] ) ) {
 				if ( ! isset( $model_data['id'] ) || ! in_array( $model_data['id'], array( '0', 0 ), true ) ) {
-					throw new Exception( 'Appointment ID ' . $this->id . ' not found' );
+					throw new Exception( esc_html( 'Appointment ID ' . $this->id . ' not found' ) );
 				}
 			}
 			$this->data = array_merge( $this->data, $model_data );
@@ -299,7 +299,7 @@ class SSA_Appointment_Object {
 
 	public function fetch_fields( $fetch_fields = array() ) {
 		if ( !is_array( $fetch_fields ) ) {
-			throw new SSA_Exception("$fetch_fields must be an array", 1);
+			throw new SSA_Exception(esc_html("$fetch_fields must be an array"), 1);
 		}
 
 		foreach ( $fetch_fields as $fetch_field => $fetch_options ) {
@@ -310,7 +310,7 @@ class SSA_Appointment_Object {
 
 			$method_name = 'fetch_'.$fetch_field;
 			if ( !method_exists( $this, $method_name ) ) {
-				throw new SSA_Exception(__CLASS__ . "->" . $method_name . "() not implemented", 1);
+				throw new SSA_Exception(esc_html(__CLASS__ . "->" . $method_name . "() not implemented"), 1);
 			}
 
 			$this->$method_name( $fetch_options );

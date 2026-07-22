@@ -47,7 +47,7 @@ class SSA_Payment_Object {
 
 		$this->get();
 		if ( empty( $this->data['id'] ) || $this->id != $this->data['id'] ) {
-			throw new Exception("Unable to create SSA_Payment from id $id");
+			throw new Exception(esc_html("Unable to create SSA_Payment from id $id"));
 		}
 	}
 
@@ -83,7 +83,7 @@ class SSA_Payment_Object {
 					return $this->data[$field];
 				}
 				
-				throw new Exception( 'Invalid ' . __CLASS__ . ' property: ' . $field );
+				throw new Exception( esc_html( 'Invalid ' . __CLASS__ . ' property: ' . $field ) );
 		}
 	}
 
@@ -122,7 +122,7 @@ class SSA_Payment_Object {
 
 	public function fetch_fields( $fetch_fields = array() ) {
 		if ( !is_array( $fetch_fields ) ) {
-			throw new SSA_Exception("$fetch_fields must be an array", 1);
+			throw new SSA_Exception(esc_html("$fetch_fields must be an array"), 1);
 		}
 
 		foreach ( $fetch_fields as $fetch_field => $fetch_options ) {
@@ -133,7 +133,7 @@ class SSA_Payment_Object {
 
 			$method_name = 'fetch_'.$fetch_field;
 			if ( ! method_exists( $this, $method_name ) ) {
-				throw new SSA_Exception(__CLASS__ . "->" . $method_name . "() not implemented", 1);
+				throw new SSA_Exception(esc_html(__CLASS__ . "->" . $method_name . "() not implemented"), 1);
 			}
 
 			$this->$method_name( $fetch_options );

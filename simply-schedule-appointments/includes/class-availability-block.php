@@ -75,7 +75,7 @@ class SSA_Availability_Block {
 	 */
 	public function __get( $field ) {
 		if ( ! property_exists( $this, $field ) ) {
-			throw new Exception( 'Invalid ' . __CLASS__ . ' property: ' . $field );
+			throw new Exception( esc_html( 'Invalid ' . __CLASS__ . ' property: ' . $field ) );
 		}
 
 		return $this->$field;
@@ -92,7 +92,7 @@ class SSA_Availability_Block {
 	 */
 	public function __set( $field, $value ) {
 		if ( ! property_exists( $this, $field ) ) {
-			throw new Exception( 'Invalid ' . __CLASS__ . ' property: ' . $field );
+			throw new Exception( esc_html( 'Invalid ' . __CLASS__ . ' property: ' . $field ) );
 		}
 
 		$this->$field = $value;

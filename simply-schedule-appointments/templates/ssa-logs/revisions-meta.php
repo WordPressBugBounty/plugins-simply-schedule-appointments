@@ -1,3 +1,4 @@
+<?php if ( ! defined( 'ABSPATH' ) ) { exit; } ?>
 <style>
 
 .table-wrapper {
@@ -46,7 +47,7 @@ th {
 					<tr>
             <?php foreach (array_keys($revisions_meta[0]) as $header): ?>
                 <th>
-                  <?php echo htmlspecialchars($header); ?>
+                  <?php echo esc_html($header); ?>
                 </th>
             <?php endforeach; ?>
 					</tr>
@@ -59,10 +60,10 @@ th {
 										<?php 
 											if (is_array($value)) {
                         echo '<pre>';
-                        echo htmlspecialchars(json_encode($value, JSON_PRETTY_PRINT));
+                        echo esc_html(wp_json_encode($value, JSON_PRETTY_PRINT));
                         echo '</pre>';
 											} else {
-                        echo htmlspecialchars($value);
+                        echo esc_html($value);
 											}
 										?>
 										</td>

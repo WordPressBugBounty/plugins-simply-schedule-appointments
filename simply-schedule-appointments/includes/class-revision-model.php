@@ -99,7 +99,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 	public function cleanup_revisions() {
 		$revisions = $this->query(
 			array(
-				'date_created_max' => date( 'Y-m-d H:i:s', strtotime( '-3 months' ) ),
+				'date_created_max' => gmdate( 'Y-m-d H:i:s', strtotime( '-3 months' ) ),
 			)
 		);
 
@@ -718,14 +718,14 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			$params['data_after']['status'] = $params['data_before']['status'];
 		}
 
-		$revision_meta['status']['meta_value'] = $params['data_after']['status'];
-		
+		$revision_meta['status']['meta_value'] = $params['data_after']['status']; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- 'meta_value' is a column in SSA's custom revision_meta table, not a WP_Query meta arg; this builds insert data, no query runs.
+
 		if ( isset( $params['data_before']['status'] ) ) {
 			$revision_meta['status']['meta_value_before'] = $params['data_before']['status'];
 		}
 
 		// append appointment raw data changes
-		$revision_meta['raw_data']['meta_value'] = $params['data_after'];
+		$revision_meta['raw_data']['meta_value'] = $params['data_after']; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- 'meta_value' is a column in SSA's custom revision_meta table, not a WP_Query meta arg; this builds insert data, no query runs.
 		if ( isset( $params['data_before'] ) ) {
 			$revision_meta['raw_data']['meta_value_before'] = $params['data_before'];
 		}
@@ -802,7 +802,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		$item = parent::prepare_item_for_response( $item, $recursive );
 
 		if ( $recursive >= 0 ) {
-			$item['action_title'] = __( $item['action_title'], 'simply-schedule-appointments' );
+			$item['action_title'] = __( $item['action_title'], 'simply-schedule-appointments' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- action_title holds one of a fixed set of English action labels from get_action_title() that are registered for translation in languages/admin-app-translations.php; the wrapper is a real runtime lookup so localized admin revision history stays translated.
 			$item['action_summary_populated'] = $this->popuplate_action_summary_for_response( $item );
 		}
 
@@ -936,7 +936,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 
 	public function popuplate_action_summary_for_response( $item ) {
 		/* translators: If found, between double curly braces {{ Should not be translated }}. Actions: booked, canceled, pending_payment.. */
-		$action_summary = esc_html__( $item['action_summary'], 'simply-schedule-appointments' );
+		$action_summary = esc_html__( $item['action_summary'], 'simply-schedule-appointments' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- action_summary holds one of a fixed set of summary templates from get_action_summary(); the wrapper is a real runtime translation lookup (and escapes) so localized sites get translated revision summaries before placeholder substitution below.
 		$summary_vars = $item['summary_vars'];
 
 		// Regular expression to match placeholders wrapped inside double curly braces
@@ -951,7 +951,7 @@ class SSA_Revision_Model extends SSA_Db_Model {
 						if ( isset( $summary_vars[ $placeholder ] ) ) {
 								if ( $placeholder === 'action' ) {
 									// Only allow translations for actions
-									return __( $summary_vars[ $placeholder ], 'simply-schedule-appointments' );
+									return __( $summary_vars[ $placeholder ], 'simply-schedule-appointments' ); // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- only reached for the 'action' placeholder, whose value is one of the fixed internal action words; the wrapper is a real runtime translation lookup, guarded above to actions only.
 								}
 								if ( $placeholder === 'staff' ) {
 									$staff_ids = $summary_vars[ $placeholder ];
@@ -1233,14 +1233,14 @@ class SSA_Revision_Model extends SSA_Db_Model {
 				$params['data_after']['status'] = $params['data_before']['status'];
 			}
 	
-			$revision_meta['status']['meta_value'] = $params['data_after']['status'];
-			
+			$revision_meta['status']['meta_value'] = $params['data_after']['status']; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- 'meta_value' is a column in SSA's custom revision_meta table, not a WP_Query meta arg; this builds insert data, no query runs.
+
 			if ( isset( $params['data_before']['status'] ) ) {
 				$revision_meta['status']['meta_value_before'] = $params['data_before']['status'];
 			}
-	
+
 			// append appointment raw data changes
-			$revision_meta['raw_data']['meta_value'] = $params['data_after'];
+			$revision_meta['raw_data']['meta_value'] = $params['data_after']; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- 'meta_value' is a column in SSA's custom revision_meta table, not a WP_Query meta arg; this builds insert data, no query runs.
 			if ( isset( $params['data_before'] ) ) {
 				$revision_meta['raw_data']['meta_value_before'] = $params['data_before'];
 			}

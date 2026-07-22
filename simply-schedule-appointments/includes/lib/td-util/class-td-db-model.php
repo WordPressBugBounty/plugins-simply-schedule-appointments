@@ -208,7 +208,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 	 */
 	public function db_get( $row_id, $recursive=0 ) {
 		global $wpdb;
-		$row = (array)$wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->get_table_name()} WHERE $this->primary_key = %s LIMIT 1;", $row_id ) );
+		$row = (array)$wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->get_table_name()} WHERE $this->primary_key = %s LIMIT 1;", $row_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- get_table_name() and primary_key are internal identifiers, row value bound via $wpdb->prepare(); direct read of custom plugin table, not cached by design.
 		$row = $this->prepare_item_for_response( $row, $recursive );
 		return $row;
 	}
@@ -223,7 +223,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 	public function db_get_by( $field, $row_id, $recursive=0 ) {
 		global $wpdb;
 		$sanitized_field = sanitize_key( esc_sql( $field ) );
-		$row = (array)$wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->get_table_name()} WHERE $sanitized_field = %s LIMIT 1;", $row_id ) );
+		$row = (array)$wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$this->get_table_name()} WHERE $sanitized_field = %s LIMIT 1;", $row_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- get_table_name() is an internal identifier and $sanitized_field is sanitize_key()'d to a safe column identifier; row value bound via $wpdb->prepare(); direct read of custom plugin table, not cached by design.
 		$row = $this->prepare_item_for_response( $row, $recursive );
 		return $row;
 	}
@@ -238,7 +238,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 	public function db_get_field( $field, $row_id ) {
 		global $wpdb;
 		$sanitized_field = sanitize_key( esc_sql( $field ) );
-		return $wpdb->get_var( $wpdb->prepare( "SELECT $sanitized_field FROM {$this->get_table_name()} WHERE $this->primary_key = %s LIMIT 1;", $row_id ) );
+		return $wpdb->get_var( $wpdb->prepare( "SELECT $sanitized_field FROM {$this->get_table_name()} WHERE $this->primary_key = %s LIMIT 1;", $row_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $sanitized_field is sanitize_key()'d to a safe column identifier, get_table_name() and primary_key are internal identifiers; row value bound via $wpdb->prepare(); direct read of custom plugin table, not cached by design.
 	}
 
 	/**
@@ -252,7 +252,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		global $wpdb;
 		$sanitized_field_where = sanitize_key( esc_sql( $field_where ) );
 		$sanitized_field = sanitize_key( esc_sql( $field ) );
-		return $wpdb->get_var( $wpdb->prepare( "SELECT $sanitized_field FROM {$this->get_table_name()} WHERE $sanitized_field_where = %s LIMIT 1;", $field_value ) );
+		return $wpdb->get_var( $wpdb->prepare( "SELECT $sanitized_field FROM {$this->get_table_name()} WHERE $sanitized_field_where = %s LIMIT 1;", $field_value ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $sanitized_field and $sanitized_field_where are sanitize_key()'d to safe column identifiers, get_table_name() is an internal identifier; row value bound via $wpdb->prepare(); direct read of custom plugin table, not cached by design.
 	}
 	
 	public function get_meta_foreign_key(){
@@ -300,7 +300,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$this->bulk_delete(
 			array(
 				$foreign_key =>  $foreign_id,
-				'meta_key' => $meta_key,
+				'meta_key' => $meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- 'meta_key' is a column of the plugin's own custom meta table, not a WP_Query/get_posts meta_query.
 			)
 		);
 	}
@@ -318,8 +318,8 @@ abstract class TD_DB_Model extends TD_API_Model {
 		}
 		$meta_record = array(
 			$foreign_key =>  $foreign_id,
-			'meta_key' => $meta_key,
-			'meta_value'     => isset($meta_value['meta_value']) ? $meta_value['meta_value'] : $meta_value,
+			'meta_key' => $meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- 'meta_key' is a column of the plugin's own custom meta table, not a WP_Query/get_posts meta_query.
+			'meta_value'     => isset($meta_value['meta_value']) ? $meta_value['meta_value'] : $meta_value, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- 'meta_value' is a column of the plugin's own custom meta table, not a WP_Query/get_posts meta_query.
 		);
 		
 		if( isset( $meta_value['meta_value_before'] ) ) {
@@ -380,7 +380,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$data_keys = array_keys( $data );
 		$field_formats = array_merge( array_flip( $data_keys ), $field_formats );
 
-		$wpdb->insert( $this->get_table_name(), $data, $field_formats );
+		$wpdb->insert( $this->get_table_name(), $data, $field_formats ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Direct write to custom plugin table via $wpdb->insert(); table name is internal and values are escaped by $wpdb->insert() using the schema format specifiers.
 
 		// do_action( $this->db_namespace.'_post_insert_' . $type, $wpdb->insert_id, $data );
 
@@ -444,7 +444,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$data_keys = array_keys( $data );
 		$field_formats = array_merge( array_flip( $data_keys ), $field_formats );
 
-		$wpdb->insert( $this->get_table_name(), $data, $field_formats );
+		$wpdb->insert( $this->get_table_name(), $data, $field_formats ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Direct write to custom plugin table via $wpdb->insert(); table name is internal and values are escaped by $wpdb->insert() using the schema format specifiers.
 
 		// do_action( $this->db_namespace.'_post_insert_' . $type, $wpdb->insert_id, $data );
 
@@ -506,7 +506,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 			$data_keys = array_keys( $data );
 			$field_formats = array_merge( array_flip( $data_keys ), $field_formats );
 			$data_formats = array_intersect_key( $field_formats, $data );
-			$value_rows[] = $wpdb->prepare( '('.implode( ',', $data_formats ).')', $data );
+			$value_rows[] = $wpdb->prepare( '('.implode( ',', $data_formats ).')', $data ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- The placeholder template is built from the schema's internal %d/%s/%f format specifiers (get_fields(), same array passed as $wpdb->insert()'s $format); row values bound via $wpdb->prepare().
 		}
 
 		$table = $this->get_table_name();
@@ -514,7 +514,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$formats = implode( ', ', $field_formats );
 		$values_csv = implode( ",\n", $value_rows );
 		$sql = "INSERT INTO `$table` ($fields) VALUES $values_csv";
-		$wpdb->get_results( $sql );
+		$wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Table name is internal and $fields are schema-whitelisted column names; each VALUES row in $values_csv was escaped via $wpdb->prepare() when built above; direct write to custom plugin table.
 		// do_action( $this->db_namespace.'_post_insert_' . $type, $wpdb->insert_id, $data );
 
 		return $wpdb->insert_id;
@@ -549,7 +549,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 			$slug = $original_slug.'-'.$int_to_try_appending;
 			$int_to_try_appending++;
 			if ( $int_to_try_appending > 20) {
-				$int_to_try_appending = rand( 21, 100 );
+				$int_to_try_appending = wp_rand( 21, 100 );
 			}
 		}
 
@@ -779,7 +779,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$field_formats = array_merge( array_flip( $data_keys ), $field_formats );
 		$field_formats = shortcode_atts( $data, $field_formats );
 
-		if ( false === $wpdb->update( $this->get_table_name(), $data, array( $where => $row_id ), $field_formats ) ) {
+		if ( false === $wpdb->update( $this->get_table_name(), $data, array( $where => $row_id ), $field_formats ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct write to custom plugin table via $wpdb->update(); values escaped by $wpdb->update().
 			// this should never happen, we failed to update a row
 			ssa_debug_log( 'Failed to update row in ' . $this->get_table_name() . ' with ID: ' . $row_id ."\n" . ssa_get_stack_trace() . "wpdb last_error: " . $wpdb->last_error, 10);
 			return false;
@@ -817,11 +817,11 @@ abstract class TD_DB_Model extends TD_API_Model {
 		if ( $should_delete ) {
 			if ( !empty( $schema['status']['supports']['soft_delete'] ) ) {				
 				$data = array( $schema['status']['field'] => 'delete', );
-				if ( false === $wpdb->update( $this->get_table_name(), $data, array( $this->primary_key => $row_id ) ) ) {
+				if ( false === $wpdb->update( $this->get_table_name(), $data, array( $this->primary_key => $row_id ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct write to custom plugin table via $wpdb->update(); values escaped by $wpdb->update().
 					return false;
 				}
 			} else {
-				if ( false === $wpdb->query( $wpdb->prepare( "DELETE FROM {$this->get_table_name()} WHERE $this->primary_key = %d", $row_id ) ) ) {
+				if ( false === $wpdb->query( $wpdb->prepare( "DELETE FROM {$this->get_table_name()} WHERE $this->primary_key = %d", $row_id ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- get_table_name() and primary_key are internal identifiers, row id bound via $wpdb->prepare(); direct delete on custom plugin table.
 					return false;
 				}
 			}
@@ -853,7 +853,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		// 	$query = $wpdb->prepare( $query .= " AND ".$key." = %s", $value );
 		// }
 
-		$result = $wpdb->query( $query );
+		$result = $wpdb->query( $query ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Table name is an internal identifier; the WHERE clause is assembled by db_where_conditions(), which binds every query-arg value via $wpdb->prepare(); direct delete on custom plugin table.
 		if ( false === $result ) {
 			return false;
 		}
@@ -871,7 +871,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 	public function truncate() {
 		global $wpdb;
 		$query = "TRUNCATE TABLE {$this->get_table_name()}";
-		$result = $wpdb->query( $query );
+		$result = $wpdb->query( $query ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Only interpolation is the internal table name (get_table_name()); TRUNCATE is a DDL statement that takes no bound parameters; no user input.
 
 		return $result;
 	}
@@ -886,7 +886,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 	public function drop() {
 		global $wpdb;
 		$query = "DROP TABLE IF EXISTS {$this->get_table_name()}";
-		$result = $wpdb->query( $query );
+		$result = $wpdb->query( $query ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Only interpolation is the internal table name (get_table_name()); DROP TABLE is a DDL statement that takes no bound parameters; no user input.
 
 		return $result;
 	}
@@ -902,7 +902,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		global $wpdb;
 		$table = sanitize_text_field( $table );
 
-		return $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE '%s'", $table ) ) === $table;
+		return $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table ) ) === $table; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Table-existence check via SHOW TABLES; not cacheable, value bound via $wpdb->prepare().
 	}
 
 	public function maybe_create_table() {
@@ -941,7 +941,9 @@ abstract class TD_DB_Model extends TD_API_Model {
 		foreach ($schema as $key => $field) {
 			// Skip any fields with empty or missing field names
 			if ( ! is_array( $field ) || empty( $field['field'] ) || empty( $field['mysql_type'] ) ) {
-				error_log( 'SSA: Skipping invalid schema field in table `' . $this->get_table_name() . '`: ' . var_export( $field, true ) );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'SSA: Skipping invalid schema field in table `' . $this->get_table_name() . '`: ' . var_export( $field, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log, WordPress.PHP.DevelopmentFunctions.error_log_var_export -- WP_DEBUG-gated diagnostic for an invalid schema field definition.
+				}
 				continue;
 			}
 			
@@ -981,7 +983,9 @@ abstract class TD_DB_Model extends TD_API_Model {
 		foreach ($this->indexes as $key => $fields) {
 			// Skip any indexes with invalid keys (but allow numeric 0) or empty field arrays
 			if ( $key === '' || $key === null || empty( $fields ) || ! is_array( $fields ) ) {
-				error_log( 'SSA: Skipping invalid index in table `' . $this->get_table_name() . '`: key=' . var_export( $key, true ) );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'SSA: Skipping invalid index in table `' . $this->get_table_name() . '`: key=' . var_export( $key, true ) ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log, WordPress.PHP.DevelopmentFunctions.error_log_var_export -- WP_DEBUG-gated diagnostic for an invalid index definition.
+				}
 				continue;
 			}
 			$sql .= ",\n KEY `".$key."` (".implode( ',',$fields).")";
@@ -999,27 +1003,31 @@ abstract class TD_DB_Model extends TD_API_Model {
 		$last_error = $wpdb->last_error;
 
 		$confirm_query = 'DESCRIBE ' . $this->get_table_name();
-		$confirm_results = $wpdb->get_results( $confirm_query );
+		$confirm_results = $wpdb->get_results( $confirm_query ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Only interpolation is the internal table name (get_table_name()); DESCRIBE takes no bound parameters; no user input.
 		if ( empty( $wpdb->last_error ) ) {
 			update_option( $this->get_table_name() . '_db_version', $this->get_version() );
 			foreach ($update_queries as $query) {
-				$wpdb->query($query);
+				$wpdb->query($query); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- Custom-table default-value backfill built from internal schema field names and developer-defined default values (see $update_queries assembled above); no user input.
 				$last_query = $wpdb->last_query;
 				$last_error = $wpdb->last_error;
 				if ( empty( $wpdb->last_error ) ) {
 					continue;
 				}
-				error_log( 'Failed to update default values of table `'.$this->get_table_name().'`' );
-				error_log( 'last_query: ' . $last_query );
-				error_log( 'last_error: ' . $last_error );
+				if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+					error_log( 'Failed to update default values of table `'.$this->get_table_name().'`' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-gated diagnostic for a failed default-value update.
+					error_log( 'last_query: ' . $last_query ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-gated diagnostic.
+					error_log( 'last_error: ' . $last_error ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-gated diagnostic.
+				}
 			}
 			return true;
 		}
 
-		error_log( 'Failed to create table `'.$this->get_table_name().'`' );
-		error_log( 'last_query: ' . $last_query );
-		error_log( 'last_error: ' . $last_error );
-		error_log( 'dbdelta error: ' . print_r( $dbdelta_response, true ) ); // phpcs:ignore
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'Failed to create table `'.$this->get_table_name().'`' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-gated diagnostic for a failed table creation.
+			error_log( 'last_query: ' . $last_query ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-gated diagnostic.
+			error_log( 'last_error: ' . $last_error ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WP_DEBUG-gated diagnostic.
+			error_log( 'dbdelta error: ' . print_r( $dbdelta_response, true ) ); // phpcs:ignore
+		}
 	}
 
 	public function db_where_conditions( $args ) {
@@ -1041,7 +1049,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 			$ids = is_array( $args['id'] ) ? array_map( 'intval', $args['id'] ) : array( intval( $args['id'] ) );
 			if ( ! empty( $ids ) ) {
 				$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
-				$where       .= $wpdb->prepare( " AND `{$this->primary_key}` IN( {$placeholders} ) ", $ids );
+				$where       .= $wpdb->prepare( " AND `{$this->primary_key}` IN( {$placeholders} ) ", $ids ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- primary_key is an internal identifier; $placeholders is a dynamically-built list of %d specifiers matching the intval'd $ids, all values bound via $wpdb->prepare().
 			}
 		}
 
@@ -1050,7 +1058,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 				$author_ids = is_array( $args['author_id'] ) ? array_map( 'intval', $args['author_id'] ) : array( intval( $args['author_id'] ) );
 				if ( ! empty( $author_ids ) ) {
 					$placeholders = implode( ',', array_fill( 0, count( $author_ids ), '%d' ) );
-					$where       .= $wpdb->prepare( " AND `author_id` IN( {$placeholders} ) ", $author_ids );
+					$where       .= $wpdb->prepare( " AND `author_id` IN( {$placeholders} ) ", $author_ids ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- `author_id` is a literal column name; $placeholders is a dynamically-built list of %d specifiers matching the intval'd $author_ids, all values bound via $wpdb->prepare().
 				}
 			}
 		}
@@ -1185,8 +1193,8 @@ abstract class TD_DB_Model extends TD_API_Model {
 		}
 
 		// if( $rows === false ) {
-			$sql = $wpdb->prepare( "SELECT $fields FROM  $table_name $where ORDER BY $sanitized_orderby $sanitized_order LIMIT %d,%d;", absint( $args['offset'] ), absint( $args['number'] ) );
-			$rows = $wpdb->get_results( $sql );
+			$sql = $wpdb->prepare( "SELECT $fields FROM  $table_name $where ORDER BY $sanitized_orderby $sanitized_order LIMIT %d,%d;", absint( $args['offset'] ), absint( $args['number'] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $fields are whitelisted against the schema, $table_name is internal, $where is pre-bound by db_where_conditions(), $sanitized_orderby/$sanitized_order are validated to a real column and ASC|DESC; LIMIT values bound via $wpdb->prepare().
+			$rows = $wpdb->get_results( $sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared -- $sql is built by $wpdb->prepare() on the line above; direct read of custom plugin table, not cached by design.
 			$rows = array_map( function($row) { return (array)$row; }, $rows );
 		// }
 
@@ -1239,7 +1247,9 @@ abstract class TD_DB_Model extends TD_API_Model {
 			$where .= $wpdb->prepare( ' AND post_type=%s', esc_attr( $args['post_type'] ) );
 		}
 		$where .= $this->db_where_conditions( $args );
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Vendored td-util base model; bulk_meta_query has no callers in SSA. Interpolated pieces are identifiers, not values: $this->post_id_field is a subclass-defined column name (protected property, L57) and $args['field'] is a schema field name used as a column alias, neither of which can be bound as a %s placeholder. $where is assembled entirely from $wpdb->prepare() fragments and an intval'd author_id in db_where_conditions(), and the meta_key it contains is a schema-driven key, so no request/user value reaches the SQL. Direct custom postmeta/posts JOIN not served by the WP object cache.
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT post_id as ".$this->post_id_field.",meta_value as ".$args['field'].",post_type,post_title,post_name FROM $wpdb->postmeta INNER JOIN $wpdb->posts on $wpdb->posts.ID=$wpdb->postmeta.post_id $where", null ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 		if ( empty( $rows ) ) {
 			return false;
 		}
@@ -1288,7 +1298,7 @@ abstract class TD_DB_Model extends TD_API_Model {
 		// $count = wp_cache_get( $cache_key, 'rows' );
 
 		// if( $count === false ) {
-			$count = $wpdb->get_var( "SELECT COUNT($this->primary_key) FROM " . $this->get_table_name() . "{$where};" );
+			$count = $wpdb->get_var( "SELECT COUNT($this->primary_key) FROM " . $this->get_table_name() . "{$where};" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- primary_key and get_table_name() are internal identifiers; $where is assembled by db_where_conditions(), which binds every query-arg value via $wpdb->prepare(); no user input directly interpolated.
 			// wp_cache_set( $cache_key, $count, 'rows', 60 );
 		// }
 

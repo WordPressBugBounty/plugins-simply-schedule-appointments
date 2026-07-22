@@ -217,6 +217,7 @@ class SSA_Ics_Exporter {
 		$ics .= 'PRODID:-//SSA//Simply Schedule Appointments ' . Simply_Schedule_Appointments::VERSION . '//EN' . $this->eol;
 		$ics .= 'CALSCALE:GREGORIAN' . $this->eol;
 		$ics .= 'X-ORIGINAL-URL:' . $this->sanitize_string( home_url( '/' ) ) . $this->eol;
+		/* translators: %s: site name */
 		$ics .= 'X-WR-CALDESC:' . $this->sanitize_string( sprintf( __( 'Appointments from %s', 'simply-schedule-appointments' ), $sitename ) ) . $this->eol;
 		$ics .= 'TRANSP:' . 'OPAQUE' . $this->eol;
 

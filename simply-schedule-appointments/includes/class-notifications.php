@@ -332,6 +332,7 @@ class SSA_Notifications {
 		$table = $this->plugin->async_action_model->get_table_name();
 		$ids   = implode( ',', array_map( 'intval', $appointment_ids ) );
 
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- custom async_action table, direct query required (async_action_model->query() only supports a single object_id); not cacheable because this reads live pending-queue state that inserts/deletes/fires mutate, and a stale snapshot would resync against outdated rows; {$table} is an internal identifier from get_table_name() ($wpdb->prefix + hardcoded slug) and {$ids} is a comma-joined list of intval-cast integers, while all value params are bound via $wpdb->prepare().
 		$rows = $wpdb->get_results( $wpdb->prepare(
 			"SELECT id, object_id, date_queued, payload FROM {$table}
 			 WHERE object_type = %s
@@ -342,6 +343,7 @@ class SSA_Notifications {
 			'ssa_fire_appointment_start_date_notifications',
 			'0000-00-00 00:00:00'
 		), ARRAY_A );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		$grouped = array();
 		foreach ( (array) $rows as $row ) {

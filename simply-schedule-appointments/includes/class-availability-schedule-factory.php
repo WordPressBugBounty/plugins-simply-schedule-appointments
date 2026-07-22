@@ -63,8 +63,8 @@ class SSA_Availability_Schedule_Factory extends SSA_Availability_Schedule {
 	}
 
 	public static function create_random( array $data = array() ) {
-		$start_time = time() + rand(1,1000) * 3600;
-		$end_time = $start_time + rand( 1, 1000 ) * 3600;
+		$start_time = time() + wp_rand(1,1000) * 3600;
+		$end_time = $start_time + wp_rand( 1, 1000 ) * 3600;
 
 		$instance = self::create( array(
 			'period' => new Period(

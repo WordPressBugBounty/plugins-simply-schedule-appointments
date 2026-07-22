@@ -1,4 +1,7 @@
-<?php $translations = array (
+<?php
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+// phpcs:disable WordPress.WP.I18n.MissingTranslatorsComment,WordPress.WP.I18n.NoEmptyStrings -- Machine-generated from the app strings.js source; per-string translator context and non-empty guarantees live in the JS source, not this build artifact.
+$translations = array (
   'actions' => 
   array (
     'back' => __( 'Go back', 'simply-schedule-appointments' ),

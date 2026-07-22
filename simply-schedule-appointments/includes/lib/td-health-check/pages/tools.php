@@ -42,13 +42,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<dt role="heading" aria-level="2">
 		<button aria-expanded="false" class="health-check-accordion-trigger" aria-controls="health-check-accordion-block-<?php echo esc_attr( $count ); ?>" id="health-check-accordion-heading-<?php echo esc_attr( $count ); ?>" type="button">
 			<span class="title">
-				<?php echo $tab['label']; ?>
+				<?php echo $tab['label']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Pre-escaped label supplied by tools via the documented health_check_tools_tab filter contract (see docblock above). ?>
 			</span>
 			<span class="icon"></span>
 		</button>
 	</dt>
 	<dd id="health-check-accordion-block-<?php echo esc_attr( $count ); ?>" role="region" aria-labelledby="health-check-accordion-heading-<?php echo esc_attr( $count ); ?>" class="health-check-accordion-panel" hidden="hidden">
-		<?php echo $tab['content']; ?>
+		<?php echo $tab['content']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Intentional HTML markup supplied by tools via the health_check_tools_tab filter; escaping would break tool output. ?>
 	</dd>
 
 	<?php endforeach; ?>

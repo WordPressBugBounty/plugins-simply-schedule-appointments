@@ -16,6 +16,6 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 } ?>
-<?php  echo sprintf( __( 'Hi %s,', 'simply-schedule-appointments' ), '{{ Appointment.customer_information.Name }}' ); ?>
+<?php  echo sprintf( /* translators: %s: customer name */ __( 'Hi %s,', 'simply-schedule-appointments' ), '{{ Appointment.customer_information.Name }}' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Plain-text email template; echoed value is a hard-coded literal placeholder string, not user input, so HTML-escaping is unnecessary and would corrupt the plain-text body. ?>
 
-<?php  echo sprintf( __( 'Your appointment "%s" (booked on %s) has been canceled', 'simply-schedule-appointments' ), '{{ Appointment.AppointmentType.title|raw }}', '{{ Global.home_url }}' ); ?>
+<?php  echo sprintf( /* translators: 1: appointment type name, 2: site URL */ __( 'Your appointment "%1$s" (booked on %2$s) has been canceled', 'simply-schedule-appointments' ), '{{ Appointment.AppointmentType.title|raw }}', '{{ Global.home_url }}' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Plain-text email template; echoed value is a hard-coded literal placeholder string, not user input, so HTML-escaping is unnecessary and would corrupt the plain-text body. ?>

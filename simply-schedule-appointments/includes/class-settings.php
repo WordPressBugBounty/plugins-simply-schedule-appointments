@@ -462,7 +462,7 @@ abstract class SSA_Settings_Schema {
 				if ( $validation_result !== true ) {
 					if ( empty( $wp_error->errors ) ) {
 						// populate the general error message
-						$wp_error->add( 422, $this->slug . ' ' . __( 'settings are invalid' ) );
+						$wp_error->add( 422, $this->slug . ' ' . __( 'settings are invalid', 'simply-schedule-appointments' ) );
 					}
 					// add the field specific error message - $validation_result is already translated
 					$wp_error->add( 422, array( $field, $validation_result ) );

@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
 // $atts are defined in class-shortcodes.php
 // don't try to load this file directly, instead call ssa()->shortcodes->ssa_past_appointments()
 
@@ -30,11 +34,11 @@ $date_format = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a' ) . ' (T
 							$localized_string  = $past_appointment_datetime->setTimezone( $customer_timezone )->format( $date_format );
 							$localized_string  = SSA_Utils::translate_formatted_date( $localized_string );
 
-							echo $localized_string;
+							echo esc_html( $localized_string );
 
 							if ( filter_var( $atts['appointment_type_displayed'], FILTER_VALIDATE_BOOLEAN ) ) {
 								$past_appointment_type = new SSA_Appointment_Type_Object( $past_appointment['appointment_type_id'] );
-								echo ' ' . $past_appointment_type->get_title();
+								echo ' ' . esc_html( $past_appointment_type->get_title() );
 							}
 
 							if ( ! empty( $past_appointment['web_meeting_url'] ) && filter_var( $atts['web_meeting_url'], FILTER_VALIDATE_BOOLEAN ) ) {

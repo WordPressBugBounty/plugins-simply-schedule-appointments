@@ -1780,7 +1780,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				// appointments rather than building a "FROM  WHERE" subquery that would 500.
 				$staff_appointment_table = $this->get_dependency_table_name( $this->plugin->staff_appointment_model );
 				if ( '' !== $staff_appointment_table ) {
-					$params['append_where_sql'] = $wpdb->prepare( ' AND id IN (SELECT appointment_id FROM ' . $staff_appointment_table . ' WHERE staff_id = %d)', $this->plugin->staff_model->get_staff_id_for_user_id( get_current_user_id() ) );
+					$params['append_where_sql'] = $wpdb->prepare( ' AND id IN (SELECT appointment_id FROM ' . $staff_appointment_table . ' WHERE staff_id = %d)', $this->plugin->staff_model->get_staff_id_for_user_id( get_current_user_id() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Interpolated identifier is the internal staff-appointment table name, not user input; the staff id is bound with %d.
 				} else {
 					$params['customer_id'] = get_current_user_id();
 				}
@@ -2317,7 +2317,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$data = $this->plugin->appointment_meta_model->query(
 			array(
 				'appointment_id' => $appointment_id,
-				'meta_key'       => $meta_key,
+				'meta_key'       => $meta_key, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Query arg for SSA's custom appointment_meta model (its own table, not core postmeta); the result is limited to a single row by appointment_id + meta_key.
 				'order_by'       => 'id',
 				'order'          => 'DESC',
 				'limit'          => 1,
@@ -2337,6 +2337,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			$date_modified_max = ssa_datetime( '-1 day' );
 		}
 
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is an internal constant from get_table_name(); the value is bound with $wpdb->prepare() below. One-off cleanup DELETE on a custom table, not cacheable.
 		$sql = 'DELETE FROM ' . $this->get_table_name() . ' WHERE status = "abandoned" AND date_modified < %s';
 		$sql = $wpdb->prepare(
 			$sql,
@@ -2344,6 +2345,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		);
 
 		$wpdb->get_results( $sql );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 
 	public function update_rescheduled_to_appointment_id( $appointment_id, $data, $data_before = array() ) {
@@ -2435,8 +2437,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		// ORDER BY id keeps batching deterministic across MySQL versions; without it
 		// the optimiser is free to return rows in any order, which makes "drain via
 		// repeated calls" rely on de-facto InnoDB clustered-index ordering.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table name is internal; each $conditions clause is individually bound via $wpdb->prepare() and LIMIT is an integer cast. Batched purge SELECT on a custom table, not cacheable.
 		$sql  = 'SELECT * FROM ' . $this->get_table_name() . ' WHERE ' . implode( ' OR ', $conditions ) . ' ORDER BY id ASC LIMIT ' . (int) $purge_batch_size;
 		$list = $wpdb->get_results( $sql, ARRAY_A );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		if ( empty( $list ) ) {
 			return new WP_REST_Response( __( 'No appointments found to be deleted.', 'simply-schedule-appointments' ), 404 );
@@ -2485,15 +2489,16 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$appointments_table = $this->get_table_name();
 
 		foreach ( array_chunk( $appointment_ids, 1000 ) as $chunk ) {
-			$wpdb->query( 'START TRANSACTION' );
+			$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction control statement wrapping a multi-table purge; not a cacheable read.
 
 			if ( ! $this->purge_appointment_dependencies( $chunk ) ) {
-				$wpdb->query( 'ROLLBACK' );
+				$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction control statement; not a cacheable read.
 				return new WP_REST_Response( __( 'Something went wrong while deleting the appointments. Please try again.', 'simply-schedule-appointments' ), 500 );
 			}
 
 			$placeholders = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
 
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $appointments_table is get_table_name() (internal identifier); $placeholders is a generated %d list bound to int-cast $chunk ids via $wpdb->prepare(). Batched delete plus transaction ROLLBACK on a custom table, not cacheable.
 			if ( false === $wpdb->query( $wpdb->prepare(
 				"DELETE FROM {$appointments_table} WHERE id IN ({$placeholders})",
 				$chunk
@@ -2501,8 +2506,9 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				$wpdb->query( 'ROLLBACK' );
 				return new WP_REST_Response( __( 'Something went wrong while deleting the appointments. Please try again.', 'simply-schedule-appointments' ), 500 );
 			}
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
-			$wpdb->query( 'COMMIT' );
+			$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Transaction control statement; not a cacheable read.
 		}
 
 		// Sweep orphan dependent rows left over from purges run before the cascade-clean
@@ -2557,6 +2563,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		$placeholders = implode( ',', array_fill( 0, count( $appointment_ids ), '%d' ) );
 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- All table names come from get_dependency_table_name() (internal identifiers, '' when the edition strips the feature) and are truthy-guarded; every value is an int-cast id bound with a generated %d list via $wpdb->prepare(). Cascade deletes on custom tables, not cacheable.
 		// Pending notifications, webhooks, calendar sync, etc. (anything queued via
 		// ssa_queue_action with object_type = 'appointment'). This is the row that
 		// causes the fatal in execute_cron_process_async_actions if left orphaned.
@@ -2618,6 +2625,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				}
 			}
 		}
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		return true;
 	}
@@ -2712,6 +2720,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$chunk_size     = 5000;
 		$max_iterations = 10;
 
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- All table names come from get_table_name()/get_dependency_table_name() (internal identifiers, truthy-guarded); orphan ids are int-cast and bound with a generated %d list and LIMIT uses %d, all via $wpdb->prepare(). Bounded orphan sweep on custom tables, not cacheable.
 		foreach ( $tables as $table ) {
 			for ( $i = 0; $i < $max_iterations; $i++ ) {
 				$orphan_ids = $wpdb->get_col( $wpdb->prepare(
@@ -2799,6 +2808,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				$orphan_revision_ids
 			) );
 		}
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 
 	/**

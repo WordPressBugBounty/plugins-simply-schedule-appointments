@@ -36,14 +36,13 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
 
   <div class="ssa-memberpress-memberships-empty-container">
     <p>
-      <?= __('Looks like Simply Schedule Appointments isn\'t fully set up yet.', 'simply-schedule-appointments'); ?>
+      <?php echo esc_html__('Looks like Simply Schedule Appointments isn\'t fully set up yet.', 'simply-schedule-appointments'); ?>
     </p>
     <span>
-      <?= sprintf( __( 'Head to %1$s the SSA dashboard  %2$s to get that squared away.', 'simply-schedule-appointments' ),
-                          '<a href="' . $this->plugin->wp_admin->url( 'ssa/appointment-types/all' ) . '" target="_blank">',
+      <?php echo wp_kses_post( sprintf( /* translators: 1: opening link tag, 2: closing link tag */ __( 'Head to %1$s the SSA dashboard  %2$s to get that squared away.', 'simply-schedule-appointments' ),
+                          '<a href="' . esc_url( $this->plugin->wp_admin->url( 'ssa/appointment-types/all' ) ) . '" target="_blank">',
                           '</a>'
-                        );
-      ?>
+                        ) ); ?>
     </span>
   </div>
 
@@ -61,7 +60,7 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
         id="ssa-mepr-include-appointments" <?php checked($enabled); ?> 
       />
       <label for="ssa-mepr-include-appointments">
-        <?= __('Do you want to include appointments with this membership?', 'simply-schedule-appointments' ); ?>
+        <?php echo esc_html__('Do you want to include appointments with this membership?', 'simply-schedule-appointments' ); ?>
       </label>
       <span 
         id="ssa-memberpress-helperText" 
@@ -69,11 +68,11 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
         style="display: <?php  echo $enabled ? 'none' : 'block'; ?>"
         aria-hidden="<?php  echo $enabled ? 'true' : 'false'; ?>"
       >
-        <?= __('Enable this feature to allow members to book appointments as part of their membership.', 'simply-schedule-appointments' ); ?>
+        <?php echo esc_html__('Enable this feature to allow members to book appointments as part of their membership.', 'simply-schedule-appointments' ); ?>
         
         <!-- TODO Set the guide url  -->
         <a href="https://simplyscheduleappointments.com/guides/memberpress-booking-subscriptions" target="_blank">
-          <?= __('Learn more', 'simply-schedule-appointments'); ?>
+          <?php echo esc_html__('Learn more', 'simply-schedule-appointments'); ?>
         </a>
 
       </span>
@@ -82,8 +81,8 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
 
     <div
       id="ssa-mepr-appointments-block" 
-      style="display: <?= $enabled ? 'block' : 'none'; ?>"
-      aria-hidden="<?= $enabled ? 'false' : 'true'; ?>"
+      style="display: <?php echo $enabled ? 'block' : 'none'; ?>"
+      aria-hidden="<?php echo $enabled ? 'false' : 'true'; ?>"
     >
       <div>
         <p 
@@ -93,15 +92,15 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
           aria-hidden="<?php  echo empty( $included_appointment_types ) ? 'false' : 'true'; ?>"
 
           >
-          <?= __('No appointment types are set up for this membership yet.', 'simply-schedule-appointments'); ?>
+          <?php echo esc_html__('No appointment types are set up for this membership yet.', 'simply-schedule-appointments'); ?>
         </p>
         <p 
           id="ssa-mepr-note-offers"
           class="ssa-mepr-note"
-          style="display: <?= ! empty( $included_appointment_types ) ? 'block' : 'none'; ?>"
-          aria-hidden="<?= ! empty( $included_appointment_types ) ? 'false' : 'true'; ?>"
+          style="display: <?php echo ! empty( $included_appointment_types ) ? 'block' : 'none'; ?>"
+          aria-hidden="<?php echo ! empty( $included_appointment_types ) ? 'false' : 'true'; ?>"
           >
-          <?= __('This Membership offers the following appointments', 'simply-schedule-appointments'); ?>:
+          <?php echo esc_html__('This Membership offers the following appointments', 'simply-schedule-appointments'); ?>:
         </p>
       </div>
       
@@ -117,7 +116,7 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
           <!-- foxy logo -->
           <div class="ssa-mepr-image-wrapper"> 
             <img 
-              src= <?= $this->plugin->url('assets/images/foxes/logo-ssa.svg') ?> 
+              src= <?php echo esc_url( $this->plugin->url('assets/images/foxes/logo-ssa.svg') ); ?>
               alt="Simply Schedule Appointments Foxy Icon" 
               class="ssa-mepr-foxy-icon"
               >
@@ -132,23 +131,23 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
       <!-- Appointment types Dropdown -->
       <div>
         <label for="ssa_apptTypesDropdown">
-          <?= __('Add a new appointment type', 'simply-schedule-appointments'); ?>:
+          <?php echo esc_html__('Add a new appointment type', 'simply-schedule-appointments'); ?>:
         </label>
         <select 
           name="appointment-types" 
           id="ssa_apptTypesDropdown"
-          aria-description="<?= __('Click the add button to choose the selected option', 'simply-schedule-appointments'); ?>"
+          aria-description="<?php echo esc_attr__('Click the add button to choose the selected option', 'simply-schedule-appointments'); ?>"
         >
           <?php foreach ($appointment_types as $appointment_type):
               $is_included = in_array( $appointment_type['id'], $included_appointment_types_ids );
               ?>
               <option 
-                value="<?= $appointment_type['id']; ?>"
-                data-title="<?= $appointment_type['title']; ?>"
-                <?= $is_included ? 'disabled' : '' ; ?>
-                aria-disabled="<?= $is_included ? 'true' : 'false'; ?>"
+                value="<?php echo esc_attr( $appointment_type['id'] ); ?>"
+                data-title="<?php echo esc_attr( $appointment_type['title'] ); ?>"
+                <?php echo $is_included ? 'disabled' : ''; ?>
+                aria-disabled="<?php echo $is_included ? 'true' : 'false'; ?>"
                 >
-                <?= $appointment_type['title']; ?>
+                <?php echo esc_html( $appointment_type['title'] ); ?>
               </option>
             <?php endforeach; ?>
         </select>
@@ -158,10 +157,10 @@ $appointment_types = $this->plugin->appointment_type_model->query( array( 'statu
           class="button"
         >
           <span class="ssa-screen-reader-text">
-            <?= __('Add the selected appointment type', 'simply-schedule-appointments'); ?>
+            <?php echo esc_html__('Add the selected appointment type', 'simply-schedule-appointments'); ?>
           </span>
           <span aria-hidden="true">
-            <?= __('Add', 'simply-schedule-appointments'); ?>
+            <?php echo esc_html__('Add', 'simply-schedule-appointments'); ?>
           </span>
         </button>
       </div> <!-- End Appointment types Dropdown -->

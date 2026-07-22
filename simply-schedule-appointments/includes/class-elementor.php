@@ -20,7 +20,7 @@ class SSA_Elementor {
 	 *
 	 * @var string The plugin version.
 	 */
-	const VERSION = '1.6.12.11';
+	const VERSION = '1.6.12.13';
 
 	/**
 	 * Minimum Elementor Version
@@ -29,7 +29,7 @@ class SSA_Elementor {
 	 *
 	 * @var string Minimum Elementor version required to run the plugin.
 	 */
-	const MINIMUM_ELEMENTOR_VERSION = '1.6.12.11';
+	const MINIMUM_ELEMENTOR_VERSION = '1.6.12.13';
 
 	/**
 	 * Minimum PHP Version
@@ -38,7 +38,7 @@ class SSA_Elementor {
 	 *
 	 * @var string Minimum PHP version required to run the plugin.
 	 */
-	const MINIMUM_PHP_VERSION = '1.6.12.11';
+	const MINIMUM_PHP_VERSION = '1.6.12.13';
 
 	/**
 	 * Instance
@@ -146,7 +146,7 @@ class SSA_Elementor {
 	 */
 	public function widget_styles() {
 
-		wp_register_style( 'ssa-elementor', plugins_url( 'widgets/css/ssa-elementor.css', __FILE__ ) );
+		wp_register_style( 'ssa-elementor', plugins_url( 'widgets/css/ssa-elementor.css', __FILE__ ), array(), self::VERSION );
 
 	}
 
@@ -158,7 +158,7 @@ class SSA_Elementor {
 	 * @access public
 	 */
 	public function widget_scripts() {
-		wp_register_script( 'ssa-elementor', plugins_url( 'widgets/js/ssa-elementor.js', __FILE__ ) );
+		wp_register_script( 'ssa-elementor', plugins_url( 'widgets/js/ssa-elementor.js', __FILE__ ), array(), self::VERSION, false );
 
 	}
 
@@ -173,7 +173,7 @@ class SSA_Elementor {
 	 */
 	public function admin_notice_missing_main_plugin() {
 
-		if ( isset( $_GET['activate'] ) ) unset( $_GET['activate'] );
+		if ( isset( $_GET['activate'] ) ) unset( $_GET['activate'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin notice; only unsets the in-memory activate query var, no state change
 
 		$message = sprintf(
 			/* translators: 1: Plugin name 2: Elementor */
@@ -182,7 +182,7 @@ class SSA_Elementor {
 			'<strong>' . esc_html__( 'Elementor', 'simply-schedule-appointments' ) . '</strong>'
 		);
 
-		printf( '<div class="notice notice-warning is-dismissible"><p>%1$s</p></div>', $message );
+		printf( '<div class="notice notice-warning is-dismissible"><p>%1$s</p></div>', wp_kses_post( $message ) );
 
 	}
 
@@ -197,7 +197,7 @@ class SSA_Elementor {
 	 */
 	public function admin_notice_minimum_elementor_version() {
 
-		if ( isset( $_GET['activate'] ) ) unset( $_GET['activate'] );
+		if ( isset( $_GET['activate'] ) ) unset( $_GET['activate'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin notice; only unsets the in-memory activate query var, no state change
 
 		$message = sprintf(
 			/* translators: 1: Plugin name 2: Elementor 3: Required Elementor version */
@@ -207,7 +207,7 @@ class SSA_Elementor {
 			 self::MINIMUM_ELEMENTOR_VERSION
 		);
 
-		printf( '<div class="notice notice-warning is-dismissible"><p>%1$s</p></div>', $message );
+		printf( '<div class="notice notice-warning is-dismissible"><p>%1$s</p></div>', wp_kses_post( $message ) );
 
 	}
 
@@ -222,7 +222,7 @@ class SSA_Elementor {
 	 */
 	public function admin_notice_minimum_php_version() {
 
-		if ( isset( $_GET['activate'] ) ) unset( $_GET['activate'] );
+		if ( isset( $_GET['activate'] ) ) unset( $_GET['activate'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin notice; only unsets the in-memory activate query var, no state change
 
 		$message = sprintf(
 			/* translators: 1: Plugin name 2: PHP 3: Required PHP version */
@@ -232,7 +232,7 @@ class SSA_Elementor {
 			 self::MINIMUM_PHP_VERSION
 		);
 
-		printf( '<div class="notice notice-warning is-dismissible"><p>%1$s</p></div>', $message );
+		printf( '<div class="notice notice-warning is-dismissible"><p>%1$s</p></div>', wp_kses_post( $message ) );
 
 	}
 

@@ -78,10 +78,10 @@ class TD_Health_Check_Files_Integrity {
 		foreach ( $checksums['checksums'] as $file => $checksum ) {
 			// Check the files.
 			if ( file_exists( $filepath . $file ) && md5_file( $filepath . $file ) !== $checksum ) {
-				$reason = esc_html__( 'Content changed', 'health-check' ) . ' <a href="#health-check-diff" data-file="' . $file . '">' . esc_html__( '(View Diff)', 'health-check' ) . '</a>';
+				$reason = esc_html__( 'Content changed', 'simply-schedule-appointments' ) . ' <a href="#health-check-diff" data-file="' . $file . '">' . esc_html__( '(View Diff)', 'simply-schedule-appointments' ) . '</a>';
 				array_push( $files, array( $file, $reason ) );
 			} elseif ( ! file_exists( $filepath . $file ) ) {
-				$reason = esc_html__( 'File not found', 'health-check' );
+				$reason = esc_html__( 'File not found', 'simply-schedule-appointments' );
 				array_push( $files, array( $file, $reason ) );
 			}
 		}
@@ -105,24 +105,24 @@ class TD_Health_Check_Files_Integrity {
 
 		if ( empty( $files ) ) {
 			$output .= '<div class="notice notice-success inline"><p>';
-			$output .= esc_html__( 'All files passed the check. Everything seems to be ok!', 'health-check' );
+			$output .= esc_html__( 'All files passed the check. Everything seems to be ok!', 'simply-schedule-appointments' );
 			$output .= '</p></div>';
 		} else {
 			$output .= '<div class="notice notice-error inline"><p>';
-			$output .= esc_html__( 'It appears as if some files may have been modified.', 'health-check' );
-			$output .= '<br>' . esc_html__( 'One possible reason for this may be that your installation contains translated versions. An easy way to clear this is to reinstall WordPress. Don\'t worry. This will only affect WordPress\' own files, not your themes, plugins or uploaded media.', 'health-check' );
+			$output .= esc_html__( 'It appears as if some files may have been modified.', 'simply-schedule-appointments' );
+			$output .= '<br>' . esc_html__( 'One possible reason for this may be that your installation contains translated versions. An easy way to clear this is to reinstall WordPress. Don\'t worry. This will only affect WordPress\' own files, not your themes, plugins or uploaded media.', 'simply-schedule-appointments' );
 			$output .= '</p></div><table class="widefat striped file-integrity-table"><thead><tr><th>';
-			$output .= esc_html__( 'Status', 'health-check' );
+			$output .= esc_html__( 'Status', 'simply-schedule-appointments' );
 			$output .= '</th><th>';
-			$output .= esc_html__( 'File', 'health-check' );
+			$output .= esc_html__( 'File', 'simply-schedule-appointments' );
 			$output .= '</th><th>';
-			$output .= esc_html__( 'Reason', 'health-check' );
+			$output .= esc_html__( 'Reason', 'simply-schedule-appointments' );
 			$output .= '</th></tr></thead><tfoot><tr><td>';
-			$output .= esc_html__( 'Status', 'health-check' );
+			$output .= esc_html__( 'Status', 'simply-schedule-appointments' );
 			$output .= '</td><td>';
-			$output .= esc_html__( 'File', 'health-check' );
+			$output .= esc_html__( 'File', 'simply-schedule-appointments' );
 			$output .= '</td><td>';
-			$output .= esc_html__( 'Reason', 'health-check' );
+			$output .= esc_html__( 'Reason', 'simply-schedule-appointments' );
 			$output .= '</td></tr></tfoot><tbody>';
 			foreach ( $files as $tampered ) {
 				$output .= '<tr>';
@@ -157,11 +157,11 @@ class TD_Health_Check_Files_Integrity {
 
 		<div>
 			<p>
-				<?php _e( 'The File Integrity checks all the core files with the <code>checksums</code> provided by the WordPress API to see if they are intact. If there are changes you will be able to make a Diff between the files hosted on WordPress.org and your installation to see what has been changed.', 'health-check' ); ?>
+				<?php echo wp_kses_post( __( 'The File Integrity checks all the core files with the <code>checksums</code> provided by the WordPress API to see if they are intact. If there are changes you will be able to make a Diff between the files hosted on WordPress.org and your installation to see what has been changed.', 'simply-schedule-appointments' ) ); ?>
 			</p>
 			<form action="#" id="health-check-file-integrity" method="POST">
 				<p>
-					<input type="submit" class="button button-primary" value="<?php esc_html_e( 'Check the Files Integrity', 'health-check' ); ?>">
+					<input type="submit" class="button button-primary" value="<?php esc_html_e( 'Check the Files Integrity', 'simply-schedule-appointments' ); ?>">
 				</p>
 			</form>
 
@@ -174,7 +174,7 @@ class TD_Health_Check_Files_Integrity {
 		$tab_content = ob_get_clean();
 
 		$tabs[] = array(
-			'label'   => esc_html__( 'File Integrity', 'health-check' ),
+			'label'   => esc_html__( 'File Integrity', 'simply-schedule-appointments' ),
 			'content' => $tab_content,
 		);
 

@@ -3,7 +3,7 @@
  * Plugin Name: Simply Schedule Appointments
  * Plugin URI:  https://simplyscheduleappointments.com
  * Description: Easy appointment scheduling
- * Version:     1.6.12.11
+ * Version:     1.6.12.13
  * Requires PHP: 7.4
  * Author:      NSquared
  * Author URI:  https://nsquared.io/
@@ -15,10 +15,14 @@
  * @link    https://simplyscheduleappointments.com
  *
  * @package Simply_Schedule_Appointments
- * @version 1.6.12.11
+ * @version 1.6.12.13
  *
  * Built using generator-plugin-wp (https://github.com/WebDevStudios/generator-plugin-wp)
  */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 
  
 /**
@@ -207,7 +211,7 @@ final class Simply_Schedule_Appointments {
 	 * @var    string
 	 * @since  0.0.0
 	 */
-	const VERSION = '1.6.12.11';
+	const VERSION = '1.6.12.13';
 
 	/**
 	 * URL of plugin directory.
@@ -553,6 +557,7 @@ final class Simply_Schedule_Appointments {
 	public static function _uninstall(){
 		global $wpdb;
 		$table_prefix = $wpdb->prefix;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Uninstall cleanup runs once on plugin removal: direct DELETE/DROP TABLE on the plugin's own custom tables (no WP API for DROP TABLE) plus a one-shot options read; every interpolated value is an internal identifier ($wpdb->prefix / $wpdb->options / hardcoded ssa_* table suffixes), never user input, and table/identifier names cannot be bound via prepare(); nothing worth caching during a destructive uninstall.
 		// Get Developer Settings
 		$wpdb->query("SELECT option_value FROM $wpdb->options WHERE option_name = 'ssa_settings_json'");
 		$settings = json_decode($wpdb->last_result[0]->option_value);
@@ -576,6 +581,7 @@ final class Simply_Schedule_Appointments {
 			$wpdb->query("DROP TABLE {$table_prefix}ssa_revisions");
 			$wpdb->query("DROP TABLE {$table_prefix}ssa_revision_meta");
 		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	public function plugins_loaded() {
@@ -599,7 +605,7 @@ final class Simply_Schedule_Appointments {
 	 */
 	public function init() {
 		// Load translated strings for plugin.
-		load_plugin_textdomain( 'simply-schedule-appointments', false, dirname( $this->basename ) . '/languages/' );
+		load_plugin_textdomain( 'simply-schedule-appointments', false, dirname( $this->basename ) . '/languages/' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- required for the paid editions (Plus/Pro/Business) distributed outside WordPress.org, where WP does not auto-load translations; only the free edition is wp.org-hosted.
 	}
 
 	/**
@@ -683,7 +689,7 @@ final class Simply_Schedule_Appointments {
 	public function requirements_not_met_notice() {
 
 		// Compile default message.
-		$default_message = sprintf( __( 'Simply Schedule Appointments detected that your system does not meet the minimum requirements. We\'ve <a href="%s">deactivated</a> Simply Schedule Appointments to make sure nothing breaks.', 'simply-schedule-appointments' ), admin_url( 'plugins.php' ) );
+		$default_message = sprintf( /* translators: %s: plugins page URL */ __( 'Simply Schedule Appointments detected that your system does not meet the minimum requirements. We\'ve <a href="%s">deactivated</a> Simply Schedule Appointments to make sure nothing breaks.', 'simply-schedule-appointments' ), admin_url( 'plugins.php' ) );
 
 		// Default details to null.
 		$details = null;

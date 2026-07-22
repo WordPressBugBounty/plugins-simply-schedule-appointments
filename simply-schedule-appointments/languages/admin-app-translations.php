@@ -1,4 +1,7 @@
-<?php $translations = array (
+<?php
+if ( ! defined( 'ABSPATH' ) ) { exit; }
+// phpcs:disable WordPress.WP.I18n.MissingTranslatorsComment,WordPress.WP.I18n.NoEmptyStrings -- Machine-generated from the app strings.js source; per-string translator context and non-empty guarantees live in the JS source, not this build artifact.
+$translations = array (
   'general' => 
   array (
     'loadingInitial' => __( 'Setting Up', 'simply-schedule-appointments' ),
@@ -2100,6 +2103,53 @@
   ),
   'support' => 
   array (
+    'externalEvents' => 
+    array (
+      'openButton' => __( 'External Calendar Events (Debug)', 'simply-schedule-appointments' ),
+      'openButtonHint' => __( 'Select an appointment type first', 'simply-schedule-appointments' ),
+      'title' => __( 'External Calendar Events', 'simply-schedule-appointments' ),
+      'close' => __( 'Close', 'simply-schedule-appointments' ),
+      'prevMonth' => __( 'Previous month', 'simply-schedule-appointments' ),
+      'nextMonth' => __( 'Next month', 'simply-schedule-appointments' ),
+      'today' => __( 'Today', 'simply-schedule-appointments' ),
+      'legendBusy' => __( 'Busy (blocks availability)', 'simply-schedule-appointments' ),
+      'legendFree' => __( 'Free (does not block)', 'simply-schedule-appointments' ),
+      'loading' => __( 'Loading events...', 'simply-schedule-appointments' ),
+      'truncated' => __( 'Too many events to load at once: showing the first {shown} of {total}. Days marked ? were not loaded, so they may hide events.', 'simply-schedule-appointments' ),
+      'detailNone' => __( 'No events on this day.', 'simply-schedule-appointments' ),
+      'detailPrompt' => __( 'Select a day to see its events.', 'simply-schedule-appointments' ),
+      'detailPartial' => __( 'This day was not fully loaded, so events may be missing. Hide some calendars, or check a narrower date range.', 'simply-schedule-appointments' ),
+      'partialHint' => __( 'Not loaded — events may be missing', 'simply-schedule-appointments' ),
+      'detailTitle' => __( 'Select a day', 'simply-schedule-appointments' ),
+      'dayEvents' => __( '{count} events', 'simply-schedule-appointments' ),
+      'dayEventsOne' => __( '{count} event', 'simply-schedule-appointments' ),
+      'dayNoEvents' => __( 'No events', 'simply-schedule-appointments' ),
+      'more' => __( '+{count} more', 'simply-schedule-appointments' ),
+      'tzNote' => __( 'Times shown in {tz}. Stored in UTC.', 'simply-schedule-appointments' ),
+      'allDay' => __( 'All day', 'simply-schedule-appointments' ),
+      'busy' => __( 'Busy', 'simply-schedule-appointments' ),
+      'free' => __( 'Free', 'simply-schedule-appointments' ),
+      'scopeLabel' => __( 'Appointment type:', 'simply-schedule-appointments' ),
+      'showAll' => __( 'Show all', 'simply-schedule-appointments' ),
+      'hideAll' => __( 'Hide all', 'simply-schedule-appointments' ),
+      'siteLabel' => __( 'Site', 'simply-schedule-appointments' ),
+      'staffLabel' => __( 'Staff', 'simply-schedule-appointments' ),
+      'staffPrefix' => __( 'Staff:', 'simply-schedule-appointments' ),
+      'cachedCalendars' => __( 'Cached calendars', 'simply-schedule-appointments' ),
+      'colOwner' => __( 'Owner', 'simply-schedule-appointments' ),
+      'colCalendar' => __( 'Calendar', 'simply-schedule-appointments' ),
+      'colEvents' => __( 'Events', 'simply-schedule-appointments' ),
+      'colChanged' => __( 'Last changed', 'simply-schedule-appointments' ),
+      'colChangedHint' => __( 'When SSA last saw this calendar\'s events change. A sync that finds no change leaves the cache untouched, so this is not the last time the calendar was checked.', 'simply-schedule-appointments' ),
+      'notAvailable' => __( 'N/A', 'simply-schedule-appointments' ),
+      'fieldLocal' => __( 'Local:', 'simply-schedule-appointments' ),
+      'fieldUtc' => __( 'UTC:', 'simply-schedule-appointments' ),
+      'fieldStatus' => __( 'Status:', 'simply-schedule-appointments' ),
+      'fieldTransparency' => __( 'Transparency:', 'simply-schedule-appointments' ),
+      'fieldEventId' => __( 'Event ID:', 'simply-schedule-appointments' ),
+      'fieldCached' => __( 'Cached:', 'simply-schedule-appointments' ),
+      'loadError' => __( 'Could not load external events.', 'simply-schedule-appointments' ),
+    ),
     'availabilityDetective' => 
     array (
       'intro' => __( 'Not sure why your availability for different appointment types isn\'t what you expected? We\'ll help you figure out what\'s going on.', 'simply-schedule-appointments' ),

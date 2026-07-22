@@ -4,9 +4,9 @@
   <table id="mepr-account-appointment-table" class="mepr-account-table">
     <thead>
       <tr>
-        <th><?php echo __('Membership', 'simply-schedule-appointments'); ?></th>
-        <th><?php echo __('Appointment types', 'simply-schedule-appointments'); ?></th>
-        <th><?php echo __('Upcoming appointments', 'simply-schedule-appointments'); ?></th>
+        <th><?php echo esc_html__('Membership', 'simply-schedule-appointments'); ?></th>
+        <th><?php echo esc_html__('Appointment types', 'simply-schedule-appointments'); ?></th>
+        <th><?php echo esc_html__('Upcoming appointments', 'simply-schedule-appointments'); ?></th>
       </tr>
     </thead>
     <tbody id="ssa-mepr-appointments-table-body" >

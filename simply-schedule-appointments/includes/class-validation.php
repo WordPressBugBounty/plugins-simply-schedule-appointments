@@ -43,11 +43,11 @@ class SSA_Validation {
 	}
 
 	public static function validate_numeric( $value ) {
-		return ( is_numeric( $value ) || __( 'Expected a numeric value but received ' ) . gettype( $value ) );
+		return ( is_numeric( $value ) || __( 'Expected a numeric value but received ', 'simply-schedule-appointments' ) . gettype( $value ) );
 	}
 	
 	public static function validate_string( $value ) {
-		return ( ( !is_numeric( $value ) && is_string( $value ) ) || __( 'Expected a string value but received ') . gettype( $value ) );
+		return ( ( !is_numeric( $value ) && is_string( $value ) ) || __( 'Expected a string value but received ', 'simply-schedule-appointments' ) . gettype( $value ) );
 	}
 
 	public static function validate_weekday( $value ) {
@@ -59,6 +59,6 @@ class SSA_Validation {
 			'Friday',
 			'Saturday',
 			'Sunday',
-		) ) || __( 'Expected English weekday value but received ' ) . $value );
+		) ) || __( 'Expected English weekday value but received ', 'simply-schedule-appointments' ) . $value );
 	}
 }

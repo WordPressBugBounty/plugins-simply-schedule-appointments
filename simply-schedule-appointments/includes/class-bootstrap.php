@@ -74,9 +74,9 @@ class SSA_Bootstrap {
 			} elseif ( !empty( $_SERVER['HTTP_X_FORWARDED_PROTO'] ) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' ) {
 				$desired_protocol = 'https';
 			} elseif ( !empty( $_SERVER['REQUEST_SCHEME'] ) ) {
-				$desired_protocol = strtolower( $_SERVER['REQUEST_SCHEME'] );
+				$desired_protocol = strtolower( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_SCHEME'] ) ) );
 			} elseif ( !empty( $_SERVER['protocol'] ) ) {
-				$desired_protocol = strtolower( substr( $_SERVER["SERVER_PROTOCOL"], 0, 5 ) ) == 'https' ? 'https' : 'http';
+				$desired_protocol = strtolower( substr( sanitize_text_field( wp_unslash( $_SERVER["SERVER_PROTOCOL"] ?? '' ) ), 0, 5 ) ) == 'https' ? 'https' : 'http';
 			}
 		}
 
@@ -92,7 +92,7 @@ class SSA_Bootstrap {
 		}
 
 		if ( $should_be_www === null ) {
-			if ( strpos( $_SERVER['HTTP_HOST'], 'www.' ) === 0 ) {
+			if ( strpos( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ), 'www.' ) === 0 ) {
 				$should_be_www = true;
 			} else {
 				$should_be_www = false;
@@ -198,7 +198,7 @@ class SSA_Bootstrap {
 	public function output_ssa_variable() {
 		$plugin = $this->plugin;
 		$script = "var ssa = " . wp_json_encode( $this->get_api_vars() ) . ';';
-		echo $script;
+		echo $script; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $script is a JS statement whose only dynamic content is wp_json_encode()-encoded data (safe for a <script> context); an HTML/text escaper would corrupt the JavaScript.
 	}
 
 	/**

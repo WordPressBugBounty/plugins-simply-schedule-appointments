@@ -523,7 +523,7 @@ class SSA_Templates {
 
 		$output = ob_get_clean();
 		if ( !empty( $echo ) ) {
-			echo $output;
+			echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $output is buffered HTML rendered by the included template file; escaping here would corrupt the template markup.
 		}
 
 		return $output;
@@ -565,7 +565,7 @@ class SSA_Templates {
 
 		$output = ob_get_clean();
 		if ( !empty( $echo ) ) {
-			echo $output;
+			echo $output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $output is buffered HTML rendered by the included template file; escaping here would corrupt the template markup.
 		}
 
 		return $output;
@@ -701,13 +701,13 @@ class SSA_Templates {
 	public function strip_mustache_content($text) {
 		$mustachePattern = '/{{\s*([^}]+)\s*}}/';
 				$mustacheCallback = function ($matches) {
-				return '{{' . strip_tags(trim($matches[1])) . '}}';
+				return '{{' . wp_strip_all_tags(trim($matches[1])) . '}}';
 		};
 		$text = preg_replace_callback($mustachePattern, $mustacheCallback, $text);
 		
 		$templatePattern = '/{%\s*([^}]+)\s*%}/';
 		$templateCallback = function ($matches) {
-				return '{%' . strip_tags(trim($matches[1])) . '%}';
+				return '{%' . wp_strip_all_tags(trim($matches[1])) . '%}';
 		};
 		$text = preg_replace_callback($templatePattern, $templateCallback, $text);
 		

@@ -63,9 +63,11 @@ class SSA_Support_Status {
 		}
 
 		if (!file_exists($path . '/index.html')) {
+			// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fwrite, WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Writes an empty index.html directory-listing guard into the plugin's own logs directory under wp-uploads; direct file handling is intentional here.
 			$handle = @fopen($path . '/index.html', 'w');
 			@fwrite($handle, '');
 			@fclose($handle);
+			// phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fwrite, WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		}
 		
 		if ( defined('AUTH_KEY') ) {
@@ -375,7 +377,7 @@ class SSA_Support_Status {
 			return false;
 		}
 
-		$date = date('Y-m-d H:i:s');
+		$date = date('Y-m-d H:i:s'); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date -- intentional site-local time for a human-readable backup label shown to the admin; the value is never parsed or compared, so gmdate() would only show admins the wrong wall-clock time.
 		$encoded = json_encode($code);
 
 		$backups = get_option( 'ssa_export_backups' );
@@ -513,6 +515,7 @@ class SSA_Support_Status {
 				// translators: %s is the URL to the login page.
 				'notices' => array(
 					sprintf(
+						/* translators: 1: license expiration date, 2: license renewal URL */
 						__( 'Your license expired on %1$s. <a href="%2$s" target="_blank">Renew your license</a> to enable automatic updates, bug fixes and support.', 'simply-schedule-appointments' ),
 						$expiration_date,
 						$license['license_renewal_link']
@@ -528,7 +531,8 @@ class SSA_Support_Status {
 				$notice = __( 'Your license is active. You have lifetime access.', 'simply-schedule-appointments' );
 			} else {
 				$notice = sprintf(
-					__( 'Your license is up-to-date. Next renewal is due on %s.', 'simply-schedule-appointments' ),
+					/* translators: %s: license renewal date */
+						__( 'Your license is up-to-date. Next renewal is due on %s.', 'simply-schedule-appointments' ),
 					$expiration_date
 				);
 			}
@@ -595,7 +599,7 @@ class SSA_Support_Status {
 		echo '<tr class="plugin-update-tr active">';
 		echo '<td colspan="4" class="plugin-update colspanchange">';
 		echo '<div class="update-message notice inline notice-error notice-alt">';
-		echo '<p>' .  __( '<strong>Error: Invalid directory name</strong>. Please rename this plugin\'s directory to simply-schedule-appointments to avoid errors when updating.', 'simply-schedule-appointments' ) . '</p>';
+		echo '<p>' .  wp_kses_post( __( '<strong>Error: Invalid directory name</strong>. Please rename this plugin\'s directory to simply-schedule-appointments to avoid errors when updating.', 'simply-schedule-appointments' ) ) . '</p>';
 		echo '</div>';
 		echo '</td>';
 		echo '</tr>';
