@@ -406,7 +406,7 @@
 			}
 			
 			$data = json_decode(wp_remote_retrieve_body($response) );
-			
+
 			// Success
 			return $data;
 		} catch ( \Throwable $th ) {
@@ -414,10 +414,54 @@
 			return false;
 		}
 	}
-	
-	
+
 	/**
-	 * 
+	 * Same read as get_event_from_calendar(), but keeps the status code and body.
+	 *
+	 * For diagnostics an HTTP error IS the answer -- a 404 means the event is gone
+	 * from Google while a cached row still claims it blocks time -- so collapsing
+	 * every failure to false, as get_event_from_calendar() does, discards the result.
+	 */
+	public function get_event_from_calendar_raw( $calendar_id, $event_id, $options = array() ) {
+		$result = array(
+			'http_code' => 0,
+			'body'      => null,
+			'error'     => '',
+		);
+
+		if ( empty( $calendar_id ) || empty( $event_id ) ) {
+			$result['error'] = 'Missing calendar_id or event_id.';
+			return $result;
+		}
+
+		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/calendars/" . urlencode( $calendar_id ) . "/events/" . urlencode( $event_id ) . "?" . $this->get_params_from_options( $options );
+
+		try {
+			$response = wp_remote_get(
+				$gcal_api_endpoint,
+				array(
+					'headers' => $this->get_request_headers(),
+					'timeout' => 30,
+				)
+			);
+
+			if ( is_wp_error( $response ) ) {
+				$result['error'] = $response->get_error_message();
+				return $result;
+			}
+
+			$result['http_code'] = (int) wp_remote_retrieve_response_code( $response );
+			$result['body']      = json_decode( wp_remote_retrieve_body( $response ) );
+		} catch ( \Throwable $th ) {
+			$result['error'] = $th->getMessage();
+		}
+
+		return $result;
+	}
+
+
+	/**
+	 *
 	 * use in place of ->events->update( $calendar_id, $event_id, $event_updated, $options = array() ) { }
 	 */
 	public function update_event_in_calendar( $calendar_id, $event_id, $event_updated, $options = array() ) {

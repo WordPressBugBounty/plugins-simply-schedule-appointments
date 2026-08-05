@@ -58,7 +58,7 @@ class SSA_Sequence implements ArrayAccess, Countable, Iterator {
 	 * This method MUST retain the state of the current instance, and return
 	 * an instance that contains the sorted ssa_periods. The key are re-indexed
 	 */
-	public function sorted(callable $compare = null) {
+	public function sorted(?callable $compare = null) {
 		if ( null === $compare ) {
 			$compare = array( $this, 'sort_by_raw_start_date' );
 		}
@@ -157,6 +157,9 @@ class SSA_Sequence implements ArrayAccess, Countable, Iterator {
 
 
 	/* ArrayAccess */
+	// Native return types would also bind SSA_Sequence_Factory, which extends this
+	// class; the attribute keeps the signatures untouched on every supported PHP.
+	#[\ReturnTypeWillChange]
 	public function offsetSet($offset, $value) {
 		if (is_null($offset)) {
 			$this->ssa_periods[] = $value;
@@ -165,42 +168,51 @@ class SSA_Sequence implements ArrayAccess, Countable, Iterator {
 		}
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetExists($offset) {
 		return isset($this->ssa_periods[$offset]);
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetUnset($offset) {
 		unset($this->ssa_periods[$offset]);
 	}
 
+	#[\ReturnTypeWillChange]
 	public function offsetGet($offset) {
 		return isset($this->ssa_periods[$offset]) ? $this->ssa_periods[$offset] : null;
 	}
 
 
 	/* Countable */
+	#[\ReturnTypeWillChange]
 	public function count() {
 		return $this->count;
 	}
 
 
 	/* Iterator */
+	#[\ReturnTypeWillChange]
 	public function rewind() {
 		$this->position = 0;
 	}
 
+	#[\ReturnTypeWillChange]
 	public function current() {
 		return $this->ssa_periods[$this->position];
 	}
 
+	#[\ReturnTypeWillChange]
 	public function key() {
 		return $this->position;
 	}
 
+	#[\ReturnTypeWillChange]
 	public function next() {
 		++$this->position;
 	}
 
+	#[\ReturnTypeWillChange]
 	public function valid() {
 		return isset($this->ssa_periods[$this->position]);
 	}

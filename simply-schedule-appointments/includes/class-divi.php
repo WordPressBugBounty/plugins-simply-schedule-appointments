@@ -17,6 +17,23 @@
  */
 class SSA_Divi {
 	/**
+	 * Shortcode attributes this route refuses, whatever the tag.
+	 *
+	 * Allowlisting the tag is not enough: [ssa_booking edit=<id>] makes
+	 * SSA_Shortcodes::ssa_booking() mint an id-token for that appointment through
+	 * get_id_token(), which performs no capability check, and hand it back in the
+	 * iframe URL -- so a non-manager could iterate ids and harvest a token each.
+	 * The builder only previews a booking form, so neither attribute has a
+	 * legitimate use here.
+	 *
+	 * @var string[]
+	 */
+	const PRIVILEGED_ATTS = array(
+		'edit',
+		'token',
+	);
+
+	/**
 	 * Parent plugin class.
 	 *
 	 * @since 0.0.3
@@ -235,6 +252,21 @@ class SSA_Divi {
 	 * @since 5.9.0
 	 */
 	public function register_rest_routes() {
+		// Only the Divi 5 Visual Builder calls this route, but hooks() registers it
+		// on every install -- the add_action sits outside the is_divi_5() branch --
+		// so sites running Elementor, Beaver Builder or plain Gutenberg were exposing
+		// it too. The allowlist makes it safe either way; not registering it at all
+		// removes the endpoint outright from the large majority of sites that can
+		// never legitimately call it.
+		//
+		// Checked here rather than in hooks(): this runs on rest_api_init, by which
+		// point the theme is loaded, so the Divi theme/class/constant probes are
+		// meaningful. At hooks() time (plugin load) the theme has not loaded yet and
+		// the check would false-negative on real Divi sites.
+		if ( ! $this->is_divi_5() ) {
+			return;
+		}
+
 		register_rest_route( 'ssa/v1', '/render-shortcode', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'render_shortcode_callback' ),
@@ -253,9 +285,16 @@ class SSA_Divi {
 	 */
 	public function render_shortcode_callback( $request ) {
 		$shortcode = $request->get_param( 'shortcode' );
-		
-		if ( empty( $shortcode ) ) {
+
+		// empty() would also catch a literal "0", which is a real payload and belongs
+		// to the allowlist decision below (a 403 -- it holds no shortcode) rather
+		// than to "nothing was sent". Every other falsy shape still 400s as before.
+		if ( empty( $shortcode ) && '0' !== $shortcode ) {
 			return new WP_Error( 'no_shortcode', 'No shortcode provided', array( 'status' => 400 ) );
+		}
+
+		if ( ! $this->render_shortcode_is_allowed( $shortcode ) ) {
+			return new WP_Error( 'ssa_shortcode_not_allowed', 'This shortcode may not be rendered here.', array( 'status' => 403 ) );
 		}
 
 		// Render the shortcode
@@ -264,6 +303,90 @@ class SSA_Divi {
 		return rest_ensure_response( array(
 			'html' => $html,
 		) );
+	}
+
+	/**
+	 * Whether the current user may render every shortcode contained in $content
+	 * through this route.
+	 *
+	 * The route exists only so the Divi builder can preview a booking form, but it
+	 * runs do_shortcode() on caller-supplied input and is gated only on edit_posts,
+	 * so without an allowlist a Contributor could render the admin appointment
+	 * shortcodes and read every booking on the site (WPScan report). Access is
+	 * capability-scoped: any edit_posts caller gets the public booking shortcodes,
+	 * a signed-in caller also gets the customer-scoped appointment shortcodes, and
+	 * the admin appointment shortcodes, which can read other people's records, need
+	 * ssa_manage_appointments.
+	 *
+	 * @param string $content Raw shortcode string from the request.
+	 * @return bool True when every shortcode in the string is allowed for the
+	 *              current user, none carries a PRIVILEGED_ATTS attribute, and
+	 *              none uses the enclosed form.
+	 */
+	protected function render_shortcode_is_allowed( $content ) {
+		// e.g. an array posted as shortcode[]= -- reject rather than coerce.
+		if ( ! is_string( $content ) ) {
+			return false;
+		}
+
+		// The public booking shortcodes are safe for any caller. The customer-scoped
+		// appointment shortcodes render only the *signed-in* caller's own bookings
+		// (SSA_Shortcodes::USER_GATED_SHORTCODES) and return nothing for a logged-out
+		// visitor, so only offer them once there is a signed-in user to scope to.
+		// Only the admin shortcodes, which can read other people's records, require
+		// ssa_manage_appointments.
+		$allowed = SSA_Shortcodes::PUBLIC_SHORTCODES;
+
+		if ( is_user_logged_in() ) {
+			$allowed = array_merge( $allowed, SSA_Shortcodes::USER_GATED_SHORTCODES );
+		}
+
+		if ( current_user_can( 'ssa_manage_appointments' ) ) {
+			$allowed = array_merge( $allowed, SSA_Shortcodes::SENSITIVE_SHORTCODES );
+		}
+
+		// Every sibling tag is checked, not just the first: do_shortcode() runs them
+		// all, so "[ssa_booking][ssa_admin_upcoming_appointments]" must be refused.
+		// Unregistered tags cannot execute (they render verbatim) and are ignored.
+		preg_match_all( '/' . get_shortcode_regex() . '/', $content, $matches );
+		$found = empty( $matches[2] ) ? array() : array_filter( (array) $matches[2] );
+
+		if ( empty( $found ) ) {
+			return false;
+		}
+
+		foreach ( $found as $index => $tag ) {
+			if ( ! in_array( $tag, $allowed, true ) ) {
+				return false;
+			}
+
+			// Refuse any tag carrying enclosed content. get_shortcode_regex() puts
+			// that content in $matches[5] and does NOT recurse into it, so a nested
+			// tag there is invisible to this loop -- checking sibling tags above is
+			// not enough on its own. Nothing legitimate sends it: the builder only
+			// ever posts a self-closing tag. This also keeps the content away from
+			// ssa_booking()'s second parameter, which WordPress fills with it and
+			// that method reads as $is_embedded_page.
+			//
+			// "[tag][/tag]" with empty content stays allowed: there is no nested tag
+			// to hide and the empty string is falsy, so neither risk applies.
+			if ( isset( $matches[5][ $index ] ) && '' !== $matches[5][ $index ] ) {
+				return false;
+			}
+
+			$atts = isset( $matches[3][ $index ] ) ? shortcode_parse_atts( $matches[3][ $index ] ) : array();
+			if ( ! is_array( $atts ) ) {
+				continue; // No named attributes to inspect.
+			}
+
+			foreach ( self::PRIVILEGED_ATTS as $privileged_att ) {
+				if ( array_key_exists( $privileged_att, $atts ) ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	}
 
 }

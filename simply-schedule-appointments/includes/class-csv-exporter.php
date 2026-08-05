@@ -13,6 +13,18 @@
  */
 class SSA_CSV_Exporter {
 	/**
+	 * Escape character passed to fputcsv().
+	 *
+	 * PHP 8.4 deprecates calling fputcsv() without $escape because the default
+	 * changes in PHP 9. Passing the historical default keeps the bytes we write
+	 * identical on every supported PHP version; adopting the new default is a
+	 * separate, deliberate change to the file format.
+	 *
+	 * @var string
+	 */
+	const CSV_ESCAPE = '\\';
+
+	/**
 	 * CSV file base path.
 	 *
 	 * @var string
@@ -96,7 +108,7 @@ class SSA_CSV_Exporter {
 			return new WP_Error( 'ssa_export_csv_file_not_writable', __( 'Cannot append: failed to open .csv for writing.', 'simply-schedule-appointments' ) );
 		}
 		foreach ( $appointments as $appointment ) {
-			fputcsv( $handle, $this->escape_row( $appointment ) );
+			fputcsv( $handle, $this->escape_row( $appointment ), ',', '"', self::CSV_ESCAPE );
 		}
 		@fclose( $handle );
 		// @codingStandardsIgnoreEnd
@@ -164,9 +176,9 @@ class SSA_CSV_Exporter {
 	protected function create( $appointments ) {
 		// @codingStandardsIgnoreStart
 		$handle = @fopen( $this->file_path, 'w' );
-		fputcsv( $handle, $this->escape_row( array_keys( $appointments[0] ) ) );
+		fputcsv( $handle, $this->escape_row( array_keys( $appointments[0] ) ), ',', '"', self::CSV_ESCAPE );
 		foreach ( $appointments as $appointment ) {
-			fputcsv( $handle, $this->escape_row( $appointment ) );
+			fputcsv( $handle, $this->escape_row( $appointment ), ',', '"', self::CSV_ESCAPE );
 		}
 		@fclose( $handle );
 		// @codingStandardsIgnoreEnd
@@ -192,6 +204,16 @@ class SSA_CSV_Exporter {
 	 * @return mixed
 	 */
 	protected function escape_cell( $value ) {
+		// Array/object cells (customer_information, meta) would otherwise reach
+		// fputcsv() and be written as the literal string "Array", losing the data
+		// this backup exists to preserve. JSON keeps it, and matches how the
+		// column is stored in the database.
+		if ( is_array( $value ) || is_object( $value ) ) {
+			$encoded = wp_json_encode( $value );
+
+			return ( false === $encoded ) ? '' : $encoded;
+		}
+
 		if ( ! is_string( $value ) || '' === $value ) {
 			return $value;
 		}

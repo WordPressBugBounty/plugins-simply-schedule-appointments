@@ -1,5 +1,14 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.15 - 2026-07-28
+
+### Fixes
+
+- Detect and fix SSA events wrongly counted as busy (Google Calendar drift)
+- Fix appointment buffer times ignored on PHP 8.2+ (allowing back-to-back bookings) and customer data lost in backups; add PHP 8.4 support
+- Harden the Divi render-shortcode route with a capability-scoped shortcode allowlist
+- Fix stalled orphaned revision_meta cleanup (+ remove DUPLICATE BLOCK log noise)
+
 ## SSA-VERSION-PREFIX.6.12.13 - 2026-07-21
 
 ### Fixes

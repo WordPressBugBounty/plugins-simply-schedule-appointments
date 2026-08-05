@@ -15,7 +15,7 @@ class SSA_Exception extends Exception {
 	public $feature;
 	protected $code;
 
-	public function __construct( string  $message = null, string $code = null ) {
+	public function __construct( ?string $message = null, ?string $code = null ) {
 
 	}
 }

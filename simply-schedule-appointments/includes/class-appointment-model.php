@@ -2068,7 +2068,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$appointment_type = $this->plugin->appointment_type_model->get( $data['appointment_type_id'] );
 		$bookable_period  = Period::after( $start_date, new DateInterval( 'PT' . $appointment_type['duration'] . 'M' ) );
 		$data['end_date'] = $bookable_period->getEndDate()->format( 'Y-m-d H:i:s' );
-		if ( false !== strpos( $data['customer_timezone'], 'Etc/' ) ) {
+		// Callers other than the booking app (integrations, the programmatic
+		// insert() API) can omit customer_timezone entirely; reading it unguarded
+		// passes null to strpos(), deprecated on PHP 8.1+ and fatal on PHP 9.
+		if ( ! empty( $data['customer_timezone'] ) && false !== strpos( $data['customer_timezone'], 'Etc/' ) ) {
 			$data['customer_timezone'] = '';
 		}
 
@@ -2331,7 +2334,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		return $data['0']['meta_value'];
 	}
 
-	public function delete_abandoned( DateTimeImmutable $date_modified_max = null ) {
+	public function delete_abandoned( ?DateTimeImmutable $date_modified_max = null ) {
 		global $wpdb;
 		if ( empty( $date_modified_max ) ) {
 			$date_modified_max = ssa_datetime( '-1 day' );

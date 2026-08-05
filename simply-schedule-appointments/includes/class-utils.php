@@ -174,12 +174,14 @@ class SSA_Utils {
 			return $time;
 		}
 		
-		if ( 0 === strpos( $time, 'Invalid' ) ) {
+		// Empty is checked first so a null/'' $time never reaches strpos(), which
+		// deprecates a null haystack on PHP 8.1+ and is a TypeError on PHP 9.
+		if ( empty( $time ) ) {
+			$time = 'now';
+		} else if ( 0 === strpos( $time, 'Invalid' ) ) {
 			ssa_debug_log( 'SSA_Utils::datetime()  `Invalid Date` detected' );
 			// $time = 'now';
 			return null; // TODO: handle error state gracefully
-		} else if ( empty( $time ) ) {
-			$time = 'now';
 		}
 		
 		$timezone = new DateTimeZone( 'UTC' );
@@ -611,7 +613,7 @@ class SSA_Utils {
 		return $appointment_type;
 	}
 
-	public static function get_query_period( Period $query_period = null ) {
+	public static function get_query_period( ?Period $query_period = null ) {
 		if ( null === $query_period ) {
 			$query_period = SSA_Constants::EPOCH_PERIOD();
 		}

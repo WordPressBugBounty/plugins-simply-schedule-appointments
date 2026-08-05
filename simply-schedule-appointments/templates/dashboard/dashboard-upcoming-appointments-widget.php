@@ -46,7 +46,9 @@ $date_format           = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a
 						<h4>
 							<?php
 							// output name of the client who booked the meeting.
-							$user_name = $upcoming_appointment['customer_information']['Name'];
+							// The 'Name' field is configurable per appointment type and is absent
+							// on appointments booked outside the booking app, so it may not exist.
+							$user_name = isset( $upcoming_appointment['customer_information']['Name'] ) ? $upcoming_appointment['customer_information']['Name'] : '';
 							echo ( ' ' . esc_html( ucfirst( $user_name ) ) . ' ' );
 							?>
 						</h4>

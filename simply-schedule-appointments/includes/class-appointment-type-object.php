@@ -20,6 +20,11 @@ class SSA_Appointment_Type_Object {
 	protected $status;
 	protected $timezone;
 
+	public $appointments_fixture = array();
+	// Left uninitialized on purpose: SSA_Resources::get_schedule() gates on isset(),
+	// which an array default would make unconditionally true.
+	public $resource_groups;
+
 	/**
 	 * Parent plugin class.
 	 *
@@ -329,7 +334,7 @@ class SSA_Appointment_Type_Object {
 		return max( $buffer_before, $buffer_after );
 	}
 
-	public function get_min_booking_notice_schedule( Period $period = null, $args = array() ) {
+	public function get_min_booking_notice_schedule( ?Period $period = null, $args = array() ) {
 		if ( empty( $args['appointment_type.min_booking_notice'] ) ) {
 			return new SSA_Availability_Schedule();
 		}
@@ -356,7 +361,7 @@ class SSA_Appointment_Type_Object {
 		return $schedule;
 	}
 
-	public function get_max_booking_notice_schedule( Period $period = null, $args = array() ) {
+	public function get_max_booking_notice_schedule( ?Period $period = null, $args = array() ) {
 		if ( empty( $args['appointment_type.max_booking_notice'] ) ) {
 			return new SSA_Availability_Schedule();
 		}
@@ -383,7 +388,7 @@ class SSA_Appointment_Type_Object {
 		return $schedule;
 	}
 
-	public function get_availability_window_schedule( Period $period = null, $args = array() ) {
+	public function get_availability_window_schedule( ?Period $period = null, $args = array() ) {
 		if ( empty( $args['appointment_type.availability_window'] ) ) {
 			return new SSA_Availability_Schedule();
 		}
@@ -521,11 +526,10 @@ class SSA_Appointment_Type_Object {
 			return false;
 		}
 
-		$buffer_before = '-' . absint( $buffer_before ) . ' MIN';
-		$calculated_period = new Period( $appointment_period->getStartDate(), $appointment_period->getStartDate() );
-		$calculated_period = $calculated_period->moveStartDate( $buffer_before );
-		
-		return $calculated_period;
+		$start_date = $appointment_period->getStartDate();
+		$buffer_start = $start_date->sub( new DateInterval( 'PT' . absint( $buffer_before ) . 'M' ) );
+
+		return new Period( $buffer_start, $start_date );
 	}
 
 	public function get_buffer_after_period( Period $appointment_period ) {
@@ -534,11 +538,10 @@ class SSA_Appointment_Type_Object {
 			return false;
 		}
 
-		$buffer_after = '+' . absint( $buffer_after ) . ' MIN';
-		$calculated_period = new Period( $appointment_period->getEndDate(), $appointment_period->getEndDate() );
-		$calculated_period = $calculated_period->moveEndDate( $buffer_after );
-		
-		return $calculated_period;
+		$end_date = $appointment_period->getEndDate();
+		$buffer_end = $end_date->add( new DateInterval( 'PT' . absint( $buffer_after ) . 'M' ) );
+
+		return new Period( $end_date, $buffer_end );
 	}
 
 	public function get_buffered_appointment_period( Period $appointment_period ) {
@@ -646,7 +649,7 @@ class SSA_Appointment_Type_Object {
 		return $schedule;
 	}
 
-	public function get_appointments( Period $period=null, $args = array() ) {
+	public function get_appointments( ?Period $period=null, $args = array() ) {
 		if ( ! empty( $this->appointments_fixture ) ) {
 			return $this->appointments_fixture;
 		}
@@ -675,7 +678,7 @@ class SSA_Appointment_Type_Object {
 		return $appointments;
 	}
 
-	public function get_appointment_objects( Period $period=null, $args = array() ) {
+	public function get_appointment_objects( ?Period $period=null, $args = array() ) {
 		$appointments = $this->get_appointments( $period, $args );
 		$appointment_objects = array();
 		foreach ( $appointments as $appointment ) {

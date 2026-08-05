@@ -154,10 +154,9 @@ class SSA_Period {
 		if ( empty( $buffer_before ) ) {
 			$this->buffer_before_period = false;
 		} else {
-			$buffer_before = '-' . absint( $buffer_before ) . ' MIN';
-			$calculated_period = new Period( $this->get_raw_period()->getStartDate(), $this->get_raw_period()->getStartDate() );
-			$calculated_period = $calculated_period->moveStartDate( $buffer_before );
-			$this->buffer_before_period = $calculated_period;
+			$raw_start = $this->get_raw_period()->getStartDate();
+			$buffer_start = $raw_start->sub( new DateInterval( 'PT' . absint( $buffer_before ) . 'M' ) );
+			$this->buffer_before_period = new Period( $buffer_start, $raw_start );
 		}
 
 		return $this->buffer_before_period;
@@ -172,10 +171,9 @@ class SSA_Period {
 		if ( empty( $buffer_after ) ) {
 			$this->buffer_after_period = false;
 		} else {
-			$buffer_after = '+' . absint( $buffer_after ) . ' MIN';
-			$calculated_period = new Period( $this->get_raw_period()->getEndDate(), $this->get_raw_period()->getEndDate() );
-			$calculated_period = $calculated_period->moveEndDate( $buffer_after );
-			$this->buffer_after_period = $calculated_period;
+			$raw_end = $this->get_raw_period()->getEndDate();
+			$buffer_end = $raw_end->add( new DateInterval( 'PT' . absint( $buffer_after ) . 'M' ) );
+			$this->buffer_after_period = new Period( $raw_end, $buffer_end );
 		}
 
 		return $this->buffer_after_period;

@@ -129,50 +129,44 @@ class SSA_Revision_Model extends SSA_Db_Model {
 	 * @return void
 	 */
 	public function check_orphaned_revisions_meta() {
-		// make sure to query all the revisions entries
-		$revisions = $this->query(
-			array(
-				'number'  => -1,
-				'orderby' => 'id',
-				'order'   => 'ASC', 
-				'fields'  => ['id']
-			)
-		);
+		global $wpdb;
 
-		if ( empty( $revisions ) ) {
-			return; // This should be a new site with no appointments yet.
+		$meta_model = $this->plugin->revision_meta_model;
+		if ( empty( $meta_model ) || $meta_model instanceof SSA_Missing ) {
+			return;
 		}
+		$revision_meta_table = $meta_model->get_table_name();
+		if ( ! is_string( $revision_meta_table ) || '' === $revision_meta_table ) {
+			return;
+		}
+		$revisions_table = $this->get_table_name();
 
-		$revisions = wp_list_pluck( $revisions, 'id', 'id' );
+		// Deliberately bounded: a large share of SSA sites run on cheap/shared/low-RAM
+		// hosts, so this daily sweep deletes at most one small batch rather than
+		// draining fast. See CLAUDE.md.
+		$batch = 2000;
 
-		$revision_meta = $this->plugin->revision_meta_model->query(
-			array(
-				'number'  => 50,
-				'orderby' => 'id',
-				'order'   => 'ASC', 
-			)
-		);
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Table names come from get_table_name() (internal identifiers, truthy-guarded); orphan ids are int-cast and bound with a generated %d list and LIMIT uses %d, all via $wpdb->prepare(). Bounded orphan sweep on a custom table, not cacheable.
+		$orphan_ids = $wpdb->get_col( $wpdb->prepare(
+			"SELECT m.id FROM {$revision_meta_table} m
+			 LEFT JOIN {$revisions_table} r ON r.id = m.revision_id
+			 WHERE r.id IS NULL
+			 LIMIT %d",
+			$batch
+		) );
 
-		if ( empty( $revision_meta ) ) {
+		if ( empty( $orphan_ids ) ) {
 			return;
 		}
 
-		$revision_meta = wp_list_pluck( $revision_meta, 'id', 'revision_id' );
+		$orphan_ids   = array_map( 'intval', $orphan_ids );
+		$placeholders = implode( ',', array_fill( 0, count( $orphan_ids ), '%d' ) );
 
-		$revisons_ids_to_delete = array();
-		foreach ( $revision_meta as $revison_id => $id ) {
-			if ( ! isset( $revisions[ $revison_id ] ) ) {
-				$revisons_ids_to_delete[] = $revison_id;
-			}
-		}
-
-		if ( ! empty( $revisons_ids_to_delete ) ) {
-			$this->plugin->revision_meta_model->bulk_delete(
-				array(
-					'revision_id' => $revisons_ids_to_delete,
-				)
-			);
-		}
+		$wpdb->query( $wpdb->prepare(
+			"DELETE FROM {$revision_meta_table} WHERE id IN ({$placeholders})",
+			$orphan_ids
+		) );
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 	}
 
 	public function has_many() {

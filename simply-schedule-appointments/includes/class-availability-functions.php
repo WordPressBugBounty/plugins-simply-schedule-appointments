@@ -68,8 +68,8 @@ class SSA_Availability_Functions {
 	public function get_period_with_buffered_start_date( $period, $original_period, $appointment_type ) {
 		ssa_defensive_timezone_fix();
 		if ( !empty( $appointment_type['buffer_before'] ) ) {
-			$buffer_before = '-' . absint( $appointment_type['buffer_before'] ) . ' MIN';
-			$period = $period->moveStartDate( $buffer_before );
+			$buffer_start = $period->getStartDate()->sub( new DateInterval( 'PT' . absint( $appointment_type['buffer_before'] ) . 'M' ) );
+			$period = new Period( $buffer_start, $period->getEndDate(), $period->getBoundaryType() );
 		}
 
 		ssa_defensive_timezone_reset();
@@ -79,8 +79,8 @@ class SSA_Availability_Functions {
 	public function get_period_with_buffered_end_date( $period, $original_period, $appointment_type ) {
 		ssa_defensive_timezone_fix();
 		if ( !empty( $appointment_type['buffer_after'] ) ) {
-			$buffer_after = '+' . absint( $appointment_type['buffer_after'] ) . ' MIN';
-			$period = $period->moveEndDate( $buffer_after );
+			$buffer_end = $period->getEndDate()->add( new DateInterval( 'PT' . absint( $appointment_type['buffer_after'] ) . 'M' ) );
+			$period = new Period( $period->getStartDate(), $buffer_end, $period->getBoundaryType() );
 		}
 
 		ssa_defensive_timezone_reset();

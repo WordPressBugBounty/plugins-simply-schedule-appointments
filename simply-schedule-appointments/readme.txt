@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.12.13
+Stable tag:        1.6.12.15
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,13 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.15 - 2026-07-28 =
+
+- Detect and fix SSA events wrongly counted as busy (Google Calendar drift)
+- Fix appointment buffer times ignored on PHP 8.2+ (allowing back-to-back bookings) and customer data lost in backups; add PHP 8.4 support
+- Harden the Divi render-shortcode route with a capability-scoped shortcode allowlist
+- Fix stalled orphaned revision_meta cleanup (+ remove DUPLICATE BLOCK log noise)
+
 = 1.6.12.13 - 2026-07-21 =
 
 - Handle Google Calendar invalid_grant: stop dead-token retries and flag staff needing reconnect
@@ -291,13 +298,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 = 1.6.11.11 - 2026-05-26 =
 
 - fix: dedicated reorder endpoint for appointment types to avoid oversized save requests
-
-= 1.6.11.9 - 2026-05-19 =
-
-- 💰Bug/Ticket: Database size issues and fatal error in async
-- Prevent token-authenticated modification of admin-controlled appointment fields (CVE-2026-6723)
-- fix(security): strip append_where_sql from REST requests
-- WordFence Vulnerability Appointment Booking Calendar <= 1.6.11.0 - Missing Authorization to Unauthenticated Arbitrary Modification via Bulk Appointments REST API Endpoint
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

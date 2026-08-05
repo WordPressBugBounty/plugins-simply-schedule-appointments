@@ -1344,7 +1344,11 @@ class SSA_Notifications {
 		if ( $recipient == 'customer' ) {
 			$value = str_replace( '"', '', $settings['global']['staff_name'] ) .' '.__('at', 'simply-schedule-appointments' ).' '.str_replace( '"', '', $settings['global']['company_name'] );
 		} elseif ( $recipient == 'staff' ) {
-			$value = $appointment_object->customer_information['Name'] .' ('.$settings['global']['company_name'].')';
+			// Customer information fields are configurable per appointment type, and
+			// appointments created outside the booking app may not carry a 'Name' key
+			// at all, so this must not assume it exists.
+			$customer_name = isset( $appointment_object->customer_information['Name'] ) ? $appointment_object->customer_information['Name'] : '';
+			$value         = $customer_name .' ('.$settings['global']['company_name'].')';
 		}
 
 		return $value;
@@ -1366,9 +1370,9 @@ class SSA_Notifications {
 		} elseif ( $recipient == 'customer' ) {
 			$value = $settings['global']['admin_email'];
 		} elseif ( $recipient == 'staff' ) {
-			$value = $appointment_object->customer_information['Email'];
+			$value = isset( $appointment_object->customer_information['Email'] ) ? $appointment_object->customer_information['Email'] : '';
 		}
-		
+
 		return is_email( $value ) ? $value : $settings['global']['admin_email'];
 	}
 

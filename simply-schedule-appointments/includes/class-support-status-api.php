@@ -181,6 +181,63 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 			),
 		) );
 
+		register_rest_route( $namespace, '/' . 'support/external_event_probe', array(
+			array(
+				'methods'         => WP_REST_Server::READABLE,
+				'callback'        => array( $this, 'get_external_event_probe' ),
+				'permission_callback' => array( $this, 'get_items_permissions_check' ),
+				'args'            => array(
+					'appointment_type_id' => array(
+						'required' => true,
+					),
+					'calendar_id' => array(
+						'required' => true,
+					),
+					'event_id' => array(
+						'required' => true,
+					),
+				),
+			),
+		) );
+
+		register_rest_route( $namespace, '/' . 'support/external_event_drift', array(
+			array(
+				'methods'         => WP_REST_Server::READABLE,
+				'callback'        => array( $this, 'scan_external_event_drift' ),
+				'permission_callback' => array( $this, 'reclaim_external_event_permissions_check' ),
+				'args'            => array(
+					'appointment_type_id' => array(
+						'required' => true,
+					),
+				),
+			),
+		) );
+
+		register_rest_route( $namespace, '/' . 'support/external_event_reclaim', array(
+			array(
+				'methods'         => WP_REST_Server::CREATABLE,
+				'callback'        => array( $this, 'reclaim_external_event' ),
+				'permission_callback' => array( $this, 'reclaim_external_event_permissions_check' ),
+				'args'            => array(
+					'appointment_type_id' => array(
+						'required' => true,
+					),
+					'calendar_id' => array(
+						'required' => true,
+					),
+					'event_id' => array(
+						'required' => true,
+					),
+					'row_id' => array(
+						'required' => true,
+					),
+					'confirm' => array(
+						'required' => true,
+					),
+				),
+			),
+		) );
+
 		register_rest_route(
 			$namespace,
 			'/fetch-guides',
@@ -401,6 +458,702 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 			'events'           => $events,
 			'calendars'        => $calendars,
 		);
+	}
+
+	/**
+	 * Read one event straight from Google, live, and report whether SSA's own-event
+	 * skip would have matched it.
+	 *
+	 * Touches no SSA table in either direction: the cached row is what is under
+	 * suspicion, so answering from it would beg the question. The skip in
+	 * SSA_Google_Calendar::get_events_from_calendar() turns on a single equality
+	 * between the event's stored ssa_home_id and SSA_Utils::get_home_id(), and that
+	 * marker is written once at booking time and never revisited -- so a site whose
+	 * home URL or AUTH_SALT changed leaves every earlier event unmatchable. This
+	 * reports both sides of that comparison rather than just its result.
+	 */
+	public function get_external_event_probe( $request ) {
+		$params = $request->get_params();
+
+		$calendar_id         = isset( $params['calendar_id'] ) ? sanitize_text_field( $params['calendar_id'] ) : '';
+		$event_id            = isset( $params['event_id'] ) ? sanitize_text_field( $params['event_id'] ) : '';
+		$appointment_type_id = isset( $params['appointment_type_id'] ) ? absint( $params['appointment_type_id'] ) : 0;
+		// Which staff token reads the calendar is derived from scope below, never from
+		// the request -- the client should not get to pick whose credentials are used.
+		$staff_id            = 0;
+
+		if ( empty( $calendar_id ) || empty( $event_id ) ) {
+			return new WP_Error(
+				'ssa_external_event_probe_missing_args',
+				__( 'A calendar and an event are required.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Google Calendar is stripped from the Basic build, leaving an SSA_Missing stub
+		// whose every method returns null -- truthy, so empty() would not catch it.
+		if ( ! class_exists( 'SSA_Google_Calendar_Client' ) || $this->plugin->google_calendar_client instanceof SSA_Missing ) {
+			return new WP_Error(
+				'ssa_external_event_probe_unavailable',
+				__( 'Google Calendar is not available on this site.', 'simply-schedule-appointments' ),
+				array( 'status' => 501 )
+			);
+		}
+
+		// Only calendars this appointment type actually checks, so the route cannot be
+		// turned into a reader for arbitrary calendars on the connected account.
+		$scope = $this->get_calendars_for_appointment_type( $appointment_type_id );
+		if ( ! isset( $scope[ $calendar_id ] ) ) {
+			return new WP_Error(
+				'ssa_external_event_probe_calendar_out_of_scope',
+				__( 'That calendar is not checked by this appointment type.', 'simply-schedule-appointments' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		// A staff-owned calendar is readable only with that staff member's own token.
+		if ( empty( $staff_id ) && 'site' !== $scope[ $calendar_id ]['owner'] && ! empty( $scope[ $calendar_id ]['staff_ids'] ) ) {
+			$staff_id = (int) $scope[ $calendar_id ]['staff_ids'][0];
+		}
+
+		try {
+			$client = $this->plugin->google_calendar_client->service_init( $staff_id );
+		} catch ( Exception $e ) {
+			return new WP_Error(
+				'ssa_external_event_probe_auth_failed',
+				$e->getMessage(),
+				array( 'status' => 502 )
+			);
+		}
+
+		$raw   = $client->get_event_from_calendar_raw( $calendar_id, $event_id );
+		$event = isset( $raw['body'] ) ? $raw['body'] : null;
+
+		$calendar_access = '';
+		try {
+			$calendar        = $client->get_calendar_from_calendar_list( $calendar_id );
+			$calendar_access = isset( $calendar->accessRole ) ? $calendar->accessRole : '';
+		} catch ( Exception $e ) {
+			$calendar_access = '';
+		}
+
+		$marker       = '';
+		$marker_scope = '';
+		if ( ! empty( $event->extendedProperties->shared->ssa_home_id ) ) {
+			$marker       = $event->extendedProperties->shared->ssa_home_id;
+			$marker_scope = 'shared';
+		} elseif ( ! empty( $event->extendedProperties->private->ssa_home_id ) ) {
+			$marker       = $event->extendedProperties->private->ssa_home_id;
+			$marker_scope = 'private';
+		}
+
+		$current_home_id = SSA_Utils::get_home_id();
+		$marker_matches  = ( ! empty( $marker ) && $marker === $current_home_id );
+
+		if ( ! empty( $raw['error'] ) ) {
+			$verdict = 'request_failed';
+		} elseif ( 404 === (int) $raw['http_code'] ) {
+			$verdict = 'event_missing';
+		} elseif ( (int) $raw['http_code'] > 299 || empty( $event ) ) {
+			$verdict = 'request_failed';
+		} elseif ( 'freeBusyReader' === $calendar_access ) {
+			// Google strips extendedProperties at this access level and the skip is
+			// gated off entirely, so SSA cannot recognise its own events here at all.
+			$verdict = 'access_hides_marker';
+		} elseif ( empty( $marker ) ) {
+			$verdict = 'marker_absent';
+		} elseif ( ! $marker_matches ) {
+			$verdict = 'marker_mismatch';
+		} else {
+			$verdict = 'would_skip';
+		}
+
+		// The same evaluator the write route authorises against, so the button can
+		// never be offered for an event the server would refuse to claim.
+		$reclaim = $this->evaluate_external_event_reclaim( $calendar_id, $event_id, $appointment_type_id, $event, $calendar_access );
+
+		// The probe is readable at the support-screen capability, but the reclaim write
+		// needs the stricter pair. Report whether THIS user could actually reclaim, so
+		// the UI never offers a button that the write route would 403.
+		$can_reclaim = (bool) $this->reclaim_external_event_permissions_check( $request );
+
+		return array(
+			'response_code'    => 200,
+			'verdict'          => $verdict,
+			'calendar_id'      => $calendar_id,
+			'event_id'         => $event_id,
+			'staff_id'         => $staff_id,
+			'http_code'        => (int) $raw['http_code'],
+			'error'            => $raw['error'],
+			'calendar_access'  => $calendar_access,
+			'marker'           => $marker,
+			'marker_scope'     => $marker_scope,
+			'marker_matches'   => $marker_matches,
+			'current_home_id'  => $current_home_id,
+			'home_url'         => get_home_url(),
+			'would_be_skipped' => ( 'freeBusyReader' !== $calendar_access ) && $marker_matches,
+			'reclaimable'      => $reclaim['reclaimable'],
+			'reclaim_reason'   => $reclaim['reason'],
+			'can_reclaim'      => $can_reclaim,
+			'appointment_id'   => ! empty( $reclaim['appointment']['id'] ) ? (int) $reclaim['appointment']['id'] : 0,
+			'event'            => $event,
+		);
+	}
+
+	/**
+	 * Decide whether this site may claim ownership of a live Google event.
+	 *
+	 * Ownership is proven by a local appointment carrying this exact
+	 * (calendar_id, event_id) pair -- never by the marker on the event. When a site
+	 * defines neither SSA_AUTH_SALT nor AUTH_SALT, SSA_Utils::site_unique_hash()
+	 * falls back to a salt shipped in the plugin source, so the marker cannot
+	 * distinguish our own stale value from another SSA site's current one.
+	 *
+	 * Claiming an event SSA did not create is the dangerous direction: SSA would
+	 * stop treating a real commitment as busy and book someone on top of it.
+	 * Every check below therefore fails closed.
+	 *
+	 * The full flow (steps 10-20 here) is documented in
+	 * documentation/external-event-reclaim-workflow.md.
+	 *
+	 * @return array reclaimable bool, reason string, appointment array
+	 */
+	protected function evaluate_external_event_reclaim( $calendar_id, $event_id, $appointment_type_id, $event, $calendar_access ) {
+		$deny = array( 'reclaimable' => false, 'reason' => '', 'appointment' => array() );
+
+		if ( ! is_string( $event_id ) || '' === $event_id || ! is_string( $calendar_id ) || '' === $calendar_id ) {
+			$deny['reason'] = 'missing_identifiers';
+			return $deny;
+		}
+
+		$scope = $this->get_calendars_for_appointment_type( $appointment_type_id );
+		if ( ! isset( $scope[ $calendar_id ] ) ) {
+			$deny['reason'] = 'calendar_out_of_scope';
+			return $deny;
+		}
+
+		// Google omits extendedProperties at this access level, so the marker could
+		// not be read back even if we wrote it.
+		if ( 'freeBusyReader' === $calendar_access ) {
+			$deny['reason'] = 'access_hides_marker';
+			return $deny;
+		}
+
+		if ( empty( $event ) || empty( $event->id ) ) {
+			$deny['reason'] = 'event_unreadable';
+			return $deny;
+		}
+
+		// class-appointment-model.php:939 tests isset(), not ! empty(), so an empty
+		// event id here would match every appointment that has never synced.
+		$matches = $this->plugin->appointment_model->query( array(
+			'google_calendar_event_id' => $event_id,
+			'number'                   => 5,
+		) );
+		if ( ! is_array( $matches ) ) {
+			$matches = array();
+		}
+
+		$confirmed = array();
+		foreach ( $matches as $row ) {
+			if ( ! isset( $row['google_calendar_event_id'], $row['google_calendar_id'] ) ) {
+				continue;
+			}
+			if ( (string) $row['google_calendar_event_id'] !== (string) $event_id ) {
+				continue;
+			}
+			if ( (string) $row['google_calendar_id'] !== (string) $calendar_id ) {
+				continue;
+			}
+			$confirmed[] = $row;
+		}
+
+		if ( empty( $confirmed ) ) {
+			$deny['reason'] = 'no_local_appointment';
+			return $deny;
+		}
+		if ( count( $confirmed ) > 1 ) {
+			$deny['reason'] = 'ambiguous_local_appointment';
+			return $deny;
+		}
+
+		$appointment = $confirmed[0];
+
+		if ( ! empty( $appointment['status'] ) && SSA_Appointment_Model::is_a_canceled_status( $appointment['status'] ) ) {
+			$deny['reason'] = 'appointment_canceled';
+			return $deny;
+		}
+
+		if ( empty( $appointment['start_date'] ) || strtotime( $appointment['start_date'] ) < ( time() - DAY_IN_SECONDS ) ) {
+			$deny['reason'] = 'appointment_in_the_past';
+			return $deny;
+		}
+
+		// SSA stamps shared.appointment_id on every event it writes, so a genuine SSA
+		// event always carries it. Group events store the group id there instead
+		// (class-google-calendar.php:881).
+		if ( empty( $event->extendedProperties->shared->appointment_id ) ) {
+			$deny['reason'] = 'event_not_marked_by_ssa';
+			return $deny;
+		}
+
+		$claimed    = (int) $event->extendedProperties->shared->appointment_id;
+		$acceptable = array( (int) $appointment['id'] );
+		if ( ! empty( $appointment['group_id'] ) ) {
+			$acceptable[] = (int) $appointment['group_id'];
+		}
+		if ( ! in_array( $claimed, $acceptable, true ) ) {
+			$deny['reason'] = 'appointment_id_mismatch';
+			return $deny;
+		}
+
+		if ( ! $this->external_event_times_match( $event, $appointment ) ) {
+			$deny['reason'] = 'times_do_not_match';
+			return $deny;
+		}
+
+		return array( 'reclaimable' => true, 'reason' => '', 'appointment' => $appointment );
+	}
+
+	/**
+	 * Does the live Google event still sit where the appointment says it does?
+	 *
+	 * Catches a recycled or reassigned event id. An SSA appointment is never
+	 * all-day, so an event with no dateTime is treated as a mismatch.
+	 */
+	protected function external_event_times_match( $event, $appointment ) {
+		if ( empty( $event->start->dateTime ) || empty( $appointment['start_date'] ) ) {
+			return false;
+		}
+
+		$event_start = strtotime( $event->start->dateTime );
+		$appt_start  = strtotime( $appointment['start_date'] . ' UTC' );
+
+		if ( empty( $event_start ) || empty( $appt_start ) ) {
+			return false;
+		}
+
+		return abs( $event_start - $appt_start ) <= MINUTE_IN_SECONDS;
+	}
+
+	/**
+	 * Find SSA's own appointments that leaked into the external busy-time cache for
+	 * an appointment type, so the admin can re-stamp them in one place.
+	 *
+	 * A correctly-marked SSA event is skipped at sync and never reaches the external
+	 * table, so any external row whose (calendar_id, event_id) matches a local
+	 * appointment is a drifted event by construction. That DB join is the cheap
+	 * pre-filter -- it excludes every genuine third-party event without a single
+	 * Google call. Only the survivors are read live and run through the same
+	 * ownership predicate the write route uses.
+	 */
+	public function scan_external_event_drift( $request ) {
+		$params              = $request->get_params();
+		$appointment_type_id = isset( $params['appointment_type_id'] ) ? absint( $params['appointment_type_id'] ) : 0;
+
+		if ( empty( $appointment_type_id ) ) {
+			return new WP_Error(
+				'ssa_drift_missing_appointment_type',
+				__( 'An appointment type is required.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$empty = array(
+			'response_code' => 200,
+			'available'     => true,
+			'scanned'       => 0,
+			'truncated'     => false,
+			'drifted'       => array(),
+		);
+
+		// Basic strips class-google-calendar.php, leaving an SSA_Missing stub whose
+		// methods return null -- truthy, so empty() would not catch it. Report
+		// unavailable rather than fataling; the UI simply shows nothing.
+		if ( ! class_exists( 'SSA_Google_Calendar_Client' )
+			|| ! class_exists( 'SSA_Google_Calendar' )
+			|| $this->plugin->google_calendar_client instanceof SSA_Missing
+			|| $this->plugin->google_calendar instanceof SSA_Missing ) {
+			$empty['available'] = false;
+			return $empty;
+		}
+
+		$scope = $this->get_calendars_for_appointment_type( $appointment_type_id );
+		if ( empty( $scope ) ) {
+			return $empty;
+		}
+
+		global $wpdb;
+		$ext_table  = $this->plugin->availability_external_model->get_table_name();
+		$appt_table = $this->plugin->appointment_model->get_table_name();
+
+		$hashes = array_map( 'ssa_int_hash', array_keys( $scope ) );
+		$hash_placeholders = implode( ', ', array_fill( 0, count( $hashes ), '%d' ) );
+
+		// The join itself is the foreign-event filter: a real third-party event has
+		// no row in the appointments table. LIMIT is a Google-call budget, not a
+		// display cap -- one live read per surviving candidate below.
+		$candidate_cap = 30;
+		$sql = "SELECT e.id AS row_id, e.event_id, e.calendar_id, e.staff_id, e.start_date
+			FROM {$ext_table} e
+			JOIN {$appt_table} a
+				ON a.google_calendar_event_id = e.event_id
+				AND a.google_calendar_id = e.calendar_id
+			WHERE e.calendar_id_hash IN ( {$hash_placeholders} )
+				AND e.service = 'google'
+				AND a.google_calendar_event_id != ''
+			ORDER BY e.start_date ASC
+			LIMIT %d";
+
+		$query_args   = $hashes;
+		$query_args[] = $candidate_cap + 1;
+		$candidates   = $wpdb->get_results( $wpdb->prepare( $sql, $query_args ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Interpolated parts are internal only: table names from get_table_name() and a list of literal %d placeholders; every value (crc32 int hashes and the row cap) is bound via prepare(). Read-only, on-demand admin diagnostic that must return fresh rows, so not cached.
+
+		if ( ! is_array( $candidates ) ) {
+			$candidates = array();
+		}
+
+		$truncated = count( $candidates ) > $candidate_cap;
+		if ( $truncated ) {
+			array_pop( $candidates );
+		}
+
+		$current_home_id = SSA_Utils::get_home_id();
+		$drifted         = array();
+		$unverified      = 0;
+
+		// One authed client per staff and one accessRole per (staff, calendar), reused
+		// across candidates. service_init() rebuilds the client and re-reads settings,
+		// and get_calendar_from_calendar_list() is a 60s blocking read -- doing either
+		// per event turns a handful of leaked rows into the wp_remote storm CLAUDE.md
+		// warns about. A cached false marks a staff whose auth failed.
+		$clients      = array();
+		$access_roles = array();
+
+		foreach ( $candidates as $candidate ) {
+			$calendar_id = $candidate['calendar_id'];
+			$event_id    = $candidate['event_id'];
+			$staff_id    = (int) $candidate['staff_id'];
+
+			// The hash filter is a crc32, so a colliding out-of-scope calendar can slip
+			// through -- the same guard the sibling routes use.
+			if ( ! isset( $scope[ $calendar_id ] ) ) {
+				continue;
+			}
+
+			if ( empty( $staff_id ) && 'site' !== $scope[ $calendar_id ]['owner'] && ! empty( $scope[ $calendar_id ]['staff_ids'] ) ) {
+				$staff_id = (int) $scope[ $calendar_id ]['staff_ids'][0];
+			}
+
+			if ( ! array_key_exists( $staff_id, $clients ) ) {
+				try {
+					$clients[ $staff_id ] = $this->plugin->google_calendar_client->service_init( $staff_id );
+				} catch ( Exception $e ) {
+					$clients[ $staff_id ] = false;
+				}
+			}
+			$client = $clients[ $staff_id ];
+			if ( false === $client ) {
+				$unverified++;
+				continue;
+			}
+
+			$raw   = $client->get_event_from_calendar_raw( $calendar_id, $event_id );
+			$event = isset( $raw['body'] ) ? $raw['body'] : null;
+			if ( 200 !== (int) $raw['http_code'] || empty( $event ) ) {
+				// A 404 is a stale row, not an auth failure -- do not flag it as
+				// "could not check". Anything else means the answer is incomplete.
+				if ( 404 !== (int) $raw['http_code'] ) {
+					$unverified++;
+				}
+				continue;
+			}
+
+			$access_key = $staff_id . '|' . $calendar_id;
+			if ( ! array_key_exists( $access_key, $access_roles ) ) {
+				try {
+					$calendar                    = $client->get_calendar_from_calendar_list( $calendar_id );
+					$access_roles[ $access_key ] = isset( $calendar->accessRole ) ? $calendar->accessRole : '';
+				} catch ( Exception $e ) {
+					$access_roles[ $access_key ] = '';
+				}
+			}
+			$calendar_access = $access_roles[ $access_key ];
+
+			$reclaim = $this->evaluate_external_event_reclaim( $calendar_id, $event_id, $appointment_type_id, $event, $calendar_access );
+			if ( empty( $reclaim['reclaimable'] ) ) {
+				continue;
+			}
+
+			$marker = isset( $event->extendedProperties->shared->ssa_home_id )
+				? (string) $event->extendedProperties->shared->ssa_home_id
+				: '';
+
+			// A marker already equal to ours is not drift -- such an event would have
+			// been skipped at sync and would not be here. Guard anyway.
+			if ( $marker === $current_home_id ) {
+				continue;
+			}
+
+			$drifted[] = array(
+				'row_id'         => (int) $candidate['row_id'],
+				'calendar_id'    => $calendar_id,
+				'event_id'       => $event_id,
+				'staff_id'       => $staff_id,
+				'appointment_id' => ! empty( $reclaim['appointment']['id'] ) ? (int) $reclaim['appointment']['id'] : 0,
+				'summary'        => isset( $event->summary ) ? (string) $event->summary : '',
+				'start_date'     => isset( $candidate['start_date'] ) ? $candidate['start_date'] : '',
+				'marker'         => $marker,
+			);
+		}
+
+		return array(
+			'response_code'   => 200,
+			'available'       => true,
+			'scanned'         => count( $candidates ),
+			'truncated'       => $truncated,
+			'unverified'      => $unverified,
+			'current_home_id' => $current_home_id,
+			'drifted'         => $drifted,
+		);
+	}
+
+	/**
+	 * This route writes to a live third-party calendar and deletes availability
+	 * data. It is deliberately gated above the rest of the support screen and
+	 * honours no token of any kind -- per CLAUDE.md, broader access would be a
+	 * different check, and a weaker one here would be invisible to the next
+	 * person who attaches a route to it.
+	 */
+	public function reclaim_external_event_permissions_check( $request ) {
+		return current_user_can( 'ssa_manage_site_settings' )
+			&& current_user_can( 'ssa_manage_others_appointments' );
+	}
+
+	/**
+	 * Stamp this site's marker back onto an event SSA created but no longer
+	 * recognises, then drop the cached busy row and recompute availability.
+	 *
+	 * The repair for a site whose home URL or AUTH_SALT changed after booking:
+	 * SSA_Utils::get_home_id() now returns a different value than the one written
+	 * into the event, so the self-skip in SSA_Google_Calendar::get_events_from_calendar()
+	 * stops matching and SSA imports its own appointments as external busy time.
+	 *
+	 * Full step-by-step: documentation/external-event-reclaim-workflow.md.
+	 */
+	public function reclaim_external_event( $request ) {
+		if ( ! apply_filters( 'ssa/external_event_reclaim/enabled', true ) ) {
+			return new WP_Error(
+				'ssa_reclaim_disabled',
+				__( 'This action is disabled on this site.', 'simply-schedule-appointments' ),
+				array( 'status' => 403 )
+			);
+		}
+
+		$params = $request->get_params();
+
+		if ( 'reclaim' !== ( isset( $params['confirm'] ) ? $params['confirm'] : '' ) ) {
+			return new WP_Error(
+				'ssa_reclaim_not_confirmed',
+				__( 'This action was not confirmed.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// class-google-calendar.php is stripped from the Basic build, leaving an
+		// SSA_Missing stub whose methods return null -- truthy, so empty() misses it.
+		if ( ! class_exists( 'SSA_Google_Calendar_Client' )
+			|| ! class_exists( 'SSA_Google_Calendar' )
+			|| $this->plugin->google_calendar_client instanceof SSA_Missing
+			|| $this->plugin->google_calendar instanceof SSA_Missing ) {
+			return new WP_Error(
+				'ssa_reclaim_unavailable',
+				__( 'Google Calendar is not available on this site.', 'simply-schedule-appointments' ),
+				array( 'status' => 501 )
+			);
+		}
+
+		$calendar_id         = isset( $params['calendar_id'] ) ? sanitize_text_field( $params['calendar_id'] ) : '';
+		$event_id            = isset( $params['event_id'] ) ? sanitize_text_field( $params['event_id'] ) : '';
+		$appointment_type_id = isset( $params['appointment_type_id'] ) ? absint( $params['appointment_type_id'] ) : 0;
+		// Which staff token performs the write is derived from scope below, never from
+		// the request -- the client should not get to pick whose credentials are used.
+		$staff_id            = 0;
+		$row_id              = isset( $params['row_id'] ) ? absint( $params['row_id'] ) : 0;
+
+		// Not defensive padding: bulk_delete( array( 'id' => 0 ) ) passes the
+		// empty-args guard in class-td-db-model.php, contributes no WHERE clause,
+		// and deletes every row in the table.
+		if ( $row_id < 1 ) {
+			return new WP_Error(
+				'ssa_reclaim_invalid_row',
+				__( 'A cached event row is required.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( empty( $calendar_id ) || empty( $event_id ) ) {
+			return new WP_Error(
+				'ssa_reclaim_missing_args',
+				__( 'A calendar and an event are required.', 'simply-schedule-appointments' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$scope = $this->get_calendars_for_appointment_type( $appointment_type_id );
+		if ( ! isset( $scope[ $calendar_id ] ) ) {
+			return new WP_Error(
+				'ssa_reclaim_refused',
+				__( 'That calendar is not checked by this appointment type.', 'simply-schedule-appointments' ),
+				array( 'status' => 403, 'reason' => 'calendar_out_of_scope' )
+			);
+		}
+
+		if ( empty( $staff_id ) && 'site' !== $scope[ $calendar_id ]['owner'] && ! empty( $scope[ $calendar_id ]['staff_ids'] ) ) {
+			$staff_id = (int) $scope[ $calendar_id ]['staff_ids'][0];
+		}
+
+		try {
+			$client = $this->plugin->google_calendar_client->service_init( $staff_id );
+		} catch ( Exception $e ) {
+			return new WP_Error(
+				'ssa_reclaim_auth_failed',
+				$e->getMessage(),
+				array( 'status' => 502 )
+			);
+		}
+
+		// Read live. The cached row is the thing under suspicion, so it cannot be
+		// the basis for a write.
+		$raw   = $client->get_event_from_calendar_raw( $calendar_id, $event_id );
+		$event = isset( $raw['body'] ) ? $raw['body'] : null;
+
+		$calendar_access = '';
+		try {
+			$calendar        = $client->get_calendar_from_calendar_list( $calendar_id );
+			$calendar_access = isset( $calendar->accessRole ) ? $calendar->accessRole : '';
+		} catch ( Exception $e ) {
+			$calendar_access = '';
+		}
+
+		// Re-derived from scratch. The client's opinion is a hint, never authority.
+		$reclaim = $this->evaluate_external_event_reclaim( $calendar_id, $event_id, $appointment_type_id, $event, $calendar_access );
+		if ( empty( $reclaim['reclaimable'] ) ) {
+			return new WP_Error(
+				'ssa_reclaim_refused',
+				__( 'SSA will not claim this event.', 'simply-schedule-appointments' ),
+				array( 'status' => 403, 'reason' => $reclaim['reason'] )
+			);
+		}
+
+		$marker_before = isset( $event->extendedProperties->shared->ssa_home_id )
+			? (string) $event->extendedProperties->shared->ssa_home_id
+			: '';
+		$home_id = SSA_Utils::get_home_id();
+
+		$written = $this->write_reclaim_marker( $client, $calendar_id, $event_id, $event, $home_id );
+		if ( is_wp_error( $written ) ) {
+			return $written;
+		}
+
+		// Only now touch local state. Deleting first would leave a failed write
+		// looking like a success until the next sync silently re-imported the event.
+		$row_deleted = false;
+		$row_stale   = false;
+
+		$row = $this->plugin->availability_external_model->get( $row_id );
+		if ( ! empty( $row['id'] )
+			&& (string) $row['event_id'] === (string) $event_id
+			&& (string) $row['calendar_id'] === (string) $calendar_id ) {
+			$row_deleted = (bool) $this->plugin->availability_external_model->bulk_delete( array( 'id' => (int) $row['id'] ) );
+		} else {
+			// A sync between page load and click rewrites every row for the calendar,
+			// so this id may now belong to a different event. Leave it alone.
+			$row_stale = true;
+		}
+
+		$cache_flushed = false;
+		if ( ! $this->plugin->availability_cache_invalidation instanceof SSA_Missing ) {
+			$this->plugin->availability_cache_invalidation->invalidate_appointment_type( $appointment_type_id );
+			$cache_flushed = true;
+		}
+
+		return array(
+			'response_code'  => 200,
+			'reclaimed'      => true,
+			'calendar_id'    => $calendar_id,
+			'event_id'       => $event_id,
+			'appointment_id' => ! empty( $reclaim['appointment']['id'] ) ? (int) $reclaim['appointment']['id'] : 0,
+			'marker_before'  => $marker_before,
+			'marker_after'   => $home_id,
+			'row_deleted'    => $row_deleted,
+			'row_stale'      => $row_stale,
+			'cache_flushed'  => $cache_flushed,
+		);
+	}
+
+	/**
+	 * Echo the event back to Google with exactly one property changed.
+	 *
+	 * update_event_in_calendar() is a full-body PUT, so the body must be the object
+	 * Google just returned -- rebuilding it from SSA's own model would overwrite
+	 * whatever the calendar owner has since edited.
+	 *
+	 * @return true|WP_Error
+	 */
+	protected function write_reclaim_marker( $client, $calendar_id, $event_id, $event, $home_id ) {
+		$updated = json_decode( wp_json_encode( $event ) );
+		if ( empty( $updated ) ) {
+			return new WP_Error(
+				'ssa_reclaim_encode_failed',
+				__( 'The event could not be prepared for update.', 'simply-schedule-appointments' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		if ( ! isset( $updated->extendedProperties ) || ! is_object( $updated->extendedProperties ) ) {
+			$updated->extendedProperties = new stdClass();
+		}
+		if ( ! isset( $updated->extendedProperties->shared ) || ! is_object( $updated->extendedProperties->shared ) ) {
+			$updated->extendedProperties->shared = new stdClass();
+		}
+		$updated->extendedProperties->shared->ssa_home_id = $home_id;
+
+		// sendUpdates is a literal, never the ssa/google_calendar/send_attendee_updates
+		// filter, which defaults to 'all' at every other write site. Nothing an
+		// attendee can see is changing here, so nobody should be emailed about it.
+		$options = array(
+			'sendUpdates'           => 'none',
+			'conferenceDataVersion' => 1,
+			'quotaUser'             => $this->plugin->google_calendar->getQuotaUser(),
+		);
+
+		$result = $client->update_event_in_calendar( $calendar_id, $event_id, $updated, $options );
+
+		// update_event_in_calendar() collapses a WP_Error, any HTTP > 299 and any
+		// Throwable to false, so a read-back is the only way to tell a swallowed
+		// failure from a success.
+		if ( false === $result ) {
+			return new WP_Error(
+				'ssa_reclaim_write_failed',
+				__( 'Google rejected the update. Nothing was changed on this site.', 'simply-schedule-appointments' ),
+				array( 'status' => 502 )
+			);
+		}
+
+		$verify = $client->get_event_from_calendar_raw( $calendar_id, $event_id );
+		$after  = isset( $verify['body'] ) ? $verify['body'] : null;
+		if ( 200 !== (int) $verify['http_code']
+			|| empty( $after->extendedProperties->shared->ssa_home_id )
+			|| (string) $after->extendedProperties->shared->ssa_home_id !== (string) $home_id ) {
+			return new WP_Error(
+				'ssa_reclaim_verify_failed',
+				__( 'The marker could not be confirmed on Google after the update. Nothing was changed on this site.', 'simply-schedule-appointments' ),
+				array( 'status' => 502 )
+			);
+		}
+
+		return true;
 	}
 
 	/**

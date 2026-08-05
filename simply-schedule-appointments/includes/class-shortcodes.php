@@ -15,6 +15,48 @@
 class SSA_Shortcodes {
 
 	/**
+	 * Booking shortcodes that render a public booking UI — output any site
+	 * visitor can already reach from an embedded booking page. Safe to render
+	 * for any caller (see SSA_Divi::render_shortcode_is_allowed).
+	 *
+	 * @var string[]
+	 */
+	const PUBLIC_SHORTCODES = array(
+		'ssa_booking',
+		'tec_ssa_booking',
+		'mepr_ssa_booking',
+		'ssa_confirmation',
+	);
+
+	/**
+	 * Shortcodes that can render OTHER people's appointment records. Each returns
+	 * empty / no-access output without ssa_manage_appointments, and the
+	 * render-shortcode route additionally only exposes them to a caller with that
+	 * capability — so a low-privilege caller cannot read the whole booking book
+	 * through the route (WPScan report).
+	 *
+	 * @var string[]
+	 */
+	const SENSITIVE_SHORTCODES = array(
+		'ssa_admin_upcoming_appointments',
+		'ssa_admin',
+	);
+
+	/**
+	 * Shortcodes gated behind a signed-in user: they render the LOGGED-IN user's
+	 * own appointment records, self-scoped by owner and pinned to their own
+	 * customer_id / email (see ssa_upcoming_appointments() / ssa_past_appointments()),
+	 * so they disclose nothing across users. The render-shortcode route offers them
+	 * to any signed-in caller, alongside the public booking shortcodes.
+	 *
+	 * @var string[]
+	 */
+	const USER_GATED_SHORTCODES = array(
+		'ssa_past_appointments',
+		'ssa_upcoming_appointments',
+	);
+
+	/**
 	 * Parent plugin class.
 	 *
 	 * @since 0.0.3

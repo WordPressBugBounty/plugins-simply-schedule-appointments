@@ -216,7 +216,7 @@ class SSA_Availability_Schedule implements Countable, Iterator {
 	 *
 	 * This method DOES NOT retain the state of the current instance, it sorts the original
 	 */
-	public function sort( callable $compare = null ) {
+	public function sort( ?callable $compare = null ) {
 		if ( $this->is_sorted() ) {
 			return $this;
 		}
@@ -522,9 +522,6 @@ class SSA_Availability_Schedule implements Countable, Iterator {
 		$clone = $this->get_clone();
 		foreach ( $blocks as $block ) {
 			$start_date = $block->get_period()->getStartDate()->format( 'Y-m-d H:i:s' );
-			if ( ! empty( $clone->blocks[$start_date] ) ) {
-				ssa_debug_log( 'DUPLICATE BLOCK! ' . $start_date, 10 );
-			}
 			$clone->blocks[$start_date] = $block;
 		}
 		$clone->is_sorted = false;
@@ -582,9 +579,6 @@ class SSA_Availability_Schedule implements Countable, Iterator {
 		$clone = $this->get_clone();
 		foreach ( $blocks as $block ) {
 			$start_date = $block->get_period()->getStartDate()->format( 'Y-m-d H:i:s' );
-			if ( ! empty( $clone->blocks[$start_date] ) ) {
-				ssa_debug_log( 'DUPLICATE BLOCK! ' . $start_date, 10 );
-			}
 			$clone->blocks[$start_date] = $block;
 		}
 
@@ -716,7 +710,7 @@ class SSA_Availability_Schedule implements Countable, Iterator {
 		return false;
 	}
 
-	public function get_free_busy_schedule( SSA_Appointment_Type_Object $appointment_type = null, $minimum_free_capacity = 1 ) {
+	public function get_free_busy_schedule( ?SSA_Appointment_Type_Object $appointment_type = null, $minimum_free_capacity = 1 ) {
 		$schedule = new SSA_Availability_Schedule();
 
 		foreach ( $this->get_blocks() as $block ) {
@@ -740,7 +734,7 @@ class SSA_Availability_Schedule implements Countable, Iterator {
 		return $schedule;
 	}
 
-	public function is_appointment_period_available( SSA_Appointment_Object $appointment, SSA_Appointment_Type_Object $appointment_type = null ) {
+	public function is_appointment_period_available( SSA_Appointment_Object $appointment, ?SSA_Appointment_Type_Object $appointment_type = null ) {
 		$appointment_buffered_period = $appointment->get_buffered_period();
 		$blocks = $this->get_blocks_for_period( $appointment_buffered_period );
 		if ( empty( $blocks ) ) {
