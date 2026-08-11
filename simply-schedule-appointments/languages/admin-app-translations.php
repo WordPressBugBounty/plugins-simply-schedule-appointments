@@ -527,6 +527,11 @@ $translations = array (
         'label' => __( 'Disable availability caching', 'simply-schedule-appointments' ),
         'help' => __( 'This will slow down your site, so only disable if you are having trouble and are instructed to do so by support.', 'simply-schedule-appointments' ),
       ),
+      'rate_limiting' => 
+      array (
+        'label' => __( 'Enable rate limiting on the booking form', 'simply-schedule-appointments' ),
+        'help' => __( 'Protects your public booking endpoints from scripted abuse. Visitors sending an unusually high number of requests are slowed down, and rapid-fire repeat bookings are quietly discarded. Enable this if you are receiving spam or bot bookings.', 'simply-schedule-appointments' ),
+      ),
       'enqueue_everywhere' => 
       array (
         'label' => __( 'Enqueue scripts everywhere', 'simply-schedule-appointments' ),

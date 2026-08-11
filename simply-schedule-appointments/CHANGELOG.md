@@ -1,5 +1,13 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.17 - 2026-08-04
+
+### Fixes
+
+- Add rate limiting to protect the booking form from spam and bot bookings
+- Fix giant emoji in appointment type titles in the admin app
+- Vulnerability: Team Member role can disclose all users' emails (up to 1.6.12.11)
+
 ## SSA-VERSION-PREFIX.6.12.15 - 2026-07-28
 
 ### Fixes

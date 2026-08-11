@@ -26,6 +26,17 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	protected $plugin = null;
 
 	/**
+	 * Set for the duration of a single create_item call when the request is
+	 * over the native no-payment booking throttle. Read by the late
+	 * before_insert filter (maybe_silently_trash_booking) to quarantine the
+	 * booking as 'abandoned' instead of returning a visible 429. Declared so
+	 * the assignment isn't a dynamic property (deprecated in PHP 8.2).
+	 *
+	 * @var bool
+	 */
+	public $silently_trash_booking = false;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since  0.0.2
@@ -54,6 +65,11 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		add_filter( 'ssa/appointment/before_update', array( $this, 'prevent_canceling_a_reserved_appointment' ), 1, 2 );
 
 		add_filter( 'ssa/appointment/before_insert', array( $this, 'default_appointment_status' ), 5, 1 );
+
+		// Runs after default_appointment_status (5) and the payments status
+		// filter (10) so the resolved status is final before we decide whether
+		// to quarantine a throttled native no-payment booking.
+		add_filter( 'ssa/appointment/before_insert', array( $this, 'maybe_silently_trash_booking' ), 20, 1 );
 
 		add_filter( 'ssa/appointment/before_update', array( $this, 'merge_customer_information' ), 10, 3 );
 
@@ -476,6 +492,37 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 
 		$data['status'] = 'booked';
+		return $data;
+	}
+
+	/**
+	 * Final-say status override for the silent booking throttle. create_item
+	 * sets $this->silently_trash_booking when an unprivileged native
+	 * no-payment booking is over the limit. Here — after the status has been
+	 * resolved by default_appointment_status (5) and the payments filter
+	 * (10) — quarantine it as 'abandoned' instead of letting it book: no
+	 * 'booked' hooks fire (no confirmation/notification), the slot isn't
+	 * held, and the row is deletable through the existing abandoned-row
+	 * cleanup paths (the admin Tools purge and the support-tools purge —
+	 * there is no automatic reaper; abandoned rows persist until an admin
+	 * runs one of those). create_item still returns a 200 mirroring a real
+	 * booking so the throttle stays invisible.
+	 *
+	 * The is_a_booked_status guard is defense in depth: even if the
+	 * pre-insert payment check ever drifts, a booking that resolved to
+	 * pending_payment/pending_form is never quarantined here.
+	 *
+	 * @param array $data
+	 * @return array
+	 */
+	public function maybe_silently_trash_booking( $data ) {
+		if ( empty( $this->silently_trash_booking ) ) {
+			return $data;
+		}
+		if ( empty( $data['status'] ) || ! self::is_a_booked_status( $data['status'] ) ) {
+			return $data;
+		}
+		$data['status'] = 'abandoned';
 		return $data;
 	}
 
@@ -1319,8 +1366,46 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			}
 		}
 
+		$trapped_booking = false;
+		if ( class_exists( 'SSA_Rate_Limit' ) && SSA_Rate_Limit::is_enabled() ) {
+			// Store a salted, one-way hash of the booker's IP on every booking
+			// (GDPR: the raw address is never persisted) for later abuse triage.
+			$ip_hash = SSA_Rate_Limit::get_client_ip_hash();
+			if ( '' !== $ip_hash ) {
+				if ( empty( $params['meta_data'] ) || ! is_array( $params['meta_data'] ) ) {
+					$params['meta_data'] = array();
+				}
+				$params['meta_data']['booking_ip_hash'] = $ip_hash;
+			}
+
+			// Silent throttle for native no-payment bookings: past the booking
+			// limit per IP or per email, accept the request but quarantine it (see
+			// maybe_silently_trash_booking) instead of returning a 429 that
+			// would tell an attacker the booking was blocked.
+			if ( ! $this->is_privileged_appointment_request()
+				&& SSA_Rate_Limit::is_native_no_payment_booking( $request )
+				&& SSA_Rate_Limit::booking_throttle_exceeded( $request ) ) {
+				$trapped_booking = true;
+			}
+
+			if ( $trapped_booking ) {
+				// Tag the quarantined row so it's separable from a genuinely
+				// abandoned booking: both resolve to 'abandoned' (and share the
+				// admin purge paths and the slot-not-held behavior), but only
+				// a throttled one carries this marker for triage and reporting.
+				if ( empty( $params['meta_data'] ) || ! is_array( $params['meta_data'] ) ) {
+					$params['meta_data'] = array();
+				}
+				$params['meta_data']['booking_throttled'] = 1;
+			}
+		}
+		$this->silently_trash_booking = $trapped_booking;
+
 		// we've duplicated the code from class-td-api-model.php  so we use explicit (modified) $params, rather than the original $request object passed into the API so we can update the end date
 		$insert_id = $this->insert( $params );
+		// Request-scoped flag; clear it immediately so the before_insert filter
+		// can't affect any unrelated insert later in the same request.
+		$this->silently_trash_booking = false;
 
 		if ( empty( $insert_id ) ) {
 			$response = array(
@@ -1366,6 +1451,12 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		$appointment_object     = new SSA_Appointment_Object( $response->data['data']['id'] );
 		$response->data['data'] = $appointment_object->get_data( 0, $params['fetch'] );
+
+		if ( $trapped_booking && isset( $response->data['data'] ) && is_array( $response->data['data'] ) ) {
+			// Mirror a real booking in the response body so the throttle is
+			// invisible to the client; the row itself stays 'abandoned'.
+			$response->data['data']['status'] = 'booked';
+		}
 
 		// $response->data['data']['ics']['customer'] = $appointment_object->get_ics( 'customer' )['file_url'];
 
@@ -1761,31 +1852,51 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	}
 
 	/**
+	 * Query args that scope an appointment query to the appointments the current
+	 * user is allowed to reach.
+	 *
+	 * Public because more than one endpoint needs this answer: any route that
+	 * derives data from appointments (e.g. resolving the users referenced by them)
+	 * must use the same rule as the appointment listing itself. Restating the rule
+	 * at the call site is how the customers endpoint ended up applying no ownership
+	 * check at all on the editions where the Staff files are stripped.
+	 *
+	 * @return array Query args to merge into an appointment query. Empty when the
+	 *               caller may reach every appointment.
+	 */
+	public function get_current_user_visibility_query_args() {
+		global $wpdb;
+
+		if ( ! is_user_logged_in() || current_user_can( 'ssa_manage_others_appointments' ) ) {
+			return array();
+		}
+
+		if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
+			return array( 'customer_id' => get_current_user_id() );
+		}
+
+		// Staff-role user: scope to appointments they're assigned to as staff. The
+		// staff_appointments table is stripped from non-Business builds, yet the core
+		// team_member role still installs and lands here — fall back to their own
+		// appointments rather than building a "FROM  WHERE" subquery that would 500.
+		$staff_appointment_table = $this->get_dependency_table_name( $this->plugin->staff_appointment_model );
+		if ( '' === $staff_appointment_table ) {
+			return array( 'customer_id' => get_current_user_id() );
+		}
+
+		return array(
+			'append_where_sql' => $wpdb->prepare( ' AND id IN (SELECT appointment_id FROM ' . $staff_appointment_table . ' WHERE staff_id = %d)', $this->plugin->staff_model->get_staff_id_for_user_id( get_current_user_id() ) ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Interpolated identifier is the internal staff-appointment table name, not user input; the staff id is bound with %d.
+		);
+	}
+
+	/**
 	 * Get a collection of items
 	 *
 	 * @param WP_REST_Request $request Full data about the request.
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
-		$params = $request->get_params();
-		if ( is_user_logged_in() && ! current_user_can( 'ssa_manage_others_appointments' ) ) {
-
-			global $wpdb;
-			if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
-				$params['customer_id'] = get_current_user_id();
-			} else {
-				// Staff-role user: scope to appointments they're assigned to as staff. The
-				// staff_appointments table is stripped from non-Business builds, yet the core
-				// team_member role still installs and lands here — fall back to their own
-				// appointments rather than building a "FROM  WHERE" subquery that would 500.
-				$staff_appointment_table = $this->get_dependency_table_name( $this->plugin->staff_appointment_model );
-				if ( '' !== $staff_appointment_table ) {
-					$params['append_where_sql'] = $wpdb->prepare( ' AND id IN (SELECT appointment_id FROM ' . $staff_appointment_table . ' WHERE staff_id = %d)', $this->plugin->staff_model->get_staff_id_for_user_id( get_current_user_id() ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Interpolated identifier is the internal staff-appointment table name, not user input; the staff id is bound with %d.
-				} else {
-					$params['customer_id'] = get_current_user_id();
-				}
-			}
-		}
+		$params = array_merge( $request->get_params(), $this->get_current_user_visibility_query_args() );
 
 		$schema = $this->get_schema();
 

@@ -385,6 +385,13 @@ abstract class TD_API_Model extends TD_Model {
 	 * See project CLAUDE.md ("Permission gates default to strict").
 	 */
 	public static function public_booking_permissions_check( $request ) {
+		if ( class_exists( 'SSA_Rate_Limit' ) ) {
+			$rate_limit = SSA_Rate_Limit::check( $request );
+			if ( is_wp_error( $rate_limit ) ) {
+				return $rate_limit;
+			}
+		}
+
 		if ( self::nonce_permissions_check( $request ) ) {
 			return true;
 		}

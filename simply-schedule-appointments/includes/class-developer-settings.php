@@ -55,7 +55,7 @@ class SSA_Developer_Settings extends SSA_Settings_Schema {
 		// Caution: When schema modified, please modify usage in ssa_uninstall function in simply-schedule-appointments.php
 		$this->schema = array(
 			// YYYY-MM-DD
-			'version' => '2026-06-25',
+			'version' => '2026-07-17',
 			'fields' => array(
 				'enabled' => array(
 					'name' => 'enabled',
@@ -107,6 +107,11 @@ class SSA_Developer_Settings extends SSA_Settings_Schema {
 				'disable_availability_caching' => array(
 					'name' => 'disable_availability_caching',
 					'default_value' => false
+				),
+
+				'rate_limiting' => array(
+					'name' => 'rate_limiting',
+					'default_value' => false,
 				),
 				
 				'object_cache' => array(

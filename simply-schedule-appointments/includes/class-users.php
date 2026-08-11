@@ -65,31 +65,68 @@ class SSA_Users {
 	}
 
 	public function get_items( $request ) {
-		$params = $request->get_params();
+		global $wpdb;
 
 		$data = array();
 
-		$role__in = array();
-		// foreach( wp_roles()->roles as $role_slug => $role ) {
-		// 	if( ! empty( $role['capabilities']['edit_posts'] ) ) {
-		// 		$role__in[] = $role_slug;
-		// 		continue;
-		// 	}
+		// Match staff-capable users by CAPABILITY, not role: staff caps can be
+		// granted per-user (e.g. via the Members plugin) without any role carrying
+		// them. This mirrors WP_User_Query's capability__in (every role that has
+		// the cap, OR the cap granted directly on the user), hand-rolled because
+		// capability__in needs WP 5.9 and is silently ignored below it — which
+		// would return every user, the exact disclosure this endpoint must never
+		// fall back to. The direct-cap clauses also guarantee the meta_query is
+		// never empty, so the all-users fall-through is structurally impossible.
+		$capability_meta_query = array( 'relation' => 'OR' );
+		foreach ( wp_roles()->roles as $role_slug => $role ) {
+			if ( ! empty( $role['capabilities']['edit_posts'] ) || ! empty( $role['capabilities']['ssa_manage_appointments'] ) ) {
+				$capability_meta_query[] = array(
+					'key'     => $wpdb->get_blog_prefix() . 'capabilities',
+					'value'   => '"' . $role_slug . '"',
+					'compare' => 'LIKE',
+				);
+			}
+		}
+		foreach ( array( 'edit_posts', 'ssa_manage_appointments' ) as $capability ) {
+			$capability_meta_query[] = array(
+				'key'     => $wpdb->get_blog_prefix() . 'capabilities',
+				'value'   => '"' . $capability . '"',
+				'compare' => 'LIKE',
+			);
+		}
 
-		// 	if( ! empty( $role['capabilities']['ssa_manage_appointments'] ) ) {
-		// 		$role__in[] = $role_slug;
-		// 		continue;
-		// 	}
-		// }
-
-		$args = array(
-			'role__in' => $role__in,
+		$wp_user_query = new WP_User_Query( array(
+			'meta_query' => $capability_meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- This is the same wp_capabilities meta_query WP_User_Query builds for capability__in; matching by capability is the point of the query and there is no non-meta equivalent.
 			// website may have many subscribers, avoid fatal errors
-			'number' => 1000,
-		);
-
-		$wp_user_query = new WP_User_Query( $args );
+			'number'     => 1000,
+		) );
 		$users = $wp_user_query->get_results();
+
+		// The admin staff list resolves each linked WP user's avatar/name from
+		// this endpoint, so include users already linked to a staff record
+		// regardless of their role (e.g. a Subscriber linked with can_login off).
+		// Staff is Business-only; the model is an SSA_Missing stub on lower
+		// editions, so guard before using it.
+		if ( ! ( $this->plugin->staff_model instanceof SSA_Missing ) ) {
+			$listed_ids = array_map( 'intval', wp_list_pluck( $users, 'ID' ) );
+			$staff_rows = $this->plugin->staff_model->query( array(
+				'fields' => array( 'user_id' ),
+				'number' => 1000,
+			) );
+
+			$linked_ids = array();
+			foreach ( $staff_rows as $staff_row ) {
+				$user_id = (int) $staff_row['user_id'];
+				if ( $user_id && ! in_array( $user_id, $listed_ids, true ) ) {
+					$linked_ids[] = $user_id;
+				}
+			}
+
+			if ( ! empty( $linked_ids ) ) {
+				$users = array_merge( $users, get_users( array( 'include' => array_unique( $linked_ids ) ) ) );
+			}
+		}
+
 		if ( empty( $users ) ) {
 			return $data;
 		}

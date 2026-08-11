@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.12.15
+Stable tag:        1.6.12.17
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,12 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.17 - 2026-08-04 =
+
+- Add rate limiting to protect the booking form from spam and bot bookings
+- Fix giant emoji in appointment type titles in the admin app
+- Vulnerability: Team Member role can disclose all users' emails (up to 1.6.12.11)
+
 = 1.6.12.15 - 2026-07-28 =
 
 - Detect and fix SSA events wrongly counted as busy (Google Calendar drift)
@@ -294,10 +300,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 - fix(notifications): stop drift resync from wiping still-applicable reminders
 - Throttle deprecated id-token verifies; use hash_equals on token compares
 - Fix token-comparison auth bypass in get_items_permissions_check
-
-= 1.6.11.11 - 2026-05-26 =
-
-- fix: dedicated reorder endpoint for appointment types to avoid oversized save requests
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
