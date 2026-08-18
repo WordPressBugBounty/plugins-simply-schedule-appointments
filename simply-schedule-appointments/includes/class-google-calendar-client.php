@@ -21,6 +21,13 @@
 	// Set when Google rejects a refresh with error=invalid_grant (dead refresh token).
 	private $refresh_token_invalid = false;
 
+	// Flipped the moment we ATTEMPT a force-refresh after a 401 on a data call -- on the
+	// attempt, not on success. The rule is deliberately outcome-independent: exactly ONE
+	// refresh+replay per client instance, whether it succeeds, fails, or 401s again. That is
+	// what stops a token Google keeps rejecting (or a refresh that fails) from spinning the
+	// refresh/replay into a loop or API storm. A fresh client (each service_init()) resets it.
+	private $did_force_refresh = false;
+
 
 	/**
 	 * Parent plugin class.
@@ -179,6 +186,119 @@
 		);
 		return $headers;
 	}
+
+	/**
+	 * Single point of contact for every Google Calendar data call.
+	 *
+	 * Since is_access_token_expired() trusts the local mint stamp instead of validating
+	 * over the network on each call, an access token that Google kills *inside* its
+	 * ~1h local window is only discovered here -- as a 401 on the real request. When
+	 * that happens we force ONE refresh (using the still-valid refresh token) and replay
+	 * the request once, so the operation completes in the same PHP request with no
+	 * disruption and no wait for the next authorize() cycle. Exactly one retry: if the
+	 * refresh fails (e.g. invalid_grant, which marks the token for the reconnect banner)
+	 * or the replayed request is rejected too, we return that response and let the
+	 * caller's existing error handling run unchanged.
+	 *
+	 * @param string $method   HTTP verb (GET/POST/PUT/DELETE).
+	 * @param string $endpoint Fully-built request URL.
+	 * @param array  $args     wp_remote_request args EXCEPT headers/method (added here).
+	 * @return array|WP_Error  The wp_remote_request() response.
+	 */
+	private function request( $method, $endpoint, $args = array() ) {
+		$args['method']  = $method;
+		$args['headers'] = $this->get_request_headers();
+
+		$response = wp_remote_request( $endpoint, $args );
+
+		// Only a 401 (rejected bearer token) is worth a refresh + replay. 403 is
+		// quota/permission and 5xx/network are transient -- refreshing fixes neither,
+		// so we leave those to the caller exactly as before.
+		if ( ! $this->is_response_unauthorized( $response ) ) {
+			return $response;
+		}
+
+		if ( ! $this->reauthorize_after_rejection() ) {
+			return $response;
+		}
+
+		// Replay once with the freshly-minted bearer token.
+		$args['headers'] = $this->get_request_headers();
+		return wp_remote_request( $endpoint, $args );
+	}
+
+	/**
+	 * True only when Google actively rejected the access token (HTTP 401).
+	 *
+	 * @param array|WP_Error $response
+	 * @return bool
+	 */
+	private function is_response_unauthorized( $response ) {
+		if ( is_wp_error( $response ) ) {
+			return false;
+		}
+		return 401 === (int) wp_remote_retrieve_response_code( $response );
+	}
+
+	/**
+	 * Force a single access-token refresh after Google rejected the current one.
+	 *
+	 * Mirrors the branch authorize() takes, but WITHOUT the local expiry check -- the
+	 * token looks fresh locally (that is exactly why the 401 slipped through), so we
+	 * must refresh unconditionally.
+	 *
+	 * We try exactly ONCE per client instance, no matter the outcome. $did_force_refresh
+	 * is flipped up front, before the refresh runs, on purpose: whether the refresh
+	 * succeeds, fails transiently, or the replay 401s again, this instance never attempts
+	 * a second refresh. The one-shot rule -- not the result -- is the guardrail that keeps
+	 * a persistently-rejected token from spinning into a refresh/replay loop or API storm.
+	 *
+	 * @return bool True if a new token was obtained and is ready to replay with.
+	 */
+	private function reauthorize_after_rejection() {
+		// One attempt per instance, outcome-independent -- see the docblock/property above.
+		if ( $this->did_force_refresh ) {
+			return false;
+		}
+		$this->did_force_refresh = true;
+
+		$google_calendar_settings = $this->plugin->google_calendar_settings->get();
+
+		// Quick Connect: the relay owns refresh, backoff and persistence. Force a
+		// re-fetch (bypassing the "looks fresh locally" cache) so a token the relay or
+		// Google killed inside its window is actually replaced. The relay's own backoff
+		// still bounds how often this can hit the service.
+		if ( ! empty( $google_calendar_settings['quick_connect_gcal_mode'] ) ) {
+			$token = $this->plugin->google_calendar->get_quick_connect_access_token( $this->staff_id, true );
+			if ( empty( $token ) || empty( $token['access_token'] ) ) {
+				return false;
+			}
+			$this->access_token = $token;
+			return true;
+		}
+
+		// Own client_id/secret: refresh with the stored refresh token.
+		$current = $this->get_access_token_for_staff_id();
+		if ( empty( $current ) || ! is_array( $current ) || empty( $current['refresh_token'] ) ) {
+			return false;
+		}
+
+		// Refresh token already known dead -- the reconnect banner is up; don't re-hit
+		// Google (authorize_with_client_id_and_secret() throws on this same flag).
+		if ( ! empty( $current['ssa_invalid_grant'] ) ) {
+			return false;
+		}
+
+		try {
+			$this->access_token = $this->refresh_access_token( $current );
+			$this->update_token_in_database();
+		} catch ( \Throwable $th ) {
+			// refresh_access_token() already logged and, on invalid_grant, marked the token.
+			return false;
+		}
+
+		return true;
+	}
 	
 	/**
 	 * Test and confirm that the access token
@@ -229,14 +349,14 @@
 		// get all pages of calendar list
 		while(true){
 			try {
-				$response = wp_remote_get(
+				$response = $this->request(
+					'GET',
 					$current_endpoint,
 					array(
-						'headers' => $this->get_request_headers(),
 						'timeout' => 60
 					)
 				);
-				
+
 				if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
 					ssa_debug_log( print_r( $response, true ), 10); // phpcs:ignore
 					return false;
@@ -275,14 +395,14 @@
 	public function get_calendar_from_calendar_list ( $calendar_id, $options = array() ) {
 		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/users/me/calendarList/" . urlencode( $calendar_id ) . "?" . $this->get_params_from_options( $options );
 		try {
-			$response = wp_remote_get(
+			$response = $this->request(
+				'GET',
 				$gcal_api_endpoint,
 				array(
-					'headers' => $this->get_request_headers(),
 					'timeout' => 60
 				)
 			);
-			
+
 			// we don't want to log 404 errors, because we expect them if the calendar is not found
 			if ( is_wp_error( $response ) || ( wp_remote_retrieve_response_code( $response ) > 299 && wp_remote_retrieve_response_code( $response ) != 404 ) ) {
 				ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
@@ -316,10 +436,10 @@
 		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/calendars/" . urlencode( $calendar_id ) . "/events?" . $event_types_query . '&' . $this->get_params_from_options( $options );
 
 		try {
-			$response = wp_remote_get(
+			$response = $this->request(
+				'GET',
 				$gcal_api_endpoint,
 				array(
-					'headers' => $this->get_request_headers(),
 					'timeout' => 60
 				)
 			);
@@ -351,22 +471,22 @@
 	 */
 	public function insert_event_into_calendar( $calendar_id, $event, $options = array() ) {
 		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/calendars/" . urlencode( $calendar_id ) . "/events?" . $this->get_params_from_options( $options );
-		
+
 		try {
-			$response = wp_remote_post(
+			$response = $this->request(
+				'POST',
 				$gcal_api_endpoint,
 				array(
-					'headers' => $this->get_request_headers(),
 					'timeout' => 60,
 					'body' => json_encode($event),
 				)
 			);
-			
+
 			if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
 				ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
 				return false;
 			}
-			
+
 			$event = json_decode(wp_remote_retrieve_body($response) );
 			
 			// Success
@@ -390,21 +510,21 @@
 			return false;
 		}
 		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/calendars/" . urlencode( $calendar_id ) . "/events/" . $event_id . "?" . $this->get_params_from_options( $options );
-		
+
 		try {
-			$response = wp_remote_get(
+			$response = $this->request(
+				'GET',
 				$gcal_api_endpoint,
 				array(
-					'headers' => $this->get_request_headers(),
 					'timeout' => 60
 				)
 			);
-			
+
 			if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
 				ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
 				return false;
 			}
-			
+
 			$data = json_decode(wp_remote_retrieve_body($response) );
 
 			// Success
@@ -437,10 +557,14 @@
 		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/calendars/" . urlencode( $calendar_id ) . "/events/" . urlencode( $event_id ) . "?" . $this->get_params_from_options( $options );
 
 		try {
-			$response = wp_remote_get(
+			// Through request() so a token Google killed inside its local window (401) is
+			// refreshed and the read replayed once -- otherwise the reclaim loop would count
+			// a recoverable event as unverified. request() only retries on 401, so the 404
+			// (event gone) this function reports on purpose is passed straight through.
+			$response = $this->request(
+				'GET',
 				$gcal_api_endpoint,
 				array(
-					'headers' => $this->get_request_headers(),
 					'timeout' => 30,
 				)
 			);
@@ -466,25 +590,24 @@
 	 */
 	public function update_event_in_calendar( $calendar_id, $event_id, $event_updated, $options = array() ) {
 		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/calendars/" . urlencode( $calendar_id ) . "/events/" . $event_id . "?" . $this->get_params_from_options( $options );
-		
+
 		try {
-			$response = wp_remote_request(
+			$response = $this->request(
+				'PUT',
 				$gcal_api_endpoint,
 				array(
-					'headers' => $this->get_request_headers(),
 					'timeout' => 60,
-					'body' => json_encode( $event_updated ),
-					'method'    => 'PUT'
+					'body' => json_encode( $event_updated )
 				)
 			);
-			
+
 			if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
 				ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
 				return false;
 			}
-			
+
 			$data = json_decode(wp_remote_retrieve_body($response) );
-		
+
 			// Success
 			return $data;
 		} catch ( \Throwable $th ) {
@@ -499,17 +622,16 @@
 	 */
 	public function delete_event_from_calendar( $calendar_id, $event_id, $options = array() ) {
 		$gcal_api_endpoint = "https://www.googleapis.com/calendar/v3/calendars/" . urlencode( $calendar_id ) . "/events/" . $event_id . "?" . $this->get_params_from_options( $options );
-		
+
 		try {
-			$response = wp_remote_request(
+			$response = $this->request(
+				'DELETE',
 				$gcal_api_endpoint,
 				array(
-					'headers' => $this->get_request_headers(),
-					'timeout' => 60,
-					'method'    => 'DELETE'
+					'timeout' => 60
 				)
 			);
-			
+
 			if ( is_wp_error($response) || wp_remote_retrieve_response_code($response) > 299 ) {
 				ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
 				return false;
@@ -539,18 +661,32 @@
 		if ( is_object( $token ) ) {
 			$token = (array) $token;
 		}
-		
+
 		// if less than 300 seconds remaining, refresh the token anyways
-		$created = 0;
+		$buffer = 300;
+		$expires_in = 3599; // access tokens usually expire in 3599 seconds
+
+		// Fast path: a LOCAL mint stamp lets us decide validity in BOTH directions with
+		// no Google round-trip. `ssa_fetched_at` is written on every path a token enters
+		// the plugin (refresh, initial OAuth exchange, quick-connect cache) using the same
+		// local clock as the `time()` comparison below, so it is safe to declare a token
+		// valid from it. Gate STRICTLY on this local stamp — never on `created` / the
+		// id_token `iat` (remote-clock values) — because trusting a remote timestamp to
+		// declare a token "valid" can re-open the clock-skew bug in the dangerous
+		// direction. Strict when declaring "valid"; liberal when declaring "expired" (a
+		// refresh is cheap and safe). Restores parity with the standard Google OAuth
+		// client, which trusts local expiry instead of validating over the network on
+		// every call (the per-call validate_access_token() below was the deviation).
 		if ( isset( $token['ssa_fetched_at'] ) ) {
-			// Local stamp recorded when the token entered the plugin (see refresh and
-			// quick-connect paths). Preferred over `created` and the id_token's `iat`
-			// claim because it uses the same local clock as the `time()` comparison
-			// below — comparing a remote-clock-derived timestamp against the local
-			// clock can falsely declare a fresh token expired on a host whose system
-			// clock has drifted.
-			$created = $token['ssa_fetched_at'];
-		} elseif ( isset( $token['created'] ) ) {
+			return ( $token['ssa_fetched_at'] + $expires_in - $buffer ) < time();
+		}
+
+		// Legacy tokens (no local stamp): keep prior behavior — short-circuit obvious
+		// expiry from the remote-clock `created` / id_token `iat`, else fall back to a
+		// one-off network validation. These self-heal on the next refresh (<=1h), which
+		// stamps `ssa_fetched_at` and moves them onto the fast path above.
+		$created = 0;
+		if ( isset( $token['created'] ) ) {
 			$created = $token['created'];
 		} elseif ( isset( $token['id_token'] ) ) {
 			// check the ID token for "iat"
@@ -566,17 +702,14 @@
 				}
 			}
 		}
-		
+
 		if( $created > 0 ){
-			$buffer = 300;
-			$expires_in = 3599;
-			// access tokens usually expire in 3599 seconds
 			if( $created + $expires_in - $buffer < time() ){
 				// consider expired to stay on the safe side
 				return true;
 			}
 		}
-		
+
 		// invert
 		return ! $this->validate_access_token( $token );
 	}
