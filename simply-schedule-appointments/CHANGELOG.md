@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.23 - 2026-08-18
+
+### Fixes
+
+- Fix CSRF: re-validate wp_rest nonce before whitelisting /ssa/ REST routes
+
 ## SSA-VERSION-PREFIX.6.12.19 - 2026-08-11
 
 ### Fixes

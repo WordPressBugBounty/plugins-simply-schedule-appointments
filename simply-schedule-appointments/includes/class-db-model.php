@@ -41,14 +41,37 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 	}
 
 	public function whitelist_ssa_rest_api( $result ) {
-		if ( isset( $GLOBALS['wp']->query_vars['rest_route'] ) ) {
-			$route = untrailingslashit( $GLOBALS['wp']->query_vars['rest_route'] );
-			if ( 0 === strpos( $route, '/ssa/' ) ) {
-				return true;
+		if ( ! isset( $GLOBALS['wp']->query_vars['rest_route'] ) ) {
+			return $result;
+		}
+
+		$route = untrailingslashit( $GLOBALS['wp']->query_vars['rest_route'] );
+		if ( 0 !== strpos( $route, '/ssa/' ) ) {
+			return $result;
+		}
+
+		// This filter keeps SSA's endpoints reachable when another plugin disables
+		// the REST API from this same hook. It must NOT also discard core's
+		// cookie-nonce check, or every /ssa/ route gated on a bare current_user_can()
+		// becomes CSRF-forgeable with an invalid nonce. So we re-run core's own check
+		// (rest_cookie_check_errors): on a cookie-authenticated request whose wp_rest
+		// nonce is missing or invalid, drop to anonymous before whitelisting — exactly
+		// as core does for a missing nonce. A valid nonce keeps the user's identity.
+		global $wp_rest_auth_cookie;
+		if ( true === $wp_rest_auth_cookie || ! is_user_logged_in() ) {
+			$nonce = '';
+			if ( isset( $_REQUEST['_wpnonce'] ) ) {
+				$nonce = sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- This IS the nonce verification, mirroring core's rest_cookie_check_errors().
+			} elseif ( isset( $_SERVER['HTTP_X_WP_NONCE'] ) ) {
+				$nonce = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_WP_NONCE'] ) );
+			}
+
+			if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+				wp_set_current_user( 0 );
 			}
 		}
 
-		return $result;
+		return true;
 	}
 
 	/**

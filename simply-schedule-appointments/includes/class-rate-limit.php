@@ -200,9 +200,9 @@ class SSA_Rate_Limit {
 		// Only trustworthy when Cloudflare fronts the site; on a non-CF install
 		// this header is attacker-forgeable — see the trust-boundary note above.
 		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
-			$raw = $_SERVER['HTTP_CF_CONNECTING_IP'];
+			$raw = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) );
 		} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$raw = $_SERVER['REMOTE_ADDR'];
+			$raw = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
 
 		$ip = self::canonical_ip( $raw );
