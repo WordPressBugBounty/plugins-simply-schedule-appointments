@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.12.23
+Stable tag:        1.6.12.24
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,11 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.24 - 2026-08-25 =
+
+- Check the appointment's own resource when it is rescheduled
+- Harden Patchstack CSRF residuals: purge CSV [3], template token leak [5], unrevocable read token [6]
+
 = 1.6.12.23 - 2026-08-18 =
 
 - Fix CSRF: re-validate wp_rest nonce before whitelisting /ssa/ REST routes
@@ -291,12 +296,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 - Security: stored XSS via nested customer_information array (Patchstack)
 - Defend Google Calendar token expiry against host clock drift
 - Fix Zoom OAuth open redirect: use wp_safe_redirect
-
-= 1.6.12.2 - 2026-06-09 =
-
-- Fix IDOR in MemberPress user appointment REST endpoints
-- fix: neutralize CSV formula injection in appointment backup exporter
-- Fix SSA module missing from Divi 5 picker with a child theme active
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

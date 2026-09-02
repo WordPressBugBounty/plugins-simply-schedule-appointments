@@ -115,6 +115,11 @@ class SSA_Templates {
 		}
 
 		$global_settings = $this->plugin->settings->get()['global'];
+
+		// The render can run in an admin's own request and be mailed to a customer,
+		// so the site-wide read token must never reach the Global scope.
+		$global_settings = $this->strip_protected_global_vars( $global_settings );
+
 		$vars['Global'] = array_merge( $vars['Global'], array(
 			'site_url' => site_url(),
 			'home_url' => home_url(),
@@ -122,6 +127,33 @@ class SSA_Templates {
 		), $global_settings );
 
 		return $vars;
+	}
+
+	/**
+	 * Remove secrets from the Global template scope: the public read-access token
+	 * and any global field flagged writeonly_secret/encrypt. Everything else
+	 * (admin_email, admin_phone, company_name, ...) stays, as it always has.
+	 *
+	 * @param array $global_settings The global settings array.
+	 * @return array
+	 */
+	protected function strip_protected_global_vars( $global_settings ) {
+		if ( ! is_array( $global_settings ) ) {
+			return array();
+		}
+
+		unset( $global_settings['public_read_access_token'] );
+
+		$schema = $this->plugin->settings_global->get_schema();
+		if ( ! empty( $schema['fields'] ) ) {
+			foreach ( $schema['fields'] as $field_slug => $field ) {
+				if ( ! empty( $field['writeonly_secret'] ) || ! empty( $field['encrypt'] ) ) {
+					unset( $global_settings[ $field_slug ] );
+				}
+			}
+		}
+
+		return $global_settings;
 	}
 
 	/**

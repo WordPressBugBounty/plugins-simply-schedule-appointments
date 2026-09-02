@@ -195,11 +195,11 @@ class SSA_Settings_Global extends SSA_Settings_Schema {
 					// 'set_result_path' => 'time_format',
 				),
 				'public_read_access_token' => array(
-					'name' => 'public_read_access_token', 
-					'get_function' => array( 'SSA_Utils', 'site_unique_hash' ),	
+					'name' => 'public_read_access_token',
+					'get_function' => array( 'SSA_Utils', 'get_public_read_access_token' ),
 					'get_input' => 'public_read_access_token',
 					'required_capability' => 'ssa_manage_others_appointments',
-				), 
+				),
 				// 'booking_post_permalink' => array(
 				// 	'name' => 'booking_post_permalink',
 

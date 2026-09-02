@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.24 - 2026-08-25
+
+### Fixes
+
+- Check the appointment's own resource when it is rescheduled
+- Harden Patchstack CSRF residuals: purge CSV [3], template token leak [5], unrevocable read token [6]
+
 ## SSA-VERSION-PREFIX.6.12.23 - 2026-08-18
 
 ### Fixes

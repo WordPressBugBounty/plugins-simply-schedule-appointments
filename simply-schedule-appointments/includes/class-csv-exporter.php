@@ -145,6 +145,19 @@ class SSA_CSV_Exporter {
 			// @codingStandardsIgnoreEnd
 		}
 
+		// Deny direct web access: these CSVs hold deleted appointments' PII and are
+		// served only through the manager-gated /appointments/backup/download route
+		// (on nginx the unguessable filename + that route are the protection).
+		if ( ! file_exists( $path . '/.htaccess' ) ) {
+			// @codingStandardsIgnoreStart
+			$handle = @fopen( $path . '/.htaccess', 'w' );
+			if ( $handle ) {
+				@fwrite( $handle, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nOrder allow,deny\nDeny from all\n</IfModule>\n" );
+				@fclose( $handle );
+			}
+			// @codingStandardsIgnoreEnd
+		}
+
 		return $path . '/' . sanitize_title( $filename ) . '.csv';
 	}
 

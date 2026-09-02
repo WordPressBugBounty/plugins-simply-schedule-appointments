@@ -1627,7 +1627,25 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 		
 		
-		$this->update( $item_id, $params );
+		$update_response = $this->update( $item_id, $params );
+
+		// A before_update filter can reject the write by setting $data['error'], in which case
+		// TD_Model::update() returns that array WITHOUT writing. Reporting 200 here would tell the
+		// customer their reschedule saved when it did not. create_item() already handles the same
+		// shape from insert(); this mirrors it.
+		if ( is_array( $update_response ) && ! empty( $update_response['error']['code'] ) ) {
+			// 'data' is null, not array(): an empty PHP array serialises to [], which is truthy in
+			// JS, and the booking app's update handler treats a truthy data as the saved
+			// appointment. That would blank out its local appointment and leave it requesting
+			// /appointments/undefined.
+			$error_response = array(
+				'response_code' => $update_response['error']['code'],
+				'error'         => $update_response['error']['message'],
+				'data'          => empty( $update_response['error']['data'] ) ? null : $update_response['error']['data'],
+			);
+
+			return new WP_REST_Response( $error_response, 200 );
+		}
 
 		$response_array = array(
 			'response_code' => 200,
@@ -1780,6 +1798,30 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 					'methods'             => WP_REST_Server::READABLE,
 					'callback'            => array( $this, 'purge_appointments' ),
 					'permission_callback' => array( $this, 'purge_appointments_permissions_check' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/' . $base . '/backup/download',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'download_appointment_backup' ),
+					'permission_callback' => array( $this, 'purge_appointments_permissions_check' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/' . $base . '/regenerate-public-token',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'regenerate_public_read_access_token' ),
+					'permission_callback' => array( $this, 'regenerate_public_read_access_token_permissions_check' ),
 				),
 			)
 		);
@@ -2576,7 +2618,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$csv             = null;
 
 		if ( $generate_backup ) {
-			$csv = $this->generate_appointments_backup( $list, $drain_id );
+			// Legacy callers without a drain_id still get a gated download URL.
+			$backup_drain_id = '' !== $drain_id ? $drain_id : strtolower( wp_generate_password( 12, false ) );
+
+			$csv = $this->generate_appointments_backup( $list, $backup_drain_id );
 
 			// CSV generation failure on any batch aborts that batch — the user expected
 			// a backup and we can't deliver it, so don't drop the rows. Earlier batches
@@ -2584,6 +2629,14 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			if ( is_wp_error( $csv ) ) {
 				return new WP_REST_Response( $csv->get_error_message(), 500 );
 			}
+
+			// Manager-gated download URL instead of the public uploads URL; same
+			// protocol fix as the admin app's api.root (TLS-terminating proxies).
+			$csv['file_url'] = add_query_arg(
+				array( 'drain_id' => $backup_drain_id ),
+				SSA_Bootstrap::maybe_fix_protocol( $this->get_ics_endpoints_base() ) . 'backup/download'
+			);
+			unset( $csv['file_path'] );
 		}
 
 		// Cascade-clean rows in dependent tables before dropping the appointments.
@@ -2957,7 +3010,8 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return $this->plugin->csv_exporter->get_csv( $list );
 		}
 
-		$filename = 'deleted-appointments-' . $drain_id;
+		// Salted server-derived name, never the caller's drain_id (the file holds PII).
+		$filename = $this->get_backup_filename_for_drain( $drain_id );
 
 		// Route to append_csv() once the file already exists for this drain.
 		// First batch goes through get_csv() so the header row is written.
@@ -2966,7 +3020,125 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return $this->plugin->csv_exporter->append_csv( $list, $filename );
 		}
 
+		// First batch of a drain: sweep expired backups once, not on every batch.
+		$this->cleanup_old_appointment_backups();
+
 		return $this->plugin->csv_exporter->get_csv( $list, $filename );
+	}
+
+	/**
+	 * How long a purge backup CSV is kept on disk before the sweep removes it.
+	 */
+	const BACKUP_FILE_TTL = 2 * HOUR_IN_SECONDS;
+
+	/**
+	 * Backup filename for a purge drain: the caller's drain_id keyed through the
+	 * site salt, so purge and download agree with nothing stored, and nobody
+	 * without AUTH_SALT can predict the name.
+	 *
+	 * @param string $drain_id Drain id from the purge request.
+	 * @return string Filename base (no extension) to hand to the CSV exporter.
+	 */
+	protected function get_backup_filename_for_drain( $drain_id ) {
+		return 'deleted-appointments-' . SSA_Utils::site_unique_hash( 'ssa_backup_' . sanitize_key( $drain_id ) );
+	}
+
+	/**
+	 * Stream a purge backup CSV to the manager who requested it. The csv dir is
+	 * deny-listed (see SSA_CSV_Exporter::get_file_path), so this capability-gated
+	 * route is the only way to retrieve one.
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return WP_REST_Response 404 when the backup is missing/expired.
+	 */
+	public function download_appointment_backup( $request ) {
+		$drain_id = sanitize_key( $request->get_param( 'drain_id' ) );
+		$dir      = SSA_Filesystem::get_uploads_dir_path();
+		if ( '' === $drain_id || empty( $dir ) ) {
+			return new WP_REST_Response( __( 'Backup not found or expired.', 'simply-schedule-appointments' ), 404 );
+		}
+
+		$dir .= '/csv';
+		$path = $dir . '/' . sanitize_title( $this->get_backup_filename_for_drain( $drain_id ) ) . '.csv';
+
+		// Defence in depth: the resolved path must sit inside the csv directory.
+		$real_dir  = realpath( $dir );
+		$real_path = realpath( $path );
+		if ( false === $real_path || false === $real_dir || 0 !== strpos( $real_path, $real_dir . DIRECTORY_SEPARATOR ) ) {
+			return new WP_REST_Response( __( 'Backup not found or expired.', 'simply-schedule-appointments' ), 404 );
+		}
+
+		// Discard any buffer a page-cache/optimizer plugin opened so readfile() streams.
+		while ( ob_get_level() ) {
+			ob_end_clean();
+		}
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="deleted-appointments.csv"' );
+		readfile( $real_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Streaming a server-generated CSV to the capability-checked manager who requested it; WP_Filesystem offers no streaming read.
+		exit;
+	}
+
+	/**
+	 * Best-effort removal of expired purge backup CSVs. Bounded to a single
+	 * scan of the plugin's own csv directory and only unlinks files past the
+	 * retention TTL — deliberately gentle for weak/shared hosts. Runs on the
+	 * admin-triggered purge, so there is no extra cron.
+	 */
+	protected function cleanup_old_appointment_backups() {
+		$dir = SSA_Filesystem::get_uploads_dir_path();
+		if ( empty( $dir ) ) {
+			return;
+		}
+		$dir .= '/csv';
+		if ( ! is_dir( $dir ) ) {
+			return;
+		}
+
+		$cutoff = time() - self::BACKUP_FILE_TTL;
+		$files  = glob( $dir . '/deleted-appointments-*.csv' );
+		if ( empty( $files ) ) {
+			return;
+		}
+		foreach ( $files as $file ) {
+			if ( is_file( $file ) && filemtime( $file ) < $cutoff ) {
+				@unlink( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_unlink, WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an expired PII backup inside the plugin's own uploads dir.
+			}
+		}
+	}
+
+	/**
+	 * Permission gate for regenerating the public read-access token — the same
+	 * manager capability the token field is scoped to.
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return bool
+	 */
+	public function regenerate_public_read_access_token_permissions_check( $request ) {
+		return current_user_can( 'ssa_manage_others_appointments' );
+	}
+
+	/**
+	 * Rotate the public read-access token. Stores a fresh random value that the
+	 * computed settings field prefers over the legacy AUTH_SALT-derived value,
+	 * which makes the token revocable: any previously-leaked value stops working
+	 * immediately, and existing ICS feed URLs must be re-copied. Manager-gated.
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return WP_REST_Response The new token.
+	 */
+	public function regenerate_public_read_access_token( $request ) {
+		$token = wp_generate_password( 40, false );
+		update_option( 'ssa_public_read_access_token', $token );
+
+		return new WP_REST_Response(
+			array(
+				'response_code'            => 200,
+				'error'                    => '',
+				'public_read_access_token' => $token,
+			),
+			200
+		);
 	}
 
 	public function get_label_id( $id ){

@@ -108,6 +108,28 @@ class SSA_Utils {
 	}
 
 	/**
+	 * Effective public read-access token: the stored (rotatable) value once an
+	 * admin has regenerated it, else the legacy AUTH_SALT-derived hash — so every
+	 * existing install keeps its current token and ICS feed URLs on landing.
+	 *
+	 * @param string $input Legacy hash input (the field key).
+	 * @return string
+	 */
+	public static function get_public_read_access_token( $input = 'public_read_access_token' ) {
+		$stored = get_option( 'ssa_public_read_access_token', null );
+		if ( null === $stored ) {
+			// Seed an autoloaded empty value once so this per-request read never costs a query.
+			add_option( 'ssa_public_read_access_token', '', '', true );
+			$stored = '';
+		}
+		if ( is_string( $stored ) && '' !== $stored ) {
+			return $stored;
+		}
+
+		return self::site_unique_hash( $input );
+	}
+
+	/**
 	 * 
 	 *
 	 * @param [type] $string
