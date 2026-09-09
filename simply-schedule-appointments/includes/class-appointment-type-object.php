@@ -216,7 +216,7 @@ class SSA_Appointment_Type_Object {
 			$appointment_periods_by_start_date = array();
 			foreach ($appointments as $appointment) {
 				$appointment = SSA_Appointment_Object::instance( $appointment );
-				if ( ! empty( $args['skip_appointment_id'] ) && $args['skip_appointment_id'] === $appointment->id ) {
+				if ( ! empty( $args['skip_appointment_id'] ) && (string) $args['skip_appointment_id'] === (string) $appointment->id ) {
 					continue;
 				}
 
@@ -484,7 +484,7 @@ class SSA_Appointment_Type_Object {
 		$detect_pending_payment = ! empty($args['appointment_type.appointments.pending_payment']) && empty($args['appointment_type.appointments.booked']) && empty($args['appointment_type.appointments.pending_form']);
 		foreach ($appointments as $key => $appointment) {
 			$appointment = SSA_Appointment_Object::instance( $appointment );
-			if ( ! empty( $args['skip_appointment_id'] ) && $args['skip_appointment_id'] === $appointment->id ) {
+			if ( ! empty( $args['skip_appointment_id'] ) && (string) $args['skip_appointment_id'] === (string) $appointment->id ) {
 				continue;
 			}
 

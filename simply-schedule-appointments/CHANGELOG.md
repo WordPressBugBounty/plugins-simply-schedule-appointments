@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.26 - 2026-09-01
+
+### Fixes
+
+- Stop charging Stripe customers for appointments SSA then refuses to record (#250928)
+
 ## SSA-VERSION-PREFIX.6.12.24 - 2026-08-25
 
 ### Fixes

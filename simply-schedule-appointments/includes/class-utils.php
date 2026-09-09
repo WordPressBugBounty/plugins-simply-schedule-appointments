@@ -715,7 +715,8 @@ function ssa_debug_log( $var, $debug_level = 1, $label = '', $file = 'debug' ) {
 	if ( is_string( $var ) ) {
 		error_log( $log_prefix.$var.PHP_EOL, 3, $path ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Deliberate file-based debug logger (error_log type 3 to $path); gated upstream by the ssa_debug_level option.
 	} else {
-		// error_log( $log_prefix.print_r( $var, true ).PHP_EOL, 3, $path );
+		// Capped so one large object can't flood the log file on weak hosts
+		error_log( $log_prefix.substr( print_r( $var, true ), 0, 20000 ).PHP_EOL, 3, $path ); // phpcs:ignore -- Deliberate file-based debug logger (error_log type 3 to $path, print_r capped); gated upstream by the ssa_debug_level option.
 	}
 }
 

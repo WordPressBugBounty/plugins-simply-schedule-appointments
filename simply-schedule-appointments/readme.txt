@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.12.24
+Stable tag:        1.6.12.27
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,10 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.26 - 2026-09-01 =
+
+- Stop charging Stripe customers for appointments SSA then refuses to record (#250928)
+
 = 1.6.12.24 - 2026-08-25 =
 
 - Check the appointment's own resource when it is rescheduled
@@ -289,13 +293,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 = 1.6.12.6 - 2026-06-23 =
 
 - PatchStack [Security][Broken Access Control] Simply Schedule Appointments plugin <= 1.6.12.0 is vulnerable to Broken Access Control
-
-= 1.6.12.4 - 2026-06-16 =
-
-- Restore webhook price fields in SSA appointment payloads
-- Security: stored XSS via nested customer_information array (Patchstack)
-- Defend Google Calendar token expiry against host clock drift
-- Fix Zoom OAuth open redirect: use wp_safe_redirect
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.
