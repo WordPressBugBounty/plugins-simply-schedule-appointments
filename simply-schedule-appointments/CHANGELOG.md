@@ -1,5 +1,15 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.29 - 2026-09-08
+
+### Fixes
+
+- Security audit: lock down staff REST reads, rate-limit license key checks, sanitize GCal OAuth error param
+
+### Features and Improvements
+
+- Support URL: detach orphaned payments and recalculate appointment totals (#255434)
+
 ## SSA-VERSION-PREFIX.6.12.26 - 2026-09-01
 
 ### Fixes

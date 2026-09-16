@@ -161,6 +161,13 @@ class SSA_Support {
 			'param' => 'ssa-remove-all-appointments',
 			'param_default_value' => '1'
 		),
+		array(
+			'callback' => 'ssa_detach_orphaned_payments',
+			'title' => 'Detach orphaned payments',
+			'details' => 'Pass 1 as a parameter to detach payment records pointing at appointments that no longer exist. Pass a date (YYYY-MM-DD) instead to also detach payment records created before that date whose appointment was created on or after it — use the date the site was reinstalled. Payment rows are never deleted, only unlinked, and totals for affected appointments are recalculated.',
+			'param' => 'ssa-detach-orphaned-payments',
+			'param_default_value' => '1'
+		),
 	);
 	/**
 	 * Constructor.
@@ -343,6 +350,136 @@ class SSA_Support {
 		$this->plugin->payment_model->truncate();
 		$this->plugin->appointment_meta_model->truncate();
 		$this->plugin->appointment_model->truncate();
+	}
+
+	/**
+	 * Detach payment records from appointments they cannot belong to. Payment rows
+	 * are never deleted, only unlinked (appointment_id set to 0), and the stored
+	 * payment_received total of every still-existing affected appointment is
+	 * recalculated.
+	 *
+	 * Pass 1 to detach payments whose appointment no longer exists. Pass a
+	 * YYYY-MM-DD date instead to also detach payments created before that date
+	 * whose appointment was created on or after it — the signature of a reused
+	 * appointment id after a reinstall, where an old payment row inflates a new
+	 * appointment's payment_received. Legitimate pre-cutoff appointment/payment
+	 * pairs are left alone.
+	 *
+	 * @return void
+	 */
+	public function ssa_detach_orphaned_payments() {
+		if ( empty( $_GET['ssa-detach-orphaned-payments'] ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( 'ssa_manage_site_settings' ) ) {
+			return;
+		}
+
+		if ( ! isset( $_GET['ssa_nonce'] ) || wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['ssa_nonce'] ) ), 'ssa-detach-orphaned-payments' ) === false ) {
+			return;
+		}
+
+		// Payment files are stripped from the Basic and Plus builds; the container
+		// hands back a truthy SSA_Missing stub there, so empty() alone can't detect it.
+		if ( empty( $this->plugin->payment_model ) || $this->plugin->payment_model instanceof SSA_Missing
+			|| empty( $this->plugin->payments ) || $this->plugin->payments instanceof SSA_Missing ) {
+			wp_die( 'Payments are not available on this edition.', 'SSA Support', array( 'response' => 200 ) );
+		}
+
+		$param  = sanitize_text_field( wp_unslash( $_GET['ssa-detach-orphaned-payments'] ) );
+		$cutoff = null;
+		if ( '1' !== $param ) {
+			$date = DateTime::createFromFormat( 'Y-m-d', $param );
+			if ( false === $date || $date->format( 'Y-m-d' ) !== $param ) {
+				wp_die( 'Invalid parameter: pass 1, or a cutoff date in YYYY-MM-DD format.', 'SSA Support', array( 'response' => 200 ) );
+			}
+			$cutoff = $param . ' 00:00:00';
+		}
+
+		global $wpdb;
+		$payments_table     = $this->plugin->payment_model->get_table_name();
+		$appointments_table = $this->plugin->appointment_model->get_table_name();
+
+		$where         = 'p.appointment_id > 0 AND a.id IS NULL';
+		$prepare_args  = array();
+		if ( null !== $cutoff ) {
+			$where        = 'p.appointment_id > 0 AND ( a.id IS NULL OR ( p.date_created < %s AND a.date_created >= %s ) )';
+			$prepare_args = array( $cutoff, $cutoff );
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter -- One-shot support tool gated by capability + nonce. Table names come from get_table_name() (internal identifiers), $where is assembled from hardcoded fragments, and every value ($cutoff dates, int-cast ids in generated %d lists) is bound via $wpdb->prepare(). Cross-table read + batched update on custom plugin tables; nothing cacheable.
+		$count_sql = "SELECT COUNT(*) FROM {$payments_table} p LEFT JOIN {$appointments_table} a ON a.id = p.appointment_id WHERE {$where}";
+		if ( $prepare_args ) {
+			$count_sql = $wpdb->prepare( $count_sql, $prepare_args );
+		}
+		$total_matching = (int) $wpdb->get_var( $count_sql );
+
+		if ( 0 === $total_matching ) {
+			wp_die( 'No detachable payment records found — nothing to do.', 'SSA Support', array( 'response' => 200 ) );
+		}
+
+		// Bounded batch per click so weak/shared hosts never load a huge result
+		// set or hold long locks; the summary says when another pass is needed.
+		$batch_limit = 2000;
+		$select_sql  = "SELECT p.id, p.appointment_id, a.id AS existing_appointment_id FROM {$payments_table} p LEFT JOIN {$appointments_table} a ON a.id = p.appointment_id WHERE {$where} ORDER BY p.id ASC LIMIT {$batch_limit}";
+		if ( $prepare_args ) {
+			$select_sql = $wpdb->prepare( $select_sql, $prepare_args );
+		}
+		$rows = $wpdb->get_results( $select_sql, ARRAY_A );
+
+		$payment_ids            = array();
+		$detached_map           = array();
+		$recalc_appointment_ids = array();
+		foreach ( $rows as $row ) {
+			$payment_ids[]                         = (int) $row['id'];
+			$detached_map[ (int) $row['id'] ]      = (int) $row['appointment_id'];
+			if ( ! empty( $row['existing_appointment_id'] ) ) {
+				$recalc_appointment_ids[ (int) $row['existing_appointment_id'] ] = true;
+			}
+		}
+		$recalc_appointment_ids = array_keys( $recalc_appointment_ids );
+
+		$now = gmdate( 'Y-m-d H:i:s' );
+		foreach ( array_chunk( $payment_ids, 500 ) as $chunk ) {
+			$placeholders = implode( ',', array_fill( 0, count( $chunk ), '%d' ) );
+			$updated      = $wpdb->query( $wpdb->prepare(
+				"UPDATE {$payments_table} SET appointment_id = 0, date_modified = %s WHERE id IN ({$placeholders})",
+				array_merge( array( $now ), $chunk )
+			) );
+			if ( false === $updated ) {
+				wp_die( 'Something went wrong while detaching payments. Please try again.', 'SSA Support', array( 'response' => 200 ) );
+			}
+		}
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
+
+		// One compact audit line so the old links are recoverable from the debug log.
+		ssa_debug_log( 'Detached payments (payment_id => old appointment_id): ' . wp_json_encode( $detached_map ), 10 );
+
+		// Same write path the normal payment flow uses, so revisions and hooks
+		// behave exactly as they do when a payment updates an appointment.
+		foreach ( $recalc_appointment_ids as $appointment_id ) {
+			$payment_received = $this->plugin->payments->calculate_payments_received_for_appointment( $appointment_id );
+			$this->plugin->appointment_model->update( $appointment_id, array( 'payment_received' => $payment_received ) );
+		}
+
+		$summary = 'Detached ' . count( $payment_ids ) . ' payment record(s) out of ' . $total_matching . ' matching. Recalculated payment totals for ' . count( $recalc_appointment_ids ) . ' appointment(s). No payment rows were deleted.';
+		if ( $total_matching > count( $payment_ids ) ) {
+			$summary .= ' More records remain — run this link again to continue.';
+		}
+		$details_lines = array();
+		foreach ( array_slice( $detached_map, 0, 100, true ) as $payment_id => $old_appointment_id ) {
+			$details_lines[] = 'payment #' . $payment_id . ' (was appointment #' . $old_appointment_id . ')';
+		}
+		if ( count( $detached_map ) > 100 ) {
+			$details_lines[] = '… and ' . ( count( $detached_map ) - 100 ) . ' more (full list in the debug log)';
+		}
+
+		wp_die(
+			esc_html( $summary ) . '<br><br>' . esc_html( implode( ', ', $details_lines ) ),
+			'SSA Support',
+			array( 'response' => 200 )
+		);
 	}
 	
 	/**
