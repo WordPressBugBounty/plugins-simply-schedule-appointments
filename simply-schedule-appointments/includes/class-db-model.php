@@ -247,17 +247,37 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 		return $where;
 	}
 
+	/**
+	 * The one id a token is minted for and verified against: the positive
+	 * integer the rest of the stack reads.
+	 *
+	 * The row is looked up by this value while the queries that return the row
+	 * cast theirs with %d, and the two readings have to agree: "1.9" as a
+	 * string matches nothing (the primary key is BIGINT), date_created never
+	 * joins the hashed string, and the token collapses to a hash of the id
+	 * alone — forgeable without knowing anything about the row. A list, an
+	 * object or a non-number is no id at all: `id[]=` on the listing route must
+	 * not verify against the token of whichever row an integer cast of the list
+	 * would name.
+	 *
+	 * @return int|false
+	 */
 	private function extract_id_from_input( $input ) {
-		if ( is_numeric( $input ) ) {
-				return $input;
-		} elseif ( is_array( $input ) && isset( $input['id'] ) ) {
-				return $input['id'];
+		if ( is_array( $input ) && isset( $input['id'] ) ) {
+			$id = $input['id'];
 		} elseif ( $input instanceof WP_REST_Request ) {
-				return $input->get_param('id');
+			$id = $input->get_param( 'id' );
 		} elseif ( is_object( $input ) && property_exists( $input, 'id' ) ) {
-				return $input->id;
+			$id = $input->id;
+		} else {
+			$id = $input;
 		}
-		return false;
+
+		if ( ! is_numeric( $id ) || (int) $id <= 0 ) {
+			return false;
+		}
+
+		return (int) $id;
 	}
 	public function get_string_to_tokenize( $input ) {
 		$id = $this->extract_id_from_input( $input );
@@ -286,18 +306,6 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 		}
 		return SSA_Utils::site_unique_hash( $string_to_tokenize );
 	}
-	
-	/**
-	 * Consider removing this code after 2026-10-10
-	 */
-	public function deprecated_get_id_token( $input ) {
-		$string_to_tokenize = $this->get_string_to_tokenize( $input );
-		if ( empty( $string_to_tokenize ) ) {
-			return false;
-		}
-		return SSA_Utils::deprecated_hash( $string_to_tokenize );
-	}
-	
 
 	/**
 	 * All tokens verification should be handled here
@@ -313,33 +321,6 @@ abstract class SSA_Db_Model extends TD_DB_Model {
 		$correct_token = $this->get_id_token( $input );
 		if ( ! empty( $correct_token ) && hash_equals( (string) $correct_token, (string) $token_to_verify ) ) {
 			return true;
-		}
-
-		// TODO remove this whole branch (including the throttle below) on 2026-09-30.
-		$target_timestamp = strtotime( '2026-09-30 00:00:00' );
-		$current_timestamp = current_time( 'timestamp' );
-
-		if ( $current_timestamp < $target_timestamp ) {
-			// The deprecated salt is in public source, so brute-force against
-			// date_created is the only remaining barrier. Cap attempts per appointment
-			// id well below what the attack needs; legitimate one-shot email-link clicks
-			// never accumulate failures.
-			$id = $this->extract_id_from_input( $input );
-			if ( ! empty( $id ) ) {
-				$throttle_key = 'ssa_dep_tok_fail_' . $id;
-				$fails        = (int) get_transient( $throttle_key );
-				if ( $fails >= 5 ) {
-					return false;
-				}
-
-				$deprecated_correct_token = $this->deprecated_get_id_token( $input );
-				if ( ! empty( $deprecated_correct_token ) && hash_equals( (string) $deprecated_correct_token, (string) $token_to_verify ) ) {
-					delete_transient( $throttle_key );
-					return true;
-				}
-
-				set_transient( $throttle_key, $fails + 1, 15 * MINUTE_IN_SECONDS );
-			}
 		}
 
 		return false;

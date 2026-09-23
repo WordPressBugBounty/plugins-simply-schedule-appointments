@@ -1,5 +1,14 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.33 - 2026-09-22
+
+### Fixes
+
+- Update moment-timezone dependency to version 0.6.3 across all relevant packages
+- Team Booking: re-check the newly selected team member's availability when rescheduling as a client
+- Keep Google Calendar blocks in place while SSA refreshes its copy of the calendar
+- Add a REST read boundary for appointment rows
+
 ## SSA-VERSION-PREFIX.6.12.29 - 2026-09-08
 
 ### Fixes

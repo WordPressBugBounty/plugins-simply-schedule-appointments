@@ -250,12 +250,36 @@ class SSA_Availability_Query {
 		$query_period = SSA_Utils::get_query_period( $query_period );
     $schedule = new SSA_Availability_Schedule();
 
+		$staff_ids_required = array();
+		if ( ! empty( $args['staff_ids_all_required'] ) && class_exists( 'SSA_Staff_Object' ) ) {
+			$staff_ids_required = (array) $args['staff_ids_all_required'];
+		}
+
 		foreach ( $args['excluded_appointment_ids'] as $appointment_id ) {
 			$appointment = new SSA_Appointment_Object( $appointment_id );
 			$period      = $appointment->get_appointment_period();
 
 			if (!$query_period->overlaps($period)) {
 					continue;
+			}
+
+			// This block is re-added so a customer can keep their own time while
+			// rescheduling. It must not survive a switch to a team member who does
+			// not work then: the staff merge_min above already zeroed that block and
+			// the merge_max below would hand it straight back.
+			$staff_works_then = true;
+			foreach ( $staff_ids_required as $staff_id ) {
+				$staff_working_hours = ( new SSA_Staff_Object( $staff_id ) )->get_working_hours_schedule( $appointment_type, $query_period, $args );
+				if ( empty( $staff_working_hours ) || $staff_working_hours->is_empty() ) {
+					continue; // No custom working hours set, so this member adds no constraint.
+				}
+				if ( ! $staff_working_hours->is_appointment_period_available( $appointment, $appointment_type ) ) {
+					$staff_works_then = false;
+					break;
+				}
+			}
+			if ( ! $staff_works_then ) {
+				continue;
 			}
 
 			$schedule = $schedule->pushmerge( SSA_Availability_Block_Factory::available_for_period( $period, array(

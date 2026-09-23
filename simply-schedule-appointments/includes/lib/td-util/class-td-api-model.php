@@ -143,7 +143,7 @@ abstract class TD_API_Model extends TD_Model {
 		$schema = $this->get_schema();
 
 		$data = $this->query( $params );
-		$data = $this->prepare_collection_for_api_response( $data );
+		$data = $this->prepare_collection_for_api_response( $data, 0, $request );
 
 		$response = array(
 			'response_code' => 200,
@@ -164,7 +164,11 @@ abstract class TD_API_Model extends TD_Model {
 		$params = $request->get_params();
 		$recursive = ( !empty( $params['recursive'] ) ) ? $params['recursive'] : 0;
 		$data = $this->get( $params['id'], $recursive );
-		$data = $this->prepare_item_for_api_response( $data );
+		$data = $this->prepare_item_for_api_response( $data, 0, $request );
+		if ( null === $data ) {
+			// A withheld row reads as a missing one; clients read `data.id` off this.
+			$data = array();
+		}
 
 		$response = array(
 			'response_code' => 200,
@@ -175,7 +179,19 @@ abstract class TD_API_Model extends TD_Model {
 		return new WP_REST_Response( $response, 200 );
 	}
 
-	public function prepare_item_for_api_response( $item, $recursive=0 ) {
+	/**
+	 * Last stop before a row leaves the REST API: redact capability-gated
+	 * fields, then hand rows hydrated under this one (the `recursive` query
+	 * arg) to their own model's boundary. A model returns null to withhold a
+	 * row — the permission callback decides who may call a route, this
+	 * decides which rows they may receive.
+	 *
+	 * @param array                $item
+	 * @param int                  $recursive
+	 * @param WP_REST_Request|null $request
+	 * @return array|null
+	 */
+	public function prepare_item_for_api_response( $item, $recursive=0, $request = null ) {
 		$keys_to_redact = array();
 		foreach ($item as $key => $value) {
 			if ( empty( $this->schema[$key]['required_capability'] ) ) {
@@ -190,13 +206,41 @@ abstract class TD_API_Model extends TD_Model {
 		}
 
 		$item = array_diff_key( $item, $keys_to_redact );
+
+		foreach ( $this->has_many() as $key => $relationship ) {
+			$model = self::boundary_model( $relationship );
+			if ( $model && ! empty( $item[ $key ] ) ) {
+				$item[ $key ] = $model->prepare_collection_for_api_response( $item[ $key ], 0, $request );
+			}
+		}
+
+		foreach ( $this->belongs_to() as $key => $relationship ) {
+			$model = self::boundary_model( $relationship );
+			if ( $model && ! empty( $item[ $key ] ) ) {
+				$related      = $model->prepare_item_for_api_response( $item[ $key ], 0, $request );
+				$item[ $key ] = ( null === $related ) ? array() : $related;
+			}
+		}
+
 		return $item;
 	}
 
-	public function prepare_collection_for_api_response( $items, $recursive=0 ) {
+	/**
+	 * The related model when it can run the boundary. A class-name string
+	 * (WP_User_Model) or an SSA_Missing stub on a lower edition cannot.
+	 */
+	private static function boundary_model( $relationship ) {
+		return ( isset( $relationship['model'] ) && $relationship['model'] instanceof TD_API_Model ) ? $relationship['model'] : null;
+	}
+
+	public function prepare_collection_for_api_response( $items, $recursive=0, $request = null ) {
 		$prepared_items = array();
-		foreach ($items as $key => $item) {
-			$prepared_items[$key] = $this->prepare_item_for_api_response( $item );
+		foreach ($items as $item) {
+			$prepared = $this->prepare_item_for_api_response( $item, 0, $request );
+			if ( null === $prepared ) {
+				continue;
+			}
+			$prepared_items[] = $prepared;
 		}
 
 		return $prepared_items;

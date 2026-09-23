@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.12.31
+Stable tag:        1.6.12.33
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,13 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.33 - 2026-09-22 =
+
+- Update moment-timezone dependency to version 0.6.3 across all relevant packages
+- Team Booking: re-check the newly selected team member's availability when rescheduling as a client
+- Keep Google Calendar blocks in place while SSA refreshes its copy of the calendar
+- Add a REST read boundary for appointment rows
+
 = 1.6.12.29 - 2026-09-08 =
 
 - Security audit: lock down staff REST reads, rate-limit license key checks, sanitize GCal OAuth error param
@@ -289,11 +296,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 - Fix memory errors when loading large appointment date ranges, and reduce unnecessary Google Calendar cache rebuilds
 - Security: unauth SQLi route-casing bypass + Contributor IDOR on appointment shortcodes
 - Fix PayPal IPN listener: reject non-POST requests
-
-= 1.6.12.8 - 2026-06-30 =
-
-- Fix purge appointments 500 on Basic/Plus/Pro editions (missing dependency models)
-- Require a non-zero "First Available within" duration (default 1 hour)
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

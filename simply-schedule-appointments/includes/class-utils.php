@@ -129,22 +129,6 @@ class SSA_Utils {
 		return self::site_unique_hash( $input );
 	}
 
-	/**
-	 * 
-	 *
-	 * @param [type] $string
-	 * @return void
-	 */
-	public static function deprecated_hash( $string ) {
-		if ( defined( 'SSA_AUTH_SALT' ) ) {
-			$salt = SSA_AUTH_SALT;
-		} else {
-			$salt = '6U2aRk6oGvAZAEXstbFNMppRF=D|H.NX!-gU:-aXGVH<)8kcF~FPor5{Z<SFr~wKz';
-		}
-		
-		return hash_hmac('md5', $string, $salt);
-	}
-
 	public static function get_home_id() {
 		return self::site_unique_hash( get_home_url() );
 	}
@@ -558,11 +542,11 @@ class SSA_Utils {
 
 	    $moment_format = strtr($php_date_format, $replacements);
 		
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only date-format helper; $_GET['ssa_locale'] only selects a display locale for the moment.js format string, no state change.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Read-only date-format helper; $_GET['ssa_locale'] only selects a display locale for the moment.js format string, no state change. It is sanitized by SSA_Translation::sanitize_locale(), which the sniff does not know.
 		if( isset( $_GET["ssa_locale"] )){
-			$moment_format = apply_filters( 'ssa/moment_format', $moment_format, sanitize_text_field( wp_unslash( $_GET["ssa_locale"] ) ) );
+			$moment_format = apply_filters( 'ssa/moment_format', $moment_format, SSA_Translation::sanitize_locale( wp_unslash( $_GET["ssa_locale"] ) ) );
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 	    return $moment_format;
 	}

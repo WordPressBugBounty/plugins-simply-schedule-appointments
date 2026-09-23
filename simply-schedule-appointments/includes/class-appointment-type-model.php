@@ -1039,6 +1039,17 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 	 */
 	public function get_items( $request ) {
 		$params = $request->get_params();
+
+		// This endpoint is reachable unauthenticated by booking-page visitors
+		// (public_booking_permissions_check accepts the static site-wide booking
+		// nonce). recursive would hydrate each type's has_many Appointment rows —
+		// customer PII and every appointment's public_token — into that public
+		// response, so a caller without a real manage-appointments capability may
+		// never trigger it. Managers keep the recursive behavior for the admin app.
+		if ( ! current_user_can( 'ssa_manage_appointments' ) && ! current_user_can( 'ssa_manage_others_appointments' ) ) {
+			unset( $params['recursive'] );
+		}
+
 		$data = $this->query( $params );
 
 		// Set staff_ids and resource_group_ids
@@ -1058,10 +1069,12 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			}
 		}
 	
+		// Appointment rows hydrated under a type by `recursive` cross the
+		// appointment model's REST boundary here; type rows pass unchanged.
 		$response = array(
 			'response_code' => 200,
 			'error' => '',
-			'data' => $data,
+			'data' => $this->prepare_collection_for_api_response( $data, 0, $request ),
 		);
 
 		return new WP_REST_Response( $response, 200 );

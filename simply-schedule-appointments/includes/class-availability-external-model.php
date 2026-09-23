@@ -334,6 +334,10 @@ class SSA_Availability_External_Model extends SSA_Db_Model {
 			$where .= $wpdb->prepare( ' AND cache_key=%d', sanitize_text_field( $args['cache_key'] ) );
 		}
 
+		if ( isset( $args['id_max'] ) ) {
+			$where .= $wpdb->prepare( ' AND id <= %d', (int) $args['id_max'] );
+		}
+
 		if ( isset( $args['intersects_period'] ) ) {
 			if ( $args['intersects_period'] instanceof Period ) {
 				$start_date_string = $args['intersects_period']->getStartDate()->format( 'Y-m-d H:i:s' );
@@ -388,5 +392,67 @@ class SSA_Availability_External_Model extends SSA_Db_Model {
 
 	public function bulk_delete( $args=array() ) {
 		return $this->db_bulk_delete( $args );
+	}
+
+	/**
+	 * The id every row inserted from now on will be at or above. Take it BEFORE fetching from the
+	 * external service and pass it to replace_calendar_rows().
+	 *
+	 * @return int
+	 */
+	public function get_next_id_cutoff() {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- table name is the internal get_table_name(); no user input; primary-key MAX on a custom plugin table.
+		return (int) $wpdb->get_var( "SELECT MAX(id) FROM {$this->get_table_name()}" ) + 1;
+	}
+
+	/**
+	 * Swaps one calendar's rows for $rows without the table ever being empty or partial for that
+	 * calendar: the new rows go in first, then only rows older than $cutoff_id are deleted.
+	 *
+	 * Returns true when the calendar ends up holding exactly $rows. Returns false when it does not
+	 * (an insert or the delete failed, or another writer touched the calendar meanwhile); the old
+	 * rows are then still in place and the caller must not record the fetch as applied.
+	 *
+	 * @param int    $calendar_id_hash ssa_int_hash() of the calendar id.
+	 * @param string $service          Row service, e.g. 'google'.
+	 * @param array  $rows       Rows in raw_insert() shape.
+	 * @param int    $cutoff_id  From get_next_id_cutoff(), taken before the rows were fetched.
+	 * @return bool
+	 */
+	public function replace_calendar_rows( $calendar_id_hash, $service, $rows, $cutoff_id ) {
+		global $wpdb;
+		$calendar_id_hash = (int) $calendar_id_hash;
+		$cutoff_id        = (int) $cutoff_id;
+		if ( empty( $calendar_id_hash ) || empty( $service ) || $cutoff_id < 1 || ! is_array( $rows ) ) {
+			return false;
+		}
+
+		foreach ( $rows as $row ) {
+			$insert_id = (int) $this->raw_insert( $row );
+			if ( $insert_id < $cutoff_id ) {
+				ssa_debug_log( 'External calendar rows kept for calendar hash ' . $calendar_id_hash . ': insert failed. ' . $wpdb->last_error, 10 );
+				return false;
+			}
+		}
+
+		$deleted = $this->bulk_delete( array(
+			'calendar_id_hash' => $calendar_id_hash,
+			'service'          => $service,
+			'id_max'           => $cutoff_id - 1,
+		) );
+		if ( false === $deleted ) {
+			ssa_debug_log( 'External calendar rows kept for calendar hash ' . $calendar_id_hash . ': delete of the previous rows failed. ' . $wpdb->last_error, 10 );
+			return false;
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- table name is the internal get_table_name(); every value is bound through $wpdb->prepare(); verification read on a custom plugin table right after its own write.
+		$count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$this->get_table_name()} WHERE calendar_id_hash = %d AND service = %s AND id >= %d", $calendar_id_hash, $service, $cutoff_id ) );
+		if ( count( $rows ) !== $count ) {
+			ssa_debug_log( 'External calendar rows for calendar hash ' . $calendar_id_hash . ' not recorded as refreshed: expected ' . count( $rows ) . ' new rows, found ' . $count, 10 );
+			return false;
+		}
+
+		return true;
 	}
 }

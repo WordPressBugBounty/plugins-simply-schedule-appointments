@@ -36,6 +36,18 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	 */
 	public $silently_trash_booking = false;
 
+	const READ_ACCESS_NONE = 'none';
+	const READ_ACCESS_READ = 'read';
+	const READ_ACCESS_FULL = 'full';
+
+	/**
+	 * Appointment ids the current user is assigned to as staff, keyed by user
+	 * id and fetched once per request (get_current_user_staff_appointment_ids).
+	 *
+	 * @var array<int, int[]>
+	 */
+	private $staff_appointment_ids_memo = array();
+
 	/**
 	 * Constructor.
 	 *
@@ -1166,10 +1178,11 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	}
 	
 	public function get_item( $request ) {
+		$this->cap_recursive_depth( $request );
 		$response = parent::get_item( $request );
 		$params  = $request->get_params();
 		
-		if( !empty( $params['fetch'] )){
+		if ( ! empty( $params['fetch'] ) && ! empty( $response->data['data']['id'] ) ) {
 			$appointment_object     = new SSA_Appointment_Object( $response->data['data']['id'] );
 			$response->data['data'] = $appointment_object->get_data( 0, $params['fetch'] );
 		}
@@ -1938,7 +1951,9 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	 * @return WP_Error|WP_REST_Response
 	 */
 	public function get_items( $request ) {
+		$this->cap_recursive_depth( $request );
 		$params = array_merge( $request->get_params(), $this->get_current_user_visibility_query_args() );
+		$params = $this->keep_read_access_fields( $params, $request );
 
 		$schema = $this->get_schema();
 
@@ -1990,7 +2005,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			echo $ics_feed['data']; // phpcs:ignore WordPress.Security.EscapeOutput 
 			exit;
 		} else {
-			$data = $this->prepare_collection_for_api_response( $data );
+			$data = $this->prepare_collection_for_api_response( $data, 0, $request );
 
 			$response = array(
 				'response_code' => 200,
@@ -2011,12 +2026,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		if ( current_user_can( 'ssa_manage_appointments' ) ) {
 			return true;
 		}
-		$settings = ssa()->settings->get();
-
-		$params = $request->get_params();
-
-		$expected_token = isset( $settings['global']['public_read_access_token'] ) ? (string) $settings['global']['public_read_access_token'] : '';
-		if ( ! empty( $params['token'] ) && is_string( $params['token'] ) && '' !== $expected_token && hash_equals( $expected_token, $params['token'] ) ) {
+		if ( $this->public_read_access_token_permissions_check( $request ) ) {
 			return true;
 		}
 
@@ -2024,10 +2034,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return true;
 		}
 
-		if ( true === $this->id_token_permissions_check( $request ) ) {
-			return true;
-		}
-
+		// The site-wide token only. A row's own token (id_token_permissions_check)
+		// is honored on /appointments/{id} alone: on the listing it would hand
+		// the caller the whole query engine (complete_group, recursive, id[]) on
+		// the strength of one row.
 		if ( true === $this->token_permissions_check( $request ) ) {
 			return true;
 		}
@@ -2322,6 +2332,171 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 
 		return $item;
+	}
+
+	/**
+	 * The calendar-feed token: read access to every row, never edit access.
+	 */
+	public function public_read_access_token_permissions_check( $request ) {
+		$params = $request->get_params();
+		if ( empty( $params['token'] ) || ! is_string( $params['token'] ) ) {
+			return false;
+		}
+
+		// Read the token from its canonical accessor rather than the settings copy
+		// the schema computes from it, so there is one reading of this secret.
+		$expected = (string) SSA_Utils::get_public_read_access_token();
+
+		return '' !== $expected && hash_equals( $expected, $params['token'] );
+	}
+
+	/**
+	 * REST boundary for appointment rows (see TD_API_Model): a row leaves the
+	 * API only to a caller entitled to it, and carries its edit token only to
+	 * a caller entitled to edit it. Internal readers (notifications, webhooks,
+	 * cron) call query()/get() directly and never pass through here.
+	 *
+	 * @return array|null The row, or null to withhold it.
+	 */
+	public function prepare_item_for_api_response( $item, $recursive = 0, $request = null ) {
+		$access = $this->get_read_access( $item, $request );
+		if ( self::READ_ACCESS_NONE === $access ) {
+			return null;
+		}
+
+		$item = parent::prepare_item_for_api_response( $item, $recursive, $request );
+		if ( self::READ_ACCESS_READ === $access ) {
+			unset( $item['public_token'], $item['public_edit_url'] );
+		}
+
+		return $item;
+	}
+
+	/**
+	 * A `fields` projection selects only the named columns, and db_query() skips
+	 * prepare_item_for_response() entirely when it is set — so a row can reach
+	 * get_read_access() without the columns it decides on. The per-row signals
+	 * then match nothing and every row is withheld: a staff login asking for
+	 * `fields[]=start_date` would get an empty list instead of its own
+	 * appointments. Keep the two decision columns in the query whenever the
+	 * caller is scoped to a subset of rows; a caller the boundary opens wholesale
+	 * (a manager, either site-wide token) needs neither and keeps its projection
+	 * exactly as asked.
+	 *
+	 * @param array           $params  Query args, already merged with the visibility scope.
+	 * @param WP_REST_Request $request The request the boundary will decide against.
+	 * @return array
+	 */
+	private function keep_read_access_fields( $params, $request ) {
+		if ( empty( $params['fields'] ) ) {
+			return $params;
+		}
+
+		// Whoever the boundary opens wholesale needs no column to prove it, so
+		// their projection is returned exactly as asked.
+		if ( current_user_can( 'ssa_manage_others_appointments' ) || current_user_can( 'ssa_manage_site_settings' )
+			|| $this->token_permissions_check( $request ) || $this->public_read_access_token_permissions_check( $request ) ) {
+			return $params;
+		}
+
+		$params['fields'] = array_unique( array_merge( (array) $params['fields'], array( 'id', 'customer_id' ) ) );
+
+		return $params;
+	}
+
+	/**
+	 * What the caller may receive of one row, mirroring the signals the route
+	 * gates accept, cheapest first.
+	 *
+	 * @param array                $item
+	 * @param WP_REST_Request|null $request
+	 * @return string One of the READ_ACCESS_* constants.
+	 */
+	public function get_read_access( $item, $request = null ) {
+		// A `fields` projection can leave a row without its id. The signals that
+		// open every row need none; the per-row ones never match without it.
+		$id = empty( $item['id'] ) ? 0 : (int) $item['id'];
+
+		if ( current_user_can( 'ssa_manage_others_appointments' ) || current_user_can( 'ssa_manage_site_settings' ) ) {
+			return self::READ_ACCESS_FULL;
+		}
+
+		// customer_id 0 must never match an anonymous caller's user id 0.
+		if ( ! empty( $item['customer_id'] ) && (int) $item['customer_id'] === get_current_user_id() ) {
+			return self::READ_ACCESS_FULL;
+		}
+
+		if ( $id && current_user_can( 'ssa_manage_appointments' ) && in_array( $id, $this->get_current_user_staff_appointment_ids(), true ) ) {
+			return self::READ_ACCESS_FULL;
+		}
+
+		if ( ! $request instanceof WP_REST_Request ) {
+			return self::READ_ACCESS_NONE;
+		}
+
+		// Site-wide tokens first: they open the whole listing.
+		if ( $this->token_permissions_check( $request ) ) {
+			return self::READ_ACCESS_FULL;
+		}
+
+		if ( $this->public_read_access_token_permissions_check( $request ) ) {
+			return self::READ_ACCESS_READ;
+		}
+
+		// The per-row token and an extension grant (class-staff.php) each vouch
+		// for exactly one row: the one the request names, the only id the route
+		// gates ever verified them against. Every other row — a group member, an
+		// appointment hydrated under this row's type — is withheld without a
+		// lookup, so no token check runs per row.
+		$named = $request->get_param( 'id' );
+		if ( ! $id || ! is_numeric( $named ) || (int) $named !== $id ) {
+			return self::READ_ACCESS_NONE;
+		}
+
+		$token = $request->get_param( 'token' );
+		if ( is_string( $token ) && '' !== $token && $this->verify_id_token( $id, sanitize_text_field( $token ) ) ) {
+			return self::READ_ACCESS_FULL;
+		}
+
+		if ( true === apply_filters( 'ssa/appointment/get_item_permissions_check', false, $request->get_params(), $request ) ) {
+			return self::READ_ACCESS_FULL;
+		}
+
+		return self::READ_ACCESS_NONE;
+	}
+
+	/**
+	 * Depth 1 hydrates a row's own type, payments and revisions. Depth 2 reaches
+	 * the type's has_many and loads every appointment of that type into memory
+	 * before the boundary withholds them — the load the public types listing
+	 * strips `recursive` to avoid, reached through the appointment routes. A
+	 * caller without a manage-appointments capability is held to depth 1.
+	 */
+	private function cap_recursive_depth( WP_REST_Request $request ) {
+		if ( empty( $request['recursive'] ) || current_user_can( 'ssa_manage_appointments' ) || current_user_can( 'ssa_manage_others_appointments' ) ) {
+			return;
+		}
+		$request->set_param( 'recursive', min( 1, (int) $request['recursive'] ) );
+	}
+
+	/**
+	 * Empty when the staff tables are stripped from this edition; those users
+	 * then fall back to their own customer rows, as the listing helper does.
+	 *
+	 * @return int[]
+	 */
+	private function get_current_user_staff_appointment_ids() {
+		$user_id = get_current_user_id();
+		if ( ! isset( $this->staff_appointment_ids_memo[ $user_id ] ) ) {
+			$ids = array();
+			if ( '' !== $this->get_dependency_table_name( $this->plugin->staff_appointment_model ) ) {
+				$staff_id = $this->plugin->staff_model->get_staff_id_for_user_id( $user_id );
+				$ids      = empty( $staff_id ) ? array() : $this->plugin->staff_appointment_model->get_appointment_ids( $staff_id );
+			}
+			$this->staff_appointment_ids_memo[ $user_id ] = $ids;
+		}
+
+		return $this->staff_appointment_ids_memo[ $user_id ];
 	}
 
 	public function get_rescheduling_note( $id ) {
@@ -3162,6 +3337,14 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return $data;
 		}
 
+		// get_current_user_visibility_query_args() returns no constraint for a
+		// logged-out caller, and completion must not read that absence as "see
+		// all". Completion is an admin-app feature — so an anonymous caller gets
+		// no completion rather than an unscoped re-query.
+		if ( ! is_user_logged_in() ) {
+			return $data;
+		}
+
 		// Collect all group_ids and track which appointment IDs we already have
 		$group_ids          = array();
 		$existing_appt_ids  = array();
@@ -3180,12 +3363,19 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return $data;
 		}
 
+		// Scope the group re-query to what the current caller may see. The
+		// listing query in get_items() is already scoped this way; without the
+		// same args here a caller who owns one appointment in a group would be
+		// handed every other member of that group — other customers' details
+		// and their public_token (a genuine edit/cancel token) — an IDOR.
+		$visibility_args = $this->get_current_user_visibility_query_args();
+
 		// Query for appointments in each group that we don't already have
 		foreach ( $group_ids as $group_id ) {
-			$group_appointments = $this->query( array(
+			$group_appointments = $this->query( array_merge( $visibility_args, array(
 				'group_id' => $group_id,
 				'number'   => -1,
-			) );
+			) ) );
 
 			foreach ( $group_appointments as $appointment ) {
 				if ( ! in_array( $appointment['id'], $existing_appt_ids, true ) ) {

@@ -420,7 +420,7 @@
 	
 	/**
 	 * use in place of ->events->listEvents( $calendar_id, $options = array() ) {}
-	 
+	 * @return array|null Event items, or null when the request failed.
 	 */
 	public function get_events_from_calendar( $calendar_id, $options = array() ) {
 		// if is a holiday caledar, pull events in english locale so that we have a way to identiy public holidays
@@ -451,16 +451,20 @@
 				} else {
 					ssa_debug_log( print_r( $response, true ), 10 ); // phpcs:ignore
 				}
-				return [];
+				return null;
 			}
 			
 			$data = json_decode( wp_remote_retrieve_body( $response ) );
 			
-			// Success
+			if ( ! isset( $data->items ) || ! is_array( $data->items ) ) {
+				ssa_debug_log( 'Google Calendar events response for ' . $calendar_id . ' has no items list', 10 );
+				return null;
+			}
+
 			return $data->items;
 		} catch ( \Throwable $th ) {
 			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
-			return [];
+			return null;
 		}
 	}
 	

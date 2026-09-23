@@ -88,6 +88,10 @@ class SSA_External_Google_Calendar_Api extends SSA_External_Calendar_Api {
 	}
 
 
+	/**
+	 * @return array|null Rows in wp_ssa_availability_external shape, an empty array for a calendar
+	 *                    with no upcoming events, or null when the events could not be fetched.
+	 */
 	public function pull_availability_calendar( $calendar_id, $args=array() ) {
 		$args = shortcode_atts( array(
 			'start_date' => new DateTime(),
@@ -101,6 +105,10 @@ class SSA_External_Google_Calendar_Api extends SSA_External_Calendar_Api {
 			$calendar = $this->get_api_service()->get_calendar_from_calendar_list( $calendar_id );
 		} catch( Exception $e ) {
 			ssa_debug_log( $e->getMessage() );
+			return null;
+		}
+		if ( empty( $calendar ) ) {
+			return null;
 		}
 
 		// get all events from calendar, without timeMin filter (the end of the event can be later then the start of searched time period)
@@ -118,6 +126,10 @@ class SSA_External_Google_Calendar_Api extends SSA_External_Calendar_Api {
 				'timeMin'      => $timeMin,
 				'maxResults'   => $limit_events,
 			) );
+
+			if ( ! is_array( $events ) ) {
+				return null;
+			}
 
 			foreach ( $events as $event ) {
 				// Skip events created by SSA in non freeBusyReader calendar.
@@ -186,7 +198,7 @@ class SSA_External_Google_Calendar_Api extends SSA_External_Calendar_Api {
 			ssa_debug_log( $e->getMessage() );
 		}
 
-		return array();
+		return null;
 
 	}
 

@@ -53,7 +53,9 @@ class SSA_Translation {
 	}
 
 	public function set_programmatic_locale( $locale = null ){
-		
+
+		$locale = self::sanitize_locale( $locale );
+
 		$this->programmatic_locale = $locale;
 
 		// attempt to reload SSA translation domain so that the programmatic_locale takes effect
@@ -61,6 +63,33 @@ class SSA_Translation {
 		if( file_exists( $mo_file ) ){
 			load_textdomain( 'simply-schedule-appointments', $mo_file );
 		}
+	}
+
+	/**
+	 * Restrict a locale to the characters WordPress core allows in one
+	 * (A-Za-z0-9_-), matching determine_locale()'s own handling of a
+	 * request-supplied locale.
+	 *
+	 * This value flows into the WP locale filter and into file paths that the
+	 * translation loader includes (the `.mo` here, and core's `.l10n.php`
+	 * sibling), so anything outside that set — a slash, a dot, a null byte —
+	 * must never survive. sanitize_locale_name() is WP 6.2.1+ and the plugin
+	 * supports 5.1, so fall back to the exact regex core uses when it is absent
+	 * rather than silently no-op on older WordPress.
+	 *
+	 * @param string|null $locale Raw locale value.
+	 * @return string Sanitized locale ('' when empty or all-stripped).
+	 */
+	public static function sanitize_locale( $locale ) {
+		if ( ! is_string( $locale ) || '' === $locale ) {
+			return '';
+		}
+
+		if ( function_exists( 'sanitize_locale_name' ) ) {
+			return sanitize_locale_name( $locale );
+		}
+
+		return preg_replace( '/[^A-Za-z0-9_-]/', '', $locale );
 	}
 	
 	
@@ -105,7 +134,11 @@ class SSA_Translation {
 			return $locale;
 		}
 
-		$lang = ( empty( $_GET['ssa_locale'] ) ) ? 'en_US' : sanitize_text_field( wp_unslash( $_GET['ssa_locale'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only locale detection for rendering, no state change.
+		$lang = ( empty( $_GET['ssa_locale'] ) ) ? 'en_US' : self::sanitize_locale( wp_unslash( $_GET['ssa_locale'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- read-only locale detection for rendering, no state change; sanitized by sanitize_locale(), which the sniff does not know.
+
+		if ( '' === $lang ) {
+			$lang = 'en_US';
+		}
 
 		return $lang;
 	}
