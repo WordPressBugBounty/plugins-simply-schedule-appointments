@@ -408,7 +408,7 @@ class SSA_Support {
 			$prepare_args = array( $cutoff, $cutoff );
 		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter -- One-shot support tool gated by capability + nonce. Table names come from get_table_name() (internal identifiers), $where is assembled from hardcoded fragments, and every value ($cutoff dates, int-cast ids in generated %d lists) is bound via $wpdb->prepare(). Cross-table read + batched update on custom plugin tables; nothing cacheable.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter -- One-shot support tool gated by capability + nonce. Table names come from get_table_name() (internal identifiers), $where is assembled from hardcoded fragments, and every value ($cutoff dates, int-cast ids in generated %d lists) is bound via $wpdb->prepare(). NotPrepared is included because the count and select statements are assembled into a variable and only routed through $wpdb->prepare() when the cutoff form supplies bound values; the sniff cannot follow the string across that assignment, so it flags both the prepare() call and the get_var()/get_results() call. Cross-table read + batched update on custom plugin tables; nothing cacheable.
 		$count_sql = "SELECT COUNT(*) FROM {$payments_table} p LEFT JOIN {$appointments_table} a ON a.id = p.appointment_id WHERE {$where}";
 		if ( $prepare_args ) {
 			$count_sql = $wpdb->prepare( $count_sql, $prepare_args );
@@ -451,7 +451,7 @@ class SSA_Support {
 				wp_die( 'Something went wrong while detaching payments. Please try again.', 'SSA Support', array( 'response' => 200 ) );
 			}
 		}
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
 
 		// One compact audit line so the old links are recoverable from the debug log.
 		ssa_debug_log( 'Detached payments (payment_id => old appointment_id): ' . wp_json_encode( $detached_map ), 10 );

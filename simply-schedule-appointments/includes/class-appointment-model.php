@@ -3102,7 +3102,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 		foreach ( $files as $file ) {
 			if ( is_file( $file ) && filemtime( $file ) < $cutoff ) {
-				@unlink( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_unlink, WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort cleanup of an expired PII backup inside the plugin's own uploads dir.
+				wp_delete_file( $file ); // Best-effort cleanup of an expired PII backup inside the plugin's own uploads dir.
 			}
 		}
 	}
