@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.35 - 2026-09-29
+
+### Fixes
+
+- Fix google calendar events with same start time
+
 ## SSA-VERSION-PREFIX.6.12.33 - 2026-09-22
 
 ### Fixes

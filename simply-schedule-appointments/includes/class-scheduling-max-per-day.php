@@ -78,7 +78,7 @@ class SSA_Scheduling_Max_Per_Day {
 
 			$start_datetime = new DateTimeImmutable( $start_date_string.' 00:00:00', $this->plugin->utils->get_datetimezone( $appointment_type['id'] ) );
 
-			$blocked_period = Period::after( $start_datetime, '1 DAY' );
+			$blocked_period = Period::after( $start_datetime, new DateInterval( 'P1D' ) );
 			$blocked_periods[] = $blocked_period;
 		}
 
