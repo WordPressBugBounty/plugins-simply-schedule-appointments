@@ -451,12 +451,16 @@ class SSA_Templates {
 		
 		$loader = new Twig\Loader\ArrayLoader(
 			array(
-				'template'   => $template_string,
-				'autoescape' => false,
+				'template' => $template_string,
 			)
 		);
 
-		$twig = new Twig\Environment( $loader );
+		// Autoescape must stay 'html' (Twig's default, set explicitly here).
+		// customer_information values reach Twig already htmlspecialchars()-ed, and
+		// the html_entity_decode() below removes one level of entities, so autoescape
+		// is what keeps customer-typed markup and entity-encoded text inert. With it
+		// off, that text decodes into live HTML before wp_kses_post() sees it.
+		$twig = new Twig\Environment( $loader, array( 'autoescape' => 'html' ) );
 		
 		// enable sandbox mode
 		$twig->addExtension( $this->getCustomTwigSandboxExtension() );

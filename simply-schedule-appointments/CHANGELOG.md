@@ -1,5 +1,19 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.12.37 - 2026-10-13
+
+### Fixes
+
+- Use add_block() when building the Google Calendar blocked schedule
+- Stop scripts planted in the debug log from running when the log is viewed
+- Return a zero rectangle from the checkbox and radio ripple adapters
+- Prevent saving customer information fields with an empty label or no values
+- Stop the booking shortcode minting an appointment edit token for anyone who can preview a draft
+- Check availability when a resource or team member is swapped without changing the time
+- Tighten who can read and change booking data over the REST API, and fix PayPal and Zoom errors, WooCommerce double bookings, the admin not loading, and field settings lost on downgrade
+- Sort Google Calendar blocks by start time before building the schedule
+- Stop the Contact Support form failing on PHP 7.4 and 8.0, and send the chosen time slot with Availability Detective tickets
+
 ## SSA-VERSION-PREFIX.6.12.35 - 2026-09-29
 
 ### Fixes

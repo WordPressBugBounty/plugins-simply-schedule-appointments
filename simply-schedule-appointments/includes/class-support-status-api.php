@@ -276,8 +276,36 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 	public function create_support_ticket( $request ) {
 		// queue the minimal ticket sending here
 		$params = $request->get_params();
+		// Redact before either ticket is built: both leave the site, and the support
+		// service stores export_code as a file on its own server.
+		if ( isset( $params['global_settings'] ) ) {
+			$params['global_settings'] = $this->redact_ticket_settings( array( 'global' => $params['global_settings'] ) )['global'] ?? '';
+		}
+		if ( isset( $params['export_code'] ) ) {
+			$params['export_code'] = $this->redact_ticket_export_code( $params['export_code'] );
+		}
 		$debug_logs_hash = SSA_Debug::get_site_unique_hash_for_debug_logs();
-		ssa_schedule_single_action( time() + 30, 'ssa/support/send_minimal_support_ticket', array( 'params' => [...$params, 'export_code' => '{}', 'debug_logs_hash' => $debug_logs_hash] ) );
+		// Stub out the heavy blobs to keep the fallback args small: Action Scheduler
+		// rejects args over 8000 JSON characters, and ssa_schedule_single_action only
+		// logs that, so an oversized fallback is never queued. The slot itself
+		// stays: this ticket only ever sends because the live relay already failed,
+		// which is exactly the ticket support has nothing else to go on. Only the
+		// appointment type is bulky, so it alone comes off and the time, status and
+		// reasons still reach the ticket.
+		$fallback_time_slot = $params['time_slot'] ?? '';
+		if ( is_array( $fallback_time_slot ) ) {
+			unset( $fallback_time_slot['appointment_type'] );
+		}
+		// array_merge rather than [...$params]: unpacking an array with string keys
+		// is PHP 8.1+, and this plugin supports 7.4, where it is a fatal error —
+		// which would take down this whole route before any ticket is sent.
+		$fallback_params = array_merge( $params, array(
+			'export_code'     => '{}',
+			'global_settings' => '',
+			'time_slot'       => $fallback_time_slot,
+			'debug_logs_hash' => $debug_logs_hash,
+		) );
+		ssa_schedule_single_action( time() + 30, 'ssa/support/send_minimal_support_ticket', array( 'params' => $fallback_params ) );
 		
 		if ( ! empty( $params['include_active_plugins'] ) ) {
 			$params['active_plugins'] = array();
@@ -303,6 +331,67 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 			ssa_unschedule_all_actions( 'ssa/support/send_minimal_support_ticket' );
 		}
 		return $result;
+	}
+
+	/**
+	 * Redacts settings before they leave the site in a support ticket: every
+	 * field its schema flags writeonly_secret or encrypt (the set
+	 * SSA_Templates::strip_protected_global_vars treats as protected), plus the
+	 * credentials whose schema carries neither flag. A set value becomes the
+	 * placeholder the settings REST layer uses, so support can still see that it
+	 * is set. A section with no schema on this edition is left over from a higher
+	 * one and can't be classified, so it is dropped.
+	 */
+	protected function redact_ticket_settings( $settings ) {
+		if ( ! is_array( $settings ) ) {
+			return array();
+		}
+		$schema = $this->plugin->settings->get_schema();
+		foreach ( $settings as $section_key => $section ) {
+			if ( ! isset( $schema[ $section_key ] ) ) {
+				unset( $settings[ $section_key ] );
+				continue;
+			}
+			if ( ! is_array( $section ) || empty( $schema[ $section_key ]['fields'] ) ) {
+				continue;
+			}
+			foreach ( $schema[ $section_key ]['fields'] as $field_slug => $field ) {
+				if ( ( ! empty( $field['writeonly_secret'] ) || ! empty( $field['encrypt'] ) ) && ! empty( $section[ $field_slug ] ) ) {
+					$settings[ $section_key ][ $field_slug ] = 'redacted-writeonly-secret';
+				}
+			}
+		}
+		// client_secret_filtered is computed, so it is not in get_schema() at all, and
+		// it can carry a secret defined in wp-config while client_secret is empty.
+		$unflagged_credentials = array(
+			'global'          => array( 'public_read_access_token' ),
+			'google_calendar' => array( 'client_secret', 'client_secret_filtered' ),
+			'mailchimp'       => array( 'api_key' ),
+		);
+		foreach ( $unflagged_credentials as $section_key => $field_slugs ) {
+			foreach ( $field_slugs as $field_slug ) {
+				if ( ! empty( $settings[ $section_key ][ $field_slug ] ) ) {
+					$settings[ $section_key ][ $field_slug ] = 'redacted-writeonly-secret';
+				}
+			}
+		}
+		return $settings;
+	}
+
+	/**
+	 * export_code arrives as a JSON string. One that can't be decoded can't be
+	 * redacted, so it goes out as the same empty export the fallback sends.
+	 */
+	protected function redact_ticket_export_code( $export_code ) {
+		$export = is_string( $export_code ) ? json_decode( $export_code, true ) : null;
+		if ( ! is_array( $export ) ) {
+			return '{}';
+		}
+		if ( ! isset( $export['settings'] ) ) {
+			return $export_code;
+		}
+		$export['settings'] = $this->redact_ticket_settings( $export['settings'] );
+		return wp_json_encode( $export );
 	}
 	public static function ssa_send_support_ticket($params = array(), $debug_logs_hash = '') {
 		$response = wp_remote_post( 'https://api.simplyscheduleappointments.com/support_ticket/', array(

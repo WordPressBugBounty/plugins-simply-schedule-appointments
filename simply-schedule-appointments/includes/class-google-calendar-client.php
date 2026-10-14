@@ -378,7 +378,7 @@
 					$current_endpoint = $gcal_api_endpoint . '&pageToken=' . $data->nextPageToken;
 				}
 			} catch ( \Throwable $th ) {
-				ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+				ssa_debug_log( $th->getMessage(), 10 );
 				break;
 			}
 		}
@@ -413,7 +413,7 @@
 			// Success
 			return $data;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return false;
 		}
 	}
@@ -463,7 +463,7 @@
 
 			return $data->items;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return null;
 		}
 	}
@@ -497,7 +497,7 @@
 			// return event ID
 			return $event;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return false;
 		}
 	}
@@ -534,7 +534,7 @@
 			// Success
 			return $data;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return false;
 		}
 	}
@@ -615,7 +615,7 @@
 			// Success
 			return $data;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return false;
 		}
 	}
@@ -645,7 +645,7 @@
 			// the delete method returns an empty body
 			return true;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return false;
 		}
 	}
@@ -767,7 +767,7 @@
 			// Success
 			return $data;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return false;
 		}
 	}
@@ -875,6 +875,7 @@
 			'authorize' => 'google',
 			'staff_id' => $staff_id,
 			'staff_token' => SSA_Utils::site_unique_hash( $staff_id ),
+			'oauth_nonce' => SSA_Utils::mint_oauth_nonce( 'google' ),
 			'token' => $license,
 			'redirect_uri' => $this->plugin->google_calendar->get_redirect_uri(),
 			'wp_callback_uri' => $this->plugin->google_calendar::get_wp_callback_uri(),
@@ -929,7 +930,7 @@
 
 			return true;
 		} catch ( \Throwable $th ) {
-			ssa_debug_log( print_r( $th, true ), 10 ); // phpcs:ignore
+			ssa_debug_log( $th->getMessage(), 10 );
 			return false;
 		}
 

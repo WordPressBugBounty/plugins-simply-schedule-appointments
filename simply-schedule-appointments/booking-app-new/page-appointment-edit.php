@@ -9,11 +9,12 @@
   </head>
   <body <?php body_class(); ?> data-iframe-height>
     <?php
-    global $ssa_current_appointment_id;
+    global $ssa_current_appointment_id, $ssa_current_appointment_token;
     if ( empty( $ssa_current_appointment_id ) ) {
       die( __( 'No appointment found, please check the URL', 'simply-schedule-appointments' ) ); // phpcs:ignore
     }
-    $shortcode = '[ssa_booking edit="'.$ssa_current_appointment_id.'"';
+    // Carries the proof the hijack callback already verified, so SSA_Shortcodes::scope_edit_att() keeps `edit`.
+    $shortcode = '[ssa_booking edit="'.$ssa_current_appointment_id.'" token="'. esc_attr( $ssa_current_appointment_token ) .'"';
     if ( ! empty( $_GET['paypal_success'] ) || ! empty( $_GET['paypal_cancel'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only render: values only presence-checked to pick the confirm_payment view after a PayPal redirect, no state change.
       $shortcode .= ' view="confirm_payment"';
     }

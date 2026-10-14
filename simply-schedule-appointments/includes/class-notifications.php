@@ -1041,11 +1041,28 @@ class SSA_Notifications {
 				continue;
 			}
 
+			try {
+				$response = $this->fire_notification( $notification, $payload );
+			} catch ( Exception $e ) {
+				// The appointment can be deleted while its notification renders.
+				// Fail this action instead of ending the rest of the queue run.
+				if ( empty( $this->plugin->appointment_model->db_get_field( 'id', $appointment_id ) ) ) {
+					$this->fail_async_action(
+						$async_action,
+						404,
+						'Appointment deleted while its notification was sent: ' . $e->getMessage(),
+						array( 'appointment_id' => $appointment_id )
+					);
+					return;
+				}
+				throw $e;
+			}
+
 			$responses[] = array(
 				'action' => $payload['action'],
 				'notification' => $notification,
 				'payload' => $payload,
-				'response' => $this->fire_notification( $notification, $payload ),
+				'response' => $response,
 			);
 
 		}

@@ -122,8 +122,18 @@ class SSA_Settings {
 	}
 
 	public function remove_unauthorized_settings_for_current_user( $settings, $replace_tokens = true, $unset_admin_only_fields = false ) {
+		$schema = $this->get_schema();
 		foreach ($settings as $module_slug => $module_settings) {
 			if ( empty( $module_settings ) || ! is_array( $module_settings ) ) {
+				continue;
+			}
+
+			// A section whose module is not in this build — stored by a higher
+			// edition before a downgrade — has no schema to redact it by, so its
+			// secrets would pass through whole. Withhold it: a fresh install of
+			// this edition never has it, and the apps already handle that.
+			if ( ! isset( $schema[ $module_slug ] ) ) {
+				unset( $settings[ $module_slug ] );
 				continue;
 			}
 			

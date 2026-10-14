@@ -133,6 +133,58 @@ class SSA_Utils {
 		return self::site_unique_hash( get_home_url() );
 	}
 
+	/**
+	 * Mint a random single-use nonce bound to the current user and an OAuth flow.
+	 *
+	 * @param string $flow 'zoom' | 'webex' | 'google'.
+	 * @return string The nonce, or '' when there is no logged-in user to bind it to.
+	 */
+	public static function mint_oauth_nonce( $flow ) {
+		if ( 0 === get_current_user_id() ) {
+			return '';
+		}
+
+		$nonce = wp_generate_password( 32, false, false );
+		set_transient( 'ssa_oauth_nonce_' . md5( $nonce ), array(
+			'user_id' => get_current_user_id(),
+			'flow'    => $flow,
+		), HOUR_IN_SECONDS );
+
+		return $nonce;
+	}
+
+	/**
+	 * Restore the user who started an OAuth flow, when the callback request arrives logged out.
+	 *
+	 * WordPress sets the login cookie host-only on the site URL host, so a callback
+	 * that runs on a different home URL host arrives with no logged-in user. The nonce
+	 * proves this request is the continuation of a flow a real user started, and restores
+	 * that user so every existing capability check runs unchanged.
+	 *
+	 * @param string $nonce
+	 * @param string $flow 'zoom' | 'webex' | 'google'.
+	 * @return void
+	 */
+	public static function restore_oauth_user( $nonce, $flow ) {
+		if ( ! is_string( $nonce ) || '' === $nonce ) {
+			return;
+		}
+
+		$key    = 'ssa_oauth_nonce_' . md5( $nonce );
+		$record = get_transient( $key );
+		delete_transient( $key );
+
+		if ( 0 !== get_current_user_id() ) {
+			return;
+		}
+
+		if ( ! is_array( $record ) || empty( $record['user_id'] ) || ! isset( $record['flow'] ) || $flow !== $record['flow'] ) {
+			return;
+		}
+
+		wp_set_current_user( (int) $record['user_id'] );
+	}
+
 	public static function is_assoc_array( array $arr ) {
 		if ( array() === $arr ) return false;
 		return array_keys( $arr ) !== range( 0, count( $arr ) - 1 );

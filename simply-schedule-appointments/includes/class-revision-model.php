@@ -424,6 +424,55 @@ class SSA_Revision_Model extends SSA_Db_Model {
 		return false;
 	}
 
+	/**
+	 * The listing follows the appointments visibility rule: a revision carries its
+	 * appointment's stored values, so it belongs to whoever may reach that
+	 * appointment. Scoped here, not in filter_where_conditions(), because the
+	 * internal revision queries (cleanup cron, purge) must keep seeing every row.
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 * @return WP_Error|WP_REST_Response
+	 */
+	public function get_items( $request ) {
+		$scope_sql = $this->get_rest_listing_scope_sql();
+		if ( '' !== $scope_sql ) {
+			$request->set_param( 'append_where_sql', $scope_sql );
+		}
+
+		return parent::get_items( $request );
+	}
+
+	/**
+	 * The WHERE fragment that narrows the REST listing to the revisions the
+	 * current caller may read. Empty when the caller may read every revision.
+	 *
+	 * @return string
+	 */
+	private function get_rest_listing_scope_sql() {
+		if ( current_user_can( 'ssa_manage_others_appointments' ) || current_user_can( 'ssa_manage_site_settings' ) ) {
+			return '';
+		}
+
+		$allowed = array();
+		if ( current_user_can( 'ssa_manage_appointments' ) ) {
+			// The same two steps the appointment model's own delete() runs to turn
+			// query args into its WHERE clause (customer_id lives in the filter).
+			$appointments = $this->plugin->appointment_model;
+			$visibility   = $appointments->get_current_user_visibility_query_args();
+			$where        = $appointments->filter_where_conditions( $appointments->db_where_conditions( $visibility ), $visibility );
+			$allowed[]    = '`appointment_id` IN (SELECT id FROM ' . $appointments->get_table_name() . ' WHERE 1=1' . $where . ')';
+		}
+		if ( current_user_can( 'ssa_manage_appointment_types' ) ) {
+			$allowed[] = '`appointment_id` = 0';
+		}
+
+		if ( empty( $allowed ) ) {
+			return ' AND 1=0 ';
+		}
+
+		return ' AND (' . implode( ' OR ', $allowed ) . ') ';
+	}
+
 	// TODO IMPORTANT: if each action only has one foreign id populated, 2 or more of the below where conditions will eliminate every result
 	public function filter_where_conditions( $where, $args ) {
 		global $wpdb;

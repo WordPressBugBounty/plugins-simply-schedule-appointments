@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.12.35
+Stable tag:        1.6.12.37
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,18 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.12.37 - 2026-10-13 =
+
+- Use add_block() when building the Google Calendar blocked schedule
+- Stop scripts planted in the debug log from running when the log is viewed
+- Return a zero rectangle from the checkbox and radio ripple adapters
+- Prevent saving customer information fields with an empty label or no values
+- Stop the booking shortcode minting an appointment edit token for anyone who can preview a draft
+- Check availability when a resource or team member is swapped without changing the time
+- Tighten who can read and change booking data over the REST API, and fix PayPal and Zoom errors, WooCommerce double bookings, the admin not loading, and field settings lost on downgrade
+- Sort Google Calendar blocks by start time before building the schedule
+- Stop the Contact Support form failing on PHP 7.4 and 8.0, and send the chosen time slot with Availability Detective tickets
+
 = 1.6.12.35 - 2026-09-29 =
 
 - Fix google calendar events with same start time
@@ -286,10 +298,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 - Fix appointment buffer times ignored on PHP 8.2+ (allowing back-to-back bookings) and customer data lost in backups; add PHP 8.4 support
 - Harden the Divi render-shortcode route with a capability-scoped shortcode allowlist
 - Fix stalled orphaned revision_meta cleanup (+ remove DUPLICATE BLOCK log noise)
-
-= 1.6.12.13 - 2026-07-21 =
-
-- Handle Google Calendar invalid_grant: stop dead-token retries and flag staff needing reconnect
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

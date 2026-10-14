@@ -40,6 +40,7 @@ class SSA_Upgrade {
 		'6.7.45', // Disable old booking app for all users
 		'6.8.1', // Update Google Calendar Quick Connect mode from saved dev settings
 		'6.8.6', // Notifications: update notification column schema in appointment types table
+		'6.12.35', // Rebuild rewrite rules so the anchored ssa-embed rule replaces the unanchored one
 	);
 
 	/**
@@ -292,11 +293,12 @@ class SSA_Upgrade {
 			$appointment_types[ $appointment_type_key ]['customer_information'] = array();
 			if ( ! empty( $appointment_type['custom_customer_information']['0']['field'] ) ) {
 				$schema = $appointment_type['custom_customer_information']['0'];
+				// keyed by field name, because stored paid lists can have gaps in their keys.
+				$paid_fields = array_column( $appointment_type['custom_customer_information'], null, 'field' );
 				foreach ( $field_conversion_map as $field_key => $field_value ) {
 					// check if we have this field set before so we can verify if it's set to display / require.
-					$existing_field_key = array_search( $field_value, array_column( $appointment_type['custom_customer_information'], 'field' ), true );
-					if ( false !== $existing_field_key ) {
-						$field = $appointment_type['custom_customer_information'][ $existing_field_key ];
+					if ( isset( $paid_fields[ $field_key ] ) ) {
+						$field = $paid_fields[ $field_key ];
 					} else {
 						$field = $field_conversion_map[ $field_key ];
 					}
@@ -1389,6 +1391,18 @@ class SSA_Upgrade {
 		}
 
 		$this->record_version( '6.8.6' );
+	}
+
+	/**
+	 * Drop the stored rewrite rules so WordPress rebuilds them with the
+	 * anchored ssa-embed rule. The old rule matched any address starting with
+	 * "ssa-embe". Deleting, rather than flushing here, lets WordPress rebuild
+	 * after every plugin has registered its rules.
+	 */
+	public function migrate_to_version_6_12_35() {
+		delete_option( 'rewrite_rules' );
+
+		$this->record_version( '6.12.35' );
 	}
 
 }

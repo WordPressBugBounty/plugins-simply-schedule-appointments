@@ -41,6 +41,24 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	const READ_ACCESS_FULL = 'full';
 
 	/**
+	 * The top-level keys a row served under READ_ACCESS_READ (the calendar-feed
+	 * token) may carry. A deny-list leaks every new field or relation until
+	 * someone remembers to add it here; this allow-list is rebuilt from
+	 * scratch instead, with `recursive` forced to 0 so no relation is ever
+	 * hydrated for this access level.
+	 *
+	 * @var string[]
+	 */
+	const READ_ONLY_FIELD_ALLOW_LIST = array(
+		'id',
+		'appointment_type_id',
+		'start_date',
+		'end_date',
+		'status',
+		'customer_information',
+	);
+
+	/**
 	 * Appointment ids the current user is assigned to as staff, keyed by user
 	 * id and fetched once per request (get_current_user_staff_appointment_ids).
 	 *
@@ -772,6 +790,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			'mysql_allow_null' => false,
 			'mysql_extra'      => '',
 			'cache_key'        => false,
+			'required_capability' => 'ssa_manage_appointments',
 		),
 		'google_calendar_event_id'        => array(
 			'field'            => 'google_calendar_event_id',
@@ -784,6 +803,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			'mysql_allow_null' => false,
 			'mysql_extra'      => '',
 			'cache_key'        => false,
+			'required_capability' => 'ssa_manage_appointments',
 		),
 		'web_meeting_password'            => array(
 			'field'            => 'web_meeting_password',
@@ -1037,37 +1057,15 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	 * Authorize bulk appointment updates. The base bulk route would otherwise
 	 * use create_item_permissions_check (which accepts the site-wide public
 	 * nonce exposed in every booking page); register_routes() above rewires
-	 * the route here. Require a capability that actually covers every
-	 * appointment the request tries to modify.
+	 * the route here. update_items() answers with every appointment on the
+	 * site, unscoped and outside the REST boundary, so only a caller who may
+	 * see every appointment may call it. Neither app calls this route.
 	 *
 	 * @param WP_REST_Request $request Full data about the request.
 	 * @return bool
 	 */
 	public function update_items_permissions_check( $request ) {
-		if ( current_user_can( 'ssa_manage_others_appointments' ) ) {
-			return true;
-		}
-
-		if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
-			return false;
-		}
-
-		$params = $request->get_params();
-		if ( empty( $params['items'] ) || ! is_array( $params['items'] ) ) {
-			return false;
-		}
-
-		$user_id = get_current_user_id();
-		foreach ( $params['items'] as $item ) {
-			if ( empty( $item['id'] ) ) {
-				return false;
-			}
-			if ( ! $this->plugin->staff_appointment_model->user_has_appointment_id( $user_id, (int) $item['id'] ) ) {
-				return false;
-			}
-		}
-
-		return true;
+		return current_user_can( 'ssa_manage_others_appointments' );
 	}
 
 	/**
@@ -1154,8 +1152,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			$args = shortcode_atts( array(
 				'cache_level_read'  => false, // check the database, bypass cache
 				'cache_level_write' => false, // don't cache the narrow-range query
-	
+
 				'excluded_appointment_ids' => array(),
+				// shortcode_atts() drops unlisted keys, so a rule a caller may switch off has to be listed here
+				'appointment_type.min_booking_notice' => true,
 			), $args );
 
 
@@ -1184,7 +1184,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		
 		if ( ! empty( $params['fetch'] ) && ! empty( $response->data['data']['id'] ) ) {
 			$appointment_object     = new SSA_Appointment_Object( $response->data['data']['id'] );
-			$response->data['data'] = $appointment_object->get_data( 0, $params['fetch'] );
+			$response->data['data'] = $this->redact_capability_gated_fields( $appointment_object->get_data( 0, $params['fetch'] ) );
 		}
 		
 		return $response;
@@ -1463,7 +1463,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		}
 
 		$appointment_object     = new SSA_Appointment_Object( $response->data['data']['id'] );
-		$response->data['data'] = $appointment_object->get_data( 0, $params['fetch'] );
+		$response->data['data'] = $this->redact_capability_gated_fields( $appointment_object->get_data( 0, $params['fetch'] ) );
 
 		if ( $trapped_booking && isset( $response->data['data'] ) && is_array( $response->data['data'] ) ) {
 			// Mirror a real booking in the response body so the throttle is
@@ -1669,7 +1669,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$response = new WP_REST_Response( $response_array, 200 );
 
 		$appointment_object     = new SSA_Appointment_Object( $item_id );
-		$response->data['data'] = $appointment_object->get_data( 0, $params['fetch'] );
+		$response->data['data'] = $this->redact_capability_gated_fields( $appointment_object->get_data( 0, $params['fetch'] ) );
 
 		if ( is_a( $response->data['data'], 'WP_Error' ) ) {
 			return $response;
@@ -2061,27 +2061,48 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	/**
 	 * Permission check for the group-cancel endpoint.
 	 *
-	 * Unlike purge, this is scoped to one group: group_cancel() only touches rows
-	 * whose group_id matches the route id, and a group's group_id defaults to its
-	 * lead appointment's own id (see create_item). So it is gated like a single
-	 * appointment via get_item_permissions_check — a manager capability, or
-	 * verified ownership of the group through the lead appointment (staff
-	 * assignment, customer account, or that appointment's id_token). That gate
-	 * does not accept the global token or public_read_access_token, so the weak
-	 * site-wide signals stay out while legitimate staff and owner group management
-	 * keeps working. Kept separate from group_delete so the two can diverge.
+	 * group_cancel() touches every row whose group_id matches the route id —
+	 * the other attendees' bookings included — and a group's group_id defaults
+	 * to its lead appointment's own id (see create_item). So owning the lead
+	 * appointment (its customer account or its id_token) is not enough: that
+	 * proves the right to change one appointment, not the group. Unlike
+	 * get_item_permissions_check, the customer-owns-the-appointment branch is
+	 * deliberately excluded here: a customer who is also one of the group's
+	 * attendees is not entitled to cancel or delete the other attendees'
+	 * bookings just because they own the lead appointment's row. The caller
+	 * must hold ssa_manage_others_appointments, or hold ssa_manage_appointments
+	 * and be the staff member assigned to the lead appointment. The site-wide
+	 * tokens stay out as before. Kept separate from group_delete so the two
+	 * can diverge.
 	 */
 	public function group_cancel_permissions_check( $request ) {
-		return $this->get_item_permissions_check( $request );
+		if ( current_user_can( 'ssa_manage_others_appointments' ) ) {
+			return true;
+		}
+
+		if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
+			return false;
+		}
+
+		return true === $this->plugin->staff_appointment_model->user_has_appointment_id( get_current_user_id(), (int) $request['id'] );
 	}
 
 	/**
-	 * Permission check for the group-delete endpoint. Same group-scoped gate as
-	 * group_cancel_permissions_check (see there for why) — kept separate so the
-	 * two can diverge. Deletes every appointment in the group named by the route id.
+	 * Permission check for the group-delete endpoint. Same gate as
+	 * group_cancel_permissions_check (see there for why the customer branch is
+	 * excluded) — kept separate so the two can diverge. Deletes every
+	 * appointment in the group named by the route id.
 	 */
 	public function group_delete_permissions_check( $request ) {
-		return $this->get_item_permissions_check( $request );
+		if ( current_user_can( 'ssa_manage_others_appointments' ) ) {
+			return true;
+		}
+
+		if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
+			return false;
+		}
+
+		return true === $this->plugin->staff_appointment_model->user_has_appointment_id( get_current_user_id(), (int) $request['id'] );
 	}
 
 	public function get_item_permissions_check( $request ) {
@@ -2366,7 +2387,19 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		$item = parent::prepare_item_for_api_response( $item, $recursive, $request );
 		if ( self::READ_ACCESS_READ === $access ) {
-			unset( $item['public_token'], $item['public_edit_url'] );
+			// Read access is a calendar's: dates, attendees, status. Every other
+			// field or relation (the edit token/URL, payment records — a Stripe
+			// gateway response carries the PaymentIntent client secret — stored
+			// meta, revisions) belongs to whoever may edit the row, so the row
+			// is rebuilt from an explicit allow-list instead of unsetting the
+			// fields known to be sensitive today.
+			$item = array_intersect_key( $item, array_flip( self::READ_ONLY_FIELD_ALLOW_LIST ) );
+
+			if ( isset( $item['customer_information']['Name'] ) ) {
+				$item['customer_information'] = array( 'Name' => $item['customer_information']['Name'] );
+			} else {
+				unset( $item['customer_information'] );
+			}
 		}
 
 		return $item;
@@ -2470,12 +2503,21 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 	 * the type's has_many and loads every appointment of that type into memory
 	 * before the boundary withholds them — the load the public types listing
 	 * strips `recursive` to avoid, reached through the appointment routes. A
-	 * caller without a manage-appointments capability is held to depth 1.
+	 * caller without a manage-appointments capability is held to depth 1 — except
+	 * the calendar-feed token, which is rebuilt from an allow-list with no
+	 * relations, so it is held to depth 0 instead: no relation is hydrated at
+	 * any depth for that access level.
 	 */
 	private function cap_recursive_depth( WP_REST_Request $request ) {
 		if ( empty( $request['recursive'] ) || current_user_can( 'ssa_manage_appointments' ) || current_user_can( 'ssa_manage_others_appointments' ) ) {
 			return;
 		}
+
+		if ( $this->public_read_access_token_permissions_check( $request ) ) {
+			$request->set_param( 'recursive', 0 );
+			return;
+		}
+
 		$request->set_param( 'recursive', min( 1, (int) $request['recursive'] ) );
 	}
 
@@ -2687,14 +2729,17 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		$rescheduled_from_appointment_id = $data['rescheduled_from_appointment_id'];
 
 		if ( $rescheduled_from_appointment_id ) {
-			// Get Payment ID of Previous Appointment
-			$payments = $this->plugin->payment_model->query( array(
-				'appointment_id' => $rescheduled_from_appointment_id,
-			) );
+			// Plus and Basic strip the payments files
+			if ( '' !== $this->get_dependency_table_name( $this->plugin->payment_model ) ) {
+				// Get Payment ID of Previous Appointment
+				$payments = $this->plugin->payment_model->query( array(
+					'appointment_id' => $rescheduled_from_appointment_id,
+				) );
 
-			foreach ($payments as $key => $payment) {
-				// Update Associated Payments to Point to New Appointment
-				$this->plugin->payment_model->update( $payment["id"], ["appointment_id" => $appointment_id] );
+				foreach ($payments as $key => $payment) {
+					// Update Associated Payments to Point to New Appointment
+					$this->plugin->payment_model->update( $payment["id"], ["appointment_id" => $appointment_id] );
+				}
 			}
 
 			$this->update(

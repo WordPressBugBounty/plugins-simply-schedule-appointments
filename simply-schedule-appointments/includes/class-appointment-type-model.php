@@ -51,6 +51,7 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 		add_filter( 'ssa/appointment_type/prepare_item_for_response', array( $this, 'set_default_attributes' ), 100);
 		
 		add_filter( 'ssa/appointment_type/before_update', array( $this, 'recheck_capacity_settings'), 10, 3 );
+		add_filter( 'ssa/appointment_type/before_update', array( $this, 'keep_stored_calendar_on_masked_update'), 10, 3 );
 		add_action( 'ssa/settings/staff/updated', array( $this, 'recheck_appointment_types_capacity_staff_toggled' ), 10, 2 );
 		add_action( 'ssa/settings/resources/updated', array( $this, 'recheck_appointment_types_capacity_resources_toggled' ), 10, 2 );
 		add_action( 'ssa/staff/after_update', array( $this, 'invalidate_appointment_type_cache'), 1000 );
@@ -1032,6 +1033,36 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 	}
 
 	/**
+	 * Booking-page visitors read this model through the listing. Three values
+	 * name the owner's accounts: the Google calendar ids, the web-meeting
+	 * settings, and google_calendar_booking, usually the owner's Gmail address,
+	 * of which the booking app only asks whether one is set. They stay with
+	 * callers who manage appointments or edit appointment types; editors need
+	 * the stored values because the type editor saves the whole type back, and
+	 * a redacted read would be written over the real one. The hydrated Author
+	 * row is a WP user record the booking app never reads.
+	 */
+	public function prepare_item_for_api_response( $item, $recursive = 0, $request = null ) {
+		$item = parent::prepare_item_for_api_response( $item, $recursive, $request );
+		if ( null === $item ) {
+			return $item;
+		}
+
+		if ( ! current_user_can( 'ssa_manage_appointments' ) && ! current_user_can( 'ssa_manage_others_appointments' ) && ! current_user_can( 'ssa_manage_appointment_types' ) ) {
+			unset( $item['google_calendars_availability'], $item['web_meetings'] );
+			if ( ! empty( $item['google_calendar_booking'] ) ) {
+				$item['google_calendar_booking'] = 'connected';
+			}
+		}
+
+		if ( ! current_user_can( 'ssa_manage_others_appointments' ) ) {
+			unset( $item['Author'] );
+		}
+
+		return $item;
+	}
+
+	/**
 	 * Get a collection of items
 	 *
 	 * @param WP_REST_Request $request Full data about the request.
@@ -1069,8 +1100,8 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			}
 		}
 	
-		// Appointment rows hydrated under a type by `recursive` cross the
-		// appointment model's REST boundary here; type rows pass unchanged.
+		// Type rows cross this model's REST boundary here, and appointment rows
+		// hydrated under a type by `recursive` cross the appointment model's.
 		$response = array(
 			'response_code' => 200,
 			'error' => '',
@@ -1532,7 +1563,22 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 		}
 		// else - do nothing
 		// if no team & no resources (on the type itself) → capacity stays at the set value
-		
+
+		return $data;
+	}
+
+	/**
+	 * Callers who neither manage appointments nor edit types receive
+	 * google_calendar_booking as the masked literal 'connected'
+	 * (prepare_item_for_api_response above). If a save carries that mask back,
+	 * treat it as "unchanged" and keep the stored calendar id instead of
+	 * overwriting it with the placeholder.
+	 */
+	public function keep_stored_calendar_on_masked_update( $data, $data_before, $appointment_type_id ) {
+		if ( isset( $data['google_calendar_booking'] ) && 'connected' === $data['google_calendar_booking'] ) {
+			unset( $data['google_calendar_booking'] );
+		}
+
 		return $data;
 	}
 }

@@ -1727,6 +1727,8 @@ $translations = array (
       'errors' => 
       array (
         'label' => __( 'Label is already taken', 'simply-schedule-appointments' ),
+        'label_required' => __( 'Label is required', 'simply-schedule-appointments' ),
+        'values_required' => __( 'At least one value is required', 'simply-schedule-appointments' ),
       ),
     ),
     'mailchimp' => 

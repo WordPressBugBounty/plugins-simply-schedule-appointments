@@ -61,7 +61,7 @@ class SSA_Debug {
 			$settings = $settings[sanitize_text_field( wp_unslash( $_GET['ssa-debug-settings'] ) )];
 		}
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
-		echo '<pre>'.print_r($settings, true).'</pre>'; // phpcs:ignore
+		echo '<pre>' . htmlspecialchars( print_r( $settings, true ), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ) . '</pre>'; // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r, Generic.PHP.ForbiddenFunctions.Found, WordPress.Security.EscapeOutput.OutputNotEscaped -- Deliberate debug dump for ssa_manage_site_settings holders, escaped by htmlspecialchars(); esc_html() returns '' on invalid UTF-8.
 		exit;
 	}
 
@@ -88,11 +88,38 @@ class SSA_Debug {
 
 		$path = $this->plugin->support_status->get_log_file_path( 'debug' );
 		if ( file_exists( $path ) && is_readable( $path ) ) {
-			$content = file_get_contents( $path );
-			echo '<pre>'.print_r($content, true).'</pre>'; // phpcs:ignore
+			self::print_escaped_log( $path );
 			exit;
 		}
 
+	}
+
+	/**
+	 * Prints a log file as text inside <pre>. Log lines carry visitor input (e.g. a
+	 * rejected appointment status), so they must never be parsed as HTML.
+	 *
+	 * Streams line by line because the log has no size cap. ENT_SUBSTITUTE keeps a
+	 * log with invalid UTF-8 readable, where esc_html() would blank all of it.
+	 *
+	 * @param string $path Log file path.
+	 */
+	public static function print_escaped_log( $path ) {
+		// phpcs:disable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Streams the plugin's own log file; WP_Filesystem has no line-by-line reader.
+		$handle = fopen( $path, 'r' );
+		if ( false === $handle ) {
+			return;
+		}
+
+		echo '<pre>';
+		$line = fgets( $handle );
+		while ( false !== $line ) {
+			echo htmlspecialchars( $line, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by htmlspecialchars(); esc_html() returns '' on invalid UTF-8.
+			$line = fgets( $handle );
+		}
+		echo '</pre>';
+
+		fclose( $handle );
+		// phpcs:enable WordPress.WP.AlternativeFunctions.file_system_operations_fopen, WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 	}
 
 	public static function get_site_unique_hash_for_debug_logs() {

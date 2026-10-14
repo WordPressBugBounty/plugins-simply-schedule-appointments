@@ -83,14 +83,27 @@ public function get_embed_code($request)
     // fresh valid id-token for any id and embed it into the iframe URL — an
     // unauthenticated attacker could then iterate sequential ids and call
     // /appointments/{id} and /appointments/{id}/delete with the minted token.
-    // Admins with ssa_manage_appointments can still load any appointment
-    // without presenting a token, since they can mint one via the admin app.
+    // Admins with ssa_manage_others_appointments can still load any
+    // appointment without presenting a token, since they can mint one via
+    // the admin app. A caller with only ssa_manage_appointments (any team
+    // member) must additionally be assigned to that appointment — otherwise
+    // any team member could mint a working edit token for an appointment
+    // they cannot see, by id alone.
     if ( ! empty( $att['edit'] ) ) {
       $appointment_id = sanitize_text_field( $att['edit'] );
       $inbound_token  = isset( $params['token'] ) ? sanitize_text_field( $params['token'] ) : '';
       $owner_proven   = ! empty( $inbound_token ) && ssa()->appointment_model->verify_id_token( $appointment_id, $inbound_token );
 
-      if ( ! $owner_proven && ! current_user_can( 'ssa_manage_appointments' ) ) {
+      if ( $owner_proven ) {
+        // Forwarded so SSA_Shortcodes::scope_edit_att() can see the same proof.
+        $att['token'] = $inbound_token;
+      }
+
+      $may_manage = current_user_can( 'ssa_manage_others_appointments' )
+        || ( current_user_can( 'ssa_manage_appointments' )
+          && true === ssa()->staff_appointment_model->user_has_appointment_id( get_current_user_id(), (int) $appointment_id ) );
+
+      if ( ! $owner_proven && ! $may_manage ) {
         unset( $att['edit'] );
       }
     }

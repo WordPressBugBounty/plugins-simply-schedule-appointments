@@ -145,7 +145,7 @@ class SSA_Shortcodes {
 	}
 
 	public function custom_rewrite_basic() {
-		add_rewrite_rule( '^ssa-embed?', 'index.php?ssa_embed=yes', 'top' );
+		add_rewrite_rule( '^ssa-embed/?$', 'index.php?ssa_embed=yes', 'top' );
 	}
 
 	public function register_query_var( $vars ) {
@@ -233,7 +233,7 @@ class SSA_Shortcodes {
 		}
 
 		global $wp;
-		if ( ! empty( $wp->matched_rule ) && $wp->matched_rule === '^ssa-embed?' ) {
+		if ( ! empty( $wp->matched_rule ) && $wp->matched_rule === '^ssa-embed/?$' ) {
 			return true;
 		}
 
@@ -282,8 +282,9 @@ class SSA_Shortcodes {
 		}
 
 		add_filter( 'show_admin_bar', '__return_false' );
-		global $ssa_current_appointment_id;
-		$ssa_current_appointment_id = $appointment_id;
+		global $ssa_current_appointment_id, $ssa_current_appointment_token;
+		$ssa_current_appointment_id    = $appointment_id;
+		$ssa_current_appointment_token = $provided_hash;
 		return $this->plugin->dir( 'booking-app-new/page-appointment-edit.php' );
 	}
 
@@ -336,8 +337,9 @@ class SSA_Shortcodes {
 		}
 
 		add_filter( 'show_admin_bar', '__return_false' );
-		global $ssa_current_appointment_id;
-		$ssa_current_appointment_id = $appointment_id;
+		global $ssa_current_appointment_id, $ssa_current_appointment_token;
+		$ssa_current_appointment_id    = $appointment_id;
+		$ssa_current_appointment_token = $provided_hash;
 
 		return $this->plugin->dir( 'booking-app-new/page-appointment-edit.php' );
 	}
@@ -500,7 +502,10 @@ class SSA_Shortcodes {
 		$appointment = new SSA_Appointment_Object( $appointment_id );
 		$customer_locale = $appointment->customer_locale;
 
-		$atts = array( 'edit' => $appointment_id );
+		$atts = array(
+			'edit'  => $appointment_id,
+			'token' => $appointment_token,
+		);
 		
 		if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
 			if ( ! empty( $customer_locale ) ) {
@@ -530,6 +535,98 @@ class SSA_Shortcodes {
 		return $this->ssa_booking( $atts );
 	}
 
+	/**
+	 * Drops `edit` unless the caller can already reach that appointment.
+	 *
+	 * ssa_booking() mints the appointment's id-token from `edit` alone and puts it
+	 * in the iframe URL, and that token authorizes read, update and delete on
+	 * /ssa/v1/appointments/<id>. Without this, any role that can preview a post --
+	 * Contributor by default -- could put [ssa_booking edit="<id>"] in a draft and
+	 * harvest a working token for any appointment id (Patchstack, 2026).
+	 *
+	 * The check sits at the sink, so every caller of ssa_booking() passes through it.
+	 * Open follow-up: https://app.asana.com/1/1992899177764/project/351348922863100/task/1219191850738304
+	 *
+	 * @param array $atts Raw atts, before shortcode_atts() drops `token`.
+	 * @return array
+	 */
+	protected function scope_edit_att( $atts ) {
+		if ( ! is_array( $atts ) || empty( $atts['edit'] ) ) {
+			return $atts;
+		}
+
+		$appointment_id = (int) sanitize_text_field( $atts['edit'] );
+		$supplied_token = isset( $atts['token'] ) ? $atts['token'] : '';
+
+		if ( $appointment_id <= 0 || ! $this->may_load_appointment_for_edit( $appointment_id, $supplied_token ) ) {
+			unset( $atts['edit'], $atts['token'] );
+		}
+
+		return $atts;
+	}
+
+	/**
+	 * Prove the appointment's own token, hold ssa_manage_others_appointments, or be
+	 * the team member assigned to it.
+	 *
+	 * The embed route runs the same check before it renders through here; this is
+	 * the one that binds.
+	 *
+	 * @param int    $appointment_id Appointment being asked for.
+	 * @param string $supplied_token Token the caller presented, if any.
+	 * @return bool
+	 */
+	protected function may_load_appointment_for_edit( $appointment_id, $supplied_token ) {
+		if ( $this->token_proves_appointment( $appointment_id, $supplied_token ) ) {
+			return true;
+		}
+
+		if ( current_user_can( 'ssa_manage_others_appointments' ) ) {
+			return true;
+		}
+
+		if ( ! current_user_can( 'ssa_manage_appointments' ) ) {
+			return false;
+		}
+
+		// staff_appointment_model ships only in Business; elsewhere the SSA_Missing
+		// stub answers null, which this comparison refuses.
+		return true === $this->plugin->staff_appointment_model->user_has_appointment_id( get_current_user_id(), $appointment_id );
+	}
+
+	/**
+	 * Two shapes, and only these two.
+	 *
+	 * With the appointment id appended: the form integrations (class-gravityforms.php,
+	 * formidable/front-end-field.php) and ssa_confirmation(), which forwards the whole
+	 * appointment_token. Tightening this to the bare form alone would break the
+	 * confirmation page for every completed booking.
+	 *
+	 * Bare: the embed route, and the emailed edit-link page via
+	 * $ssa_current_appointment_token.
+	 *
+	 * @param int    $appointment_id Appointment being asked for.
+	 * @param string $supplied_token Token the caller presented, if any.
+	 * @return bool
+	 */
+	protected function token_proves_appointment( $appointment_id, $supplied_token ) {
+		if ( ! is_string( $supplied_token ) || '' === $supplied_token ) {
+			return false;
+		}
+
+		$supplied_token = sanitize_text_field( $supplied_token );
+		$correct_token  = $this->plugin->appointment_model->get_id_token( $appointment_id );
+
+		if ( empty( $correct_token ) ) {
+			return false;
+		}
+
+		// Matched whole rather than by prefix: trailing bytes beyond the id are
+		// not a shape any caller sends, so they are refused rather than ignored.
+		return hash_equals( (string) $correct_token, $supplied_token )
+			|| hash_equals( (string) $correct_token . (string) $appointment_id, $supplied_token );
+	}
+
 	public function ssa_booking( $atts, $is_embedded_page = false ) {
 		// sanitize all atts
 		$atts = array_map( 'sanitize_text_field', $atts );
@@ -538,6 +635,9 @@ class SSA_Shortcodes {
 		if ( is_array( $atts ) && in_array( 'defer', $atts, true ) ) {
 			$atts['defer'] = '1';
 		}
+
+		// Before shortcode_atts(), which drops `token`: it is not a declared att.
+		$atts = $this->scope_edit_att( $atts );
 
 		$atts = shortcode_atts( $this->get_ssa_booking_arg_defaults(), $atts, 'ssa_booking' );
 		$atts = apply_filters( 'ssa_booking_shortcode_atts', $atts );

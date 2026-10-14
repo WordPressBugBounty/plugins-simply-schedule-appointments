@@ -192,20 +192,7 @@ abstract class TD_API_Model extends TD_Model {
 	 * @return array|null
 	 */
 	public function prepare_item_for_api_response( $item, $recursive=0, $request = null ) {
-		$keys_to_redact = array();
-		foreach ($item as $key => $value) {
-			if ( empty( $this->schema[$key]['required_capability'] ) ) {
-				continue;
-			}
-
-			if ( current_user_can( $this->schema[$key]['required_capability'] ) ) {
-				continue;
-			}
-
-			$keys_to_redact[$key] = $key;
-		}
-
-		$item = array_diff_key( $item, $keys_to_redact );
+		$item = $this->redact_capability_gated_fields( $item );
 
 		foreach ( $this->has_many() as $key => $relationship ) {
 			$model = self::boundary_model( $relationship );
@@ -223,6 +210,36 @@ abstract class TD_API_Model extends TD_Model {
 		}
 
 		return $item;
+	}
+
+	/**
+	 * Drops every field whose schema `required_capability` the current user
+	 * lacks. A response built outside prepare_item_for_api_response() runs
+	 * this too, so the field gate has no bypass. Anything but an array (a
+	 * WP_Error) passes through.
+	 *
+	 * @param mixed $item
+	 * @return mixed
+	 */
+	protected function redact_capability_gated_fields( $item ) {
+		if ( ! is_array( $item ) ) {
+			return $item;
+		}
+
+		$keys_to_redact = array();
+		foreach ($item as $key => $value) {
+			if ( empty( $this->schema[$key]['required_capability'] ) ) {
+				continue;
+			}
+
+			if ( current_user_can( $this->schema[$key]['required_capability'] ) ) {
+				continue;
+			}
+
+			$keys_to_redact[$key] = $key;
+		}
+
+		return array_diff_key( $item, $keys_to_redact );
 	}
 
 	/**
