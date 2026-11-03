@@ -41,6 +41,7 @@ class SSA_Upgrade {
 		'6.8.1', // Update Google Calendar Quick Connect mode from saved dev settings
 		'6.8.6', // Notifications: update notification column schema in appointment types table
 		'6.12.35', // Rebuild rewrite rules so the anchored ssa-embed rule replaces the unanchored one
+		'6.12.39', // Empty the availability cache once, so schedules saved by earlier versions are rebuilt
 	);
 
 	/**
@@ -1403,6 +1404,16 @@ class SSA_Upgrade {
 		delete_option( 'rewrite_rules' );
 
 		$this->record_version( '6.12.35' );
+	}
+
+	/**
+	 * Empty the availability cache once. The cache table isn't keyed by plugin version, so schedules saved by
+	 * earlier versions would otherwise be served by this one until something invalidates them.
+	 */
+	public function migrate_to_version_6_12_39() {
+		$this->plugin->availability_cache_invalidation->invalidate_everything();
+
+		$this->record_version( '6.12.39' );
 	}
 
 }

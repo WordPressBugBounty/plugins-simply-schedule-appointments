@@ -1,5 +1,11 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.13.0 - 2026-10-29
+
+### Fixes
+
+- Booking pages show available times instantly again, and visitors can't book a team member who's already booked
+
 ## SSA-VERSION-PREFIX.6.12.37 - 2026-10-13
 
 ### Fixes

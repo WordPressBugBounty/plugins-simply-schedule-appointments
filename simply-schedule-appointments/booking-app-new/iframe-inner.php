@@ -456,7 +456,8 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     var ssa_token = '<?php echo isset( $_GET['token'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['token'] ) ) ) : '' ?>'
     var ssa_embed_settings = <?php echo json_encode(array("redirect_post_id" => isset($_GET['redirect_post_id'])? sanitize_text_field( wp_unslash( $_GET['redirect_post_id'] ) ): '', "redirect_url" => isset($_GET['redirect_post_id'])? get_permalink(sanitize_text_field( wp_unslash( $_GET['redirect_post_id'] ) )): '')); ?>;
     var ssa_availability_edge_cache_timestamp = <?php echo json_encode(gmdate("Y-m-d H:i:s")) ?>;
-    var ssa_availability_edge_cache = <?php echo json_encode( ssa_cache_get( 'booking_app_availability_edge_cache' ) ); ?>;
+    var ssa_availability_edge_cache_max_age = <?php echo (int) $ssa->appointment_type_model->get_booking_app_availability_edge_cache_page_max_age(); ?>;
+    var ssa_availability_edge_cache = <?php echo json_encode( (object) $ssa->appointment_type_model->get_booking_app_availability_edge_cache() ); ?>;
     var ssa_availability_query_args = <?php echo json_encode( SSA_Availability_Query::get_default_args() ); ?>;
     var ssa_defer_init = <?php echo ! empty( $_GET['defer'] ) ? 'true' : 'false'; ?>;
     var ssa_hide_header = <?php echo ! empty( $_GET['hide_header'] ) ? 'true' : 'false'; ?>;

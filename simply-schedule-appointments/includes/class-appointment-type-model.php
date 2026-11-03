@@ -1323,7 +1323,6 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 
 		// $schedule = $appointment_type->get_schedule( $period );
 		$time_start = microtime( true );
-		$args = array_merge( $params , $args);
 		$availability_query = new SSA_Availability_Query(
 			$appointment_type,
 			$period,
@@ -1334,15 +1333,35 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 			sleep( 4 ); // avoid the stampede on this specific query
 		}
 		$bookable_start_datetime_strings = $availability_query->get_bookable_appointment_start_datetime_strings();
-		$booking_app_availability_cache = ssa_cache_get( 'booking_app_availability_edge_cache' );
-		if ( empty( $booking_app_availability_cache ) ) {
-			$booking_app_availability_cache = array();
+		$edge_cache_max_age = $this->get_booking_app_availability_edge_cache_max_age();
+		// Member-specific availability is never read from the edge cache by the booking app, so keep it out of the
+		// shared cache that's printed on every booking page
+		if ( empty( $args['mepr_membership_id'] ) && $edge_cache_max_age > 0 ) {
+			// Not the old name: plugin code from before {time, slots} entries prints anything stored there as plain slots
+			$booking_app_availability_cache = ssa_cache_get( 'booking_app_availability_edge_cache_v2' );
+			if ( ! is_array( $booking_app_availability_cache ) ) {
+				$booking_app_availability_cache = array();
+			}
+			$query_hash = $availability_query->get_query_hash();
+			$stored_entry = isset( $booking_app_availability_cache[ $query_hash ] ) ? $booking_app_availability_cache[ $query_hash ] : null;
+			// Saving rewrites the whole cache, so an entry that still holds these slots is only saved again once it's
+			// halfway to max age. Keeping its older time can only make it expire sooner.
+			$is_stored_entry_current = isset( $stored_entry['time'], $stored_entry['slots'] )
+				&& $stored_entry['slots'] === $bookable_start_datetime_strings
+				// Not dated in the future either, as after the server clock was set back
+				&& time() >= $stored_entry['time']
+				&& time() - $stored_entry['time'] < $edge_cache_max_age / 2;
+			if ( ! $is_stored_entry_current ) {
+				// Moved to the end, so the oldest entry is always first
+				unset( $booking_app_availability_cache[ $query_hash ] );
+				$booking_app_availability_cache[ $query_hash ] = array(
+					'time' => time(),
+					'slots' => $bookable_start_datetime_strings,
+					'bytes' => strlen( wp_json_encode( $bookable_start_datetime_strings ) ),
+				);
+				ssa_cache_set( 'booking_app_availability_edge_cache_v2', $this->trim_booking_app_availability_edge_cache( $booking_app_availability_cache ) );
+			}
 		}
-		if ( count( $booking_app_availability_cache ) > 100 ) {
-			array_shift( $booking_app_availability_cache );
-		}
-		$booking_app_availability_cache[$availability_query->get_query_hash()] = $bookable_start_datetime_strings;
-		ssa_cache_set( 'booking_app_availability_edge_cache', $booking_app_availability_cache  );
 		// ssa_debug_log( microtime( true ) - $time_start, 10, 'get_availability_query', 'query_time' );
 		// $min_booking_notice = $appointment_type->__get( 'min_booking_notice' );
 		// $max_booking_notice = $appointment_type->__get( 'max_booking_notice' );
@@ -1381,6 +1400,88 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 		);
 
 		return $response;
+	}
+
+	/**
+	 * How old (seconds) an availability result in the edge cache may be when a booking page prints it.
+	 * The page then uses it for up to get_booking_app_availability_edge_cache_page_max_age() more.
+	 * Bookings are re-validated on insert, so a stale slot leads to a time conflict message, not a double booking.
+	 *
+	 * @return int 0 disables the edge cache (also when availability caching is disabled in developer settings)
+	 */
+	public function get_booking_app_availability_edge_cache_max_age() {
+		// Settings -> Developer -> Disable availability caching turns the edge cache off too, e.g. while working on availability
+		if ( ! $this->plugin->availability_cache->is_enabled() ) {
+			return 0;
+		}
+
+		return (int) apply_filters( 'ssa/booking_app/availability_edge_cache/max_age', 5 * MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * How long (seconds) after a booking page was printed the booking app may keep using its edge cache, as before 6.8.3.
+	 *
+	 * @return int never more than the max age, so 0 when the edge cache is off
+	 */
+	public function get_booking_app_availability_edge_cache_page_max_age() {
+		return min( MINUTE_IN_SECONDS, $this->get_booking_app_availability_edge_cache_max_age() );
+	}
+
+	/**
+	 * Recent availability results for the booking app, keyed by SSA_Availability_Query::get_query_hash(),
+	 * leaving out entries computed longer than max age ago or dated in the future.
+	 *
+	 * @return array query hash => bookable start datetime strings
+	 */
+	public function get_booking_app_availability_edge_cache() {
+		$max_age = $this->get_booking_app_availability_edge_cache_max_age();
+		$cache = ssa_cache_get( 'booking_app_availability_edge_cache_v2' );
+		if ( $max_age <= 0 || empty( $cache ) || ! is_array( $cache ) ) {
+			return array();
+		}
+
+		$fresh = array();
+		foreach ( $cache as $hash => $entry ) {
+			// Entries written before entries carried a time are treated as expired, and so are entries dated in the
+			// future, as after the server clock was set back
+			if ( ! isset( $entry['time'], $entry['slots'] ) || time() < $entry['time'] || time() - $entry['time'] >= $max_age ) {
+				continue;
+			}
+			$fresh[ $hash ] = $entry['slots'];
+		}
+
+		return $fresh;
+	}
+
+	/**
+	 * Keeps the edge cache small enough to store and to print on every booking page: drops entries older than
+	 * max age or dated in the future, then the oldest ones, until at most 100 entries and the size limit are left.
+	 *
+	 * @param array $cache query hash => entry, oldest first
+	 * @return array
+	 */
+	private function trim_booking_app_availability_edge_cache( $cache ) {
+		$max_age = $this->get_booking_app_availability_edge_cache_max_age();
+		$max_bytes = (int) apply_filters( 'ssa/booking_app/availability_edge_cache/max_bytes', 512 * KB_IN_BYTES );
+
+		$bytes = 0;
+		foreach ( $cache as $hash => $entry ) {
+			// An entry too big to print on its own is dropped by itself, so it can't push every other entry out first
+			if ( ! isset( $entry['time'], $entry['bytes'] ) || time() < $entry['time'] || time() - $entry['time'] >= $max_age || $entry['bytes'] > $max_bytes ) {
+				unset( $cache[ $hash ] );
+				continue;
+			}
+			$bytes += $entry['bytes'];
+		}
+
+		while ( ! empty( $cache ) && ( count( $cache ) > 100 || $bytes > $max_bytes ) ) {
+			reset( $cache );
+			$oldest = key( $cache );
+			$bytes -= $cache[ $oldest ]['bytes'];
+			unset( $cache[ $oldest ] );
+		}
+
+		return $cache;
 	}
 
 	public function get_all_appointment_types() {

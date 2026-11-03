@@ -1143,6 +1143,27 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		return true;
 	}
 
+	/**
+	 * Whether every team member the booking names is free at its time. The type check above doesn't look at who was picked.
+	 */
+	private function are_picked_staff_available( SSA_Appointment_Type_Object $appointment_type, SSA_Appointment_Object $appointment, $staff_ids ) {
+		if ( empty( $staff_ids ) || ! class_exists( 'SSA_Staff_Object' ) || ! $this->plugin->settings_installed->is_enabled( 'staff' ) ) {
+			return true;
+		}
+
+		$type_staff_ids = (array) $this->plugin->staff_appointment_type_model->get_staff_ids_for_appointment_type_id( $appointment_type->id );
+		foreach ( (array) $staff_ids as $staff_id ) {
+			if ( ! in_array( (int) $staff_id, $type_staff_ids, true ) ) {
+				return false; // not a team member of this appointment type
+			}
+			if ( ! ( new SSA_Staff_Object( (int) $staff_id ) )->is_appointment_period_available( $appointment, $appointment_type ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	public function is_prospective_appointment_available( SSA_Appointment_Type_Object $appointment_type, DateTimeImmutable $start_date, $args = array() ) {
 			$period = new Period(
 				$start_date->sub( $appointment_type->get_buffered_duration_interval() ),
@@ -1354,6 +1375,15 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				'start_date' => $start_date->format( 'Y-m-d H:i:s' ),
 			)
 		);
+		if ( ! $this->is_privileged_appointment_request() && ! $this->are_picked_staff_available( $appointment_type, $prospective_appointment, $params['staff_ids'] ) ) {
+			return array(
+				'error' => array(
+					'code'    => 'appointment_unavailable',
+					'message' => __( 'Sorry, that time was just booked and is no longer available', 'simply-schedule-appointments' ),
+					'data'    => array(),
+				),
+			);
+		}
 		$params['end_date']      = $prospective_appointment->end_date;
 		// if ( apply_filters( 'ssa/scalability/preemptively_clear_cache', false ) ) {
 		// $this->plugin->availability_cache_invalidation->invalidate_prospective_appointment( $prospective_appointment );

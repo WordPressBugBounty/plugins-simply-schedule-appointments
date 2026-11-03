@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.12.37
+Stable tag:        1.6.13.0
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,10 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.13.0 - 2026-10-29 =
+
+- Booking pages show available times instantly again, and visitors can't book a team member who's already booked
+
 = 1.6.12.37 - 2026-10-13 =
 
 - Use add_block() when building the Google Calendar blocked schedule
@@ -291,13 +295,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 - Add rate limiting to protect the booking form from spam and bot bookings
 - Fix giant emoji in appointment type titles in the admin app
 - Vulnerability: Team Member role can disclose all users' emails (up to 1.6.12.16)
-
-= 1.6.12.15 - 2026-07-28 =
-
-- Detect and fix SSA events wrongly counted as busy (Google Calendar drift)
-- Fix appointment buffer times ignored on PHP 8.2+ (allowing back-to-back bookings) and customer data lost in backups; add PHP 8.4 support
-- Harden the Divi render-shortcode route with a capability-scoped shortcode allowlist
-- Fix stalled orphaned revision_meta cleanup (+ remove DUPLICATE BLOCK log noise)
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

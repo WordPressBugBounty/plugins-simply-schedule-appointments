@@ -123,7 +123,9 @@ class SSA_Availability_Query {
 	}
 
 	public function get_query_hash() {
-		$args = $this->args;
+		// Only known query args, so the key matches the booking app's (crc32 of get_default_args() in Date.vue). Any other arg
+		// that changes the result would be cached under a key that ignores it, so callers must not pass one.
+		$args = array_intersect_key( $this->args, self::args );
 		unset( $args['cache_level_write'] );
 		unset( $args['cache_level_read'] );
 
