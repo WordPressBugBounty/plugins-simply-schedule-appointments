@@ -165,6 +165,15 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		return in_array( $status, self::get_abandoned_statuses() );
 	}
 
+	// Statuses a form field may re-open: https://app.asana.com/1/1992899177764/project/351348922863100/task/1219466819047962
+	public static function get_form_loadable_statuses() {
+		return array_merge( self::get_reserved_statuses(), self::get_abandoned_statuses() );
+	}
+
+	public static function is_a_form_loadable_status( $status ) {
+		return in_array( $status, self::get_form_loadable_statuses(), true );
+	}
+
 	public static function get_unavailable_statuses() {
 		return array_merge(
 			self::get_booked_statuses(),
@@ -364,6 +373,14 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			}
 		}
 
+		// A booking-page visitor may set these three; they hold a payment method slug,
+		// a timezone name and a locale code, so markup in them is never legitimate.
+		foreach ( array( 'payment_method', 'customer_timezone', 'customer_locale' ) as $field ) {
+			if ( isset( $data[ $field ] ) && is_string( $data[ $field ] ) ) {
+				$data[ $field ] = sanitize_text_field( $data[ $field ] );
+			}
+		}
+
 		return $data;
 	}
 
@@ -512,6 +529,33 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			'staff_ids',
 			'selected_resources',
 			'rescheduling_note',
+		);
+	}
+
+	/**
+	 * The booking app sends start_date as 'Y-m-d H:i:s', the shape the column stores,
+	 * so a customer-scoped request carrying any other shape is refused before anything
+	 * is written. The shape the report abused, a parseable ' +1 day' suffix, moves the
+	 * moment PHP reads while MySQL keeps only the leading date. One check for both
+	 * routes, so the two cannot drift apart.
+	 *
+	 * @param array $params
+	 * @return array|null The error response, or null when the value is acceptable.
+	 */
+	private function reject_non_canonical_start_date( $params ) {
+		if ( empty( $params['start_date'] ) ) {
+			return null;
+		}
+		if ( is_string( $params['start_date'] ) && preg_match( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\z/', $params['start_date'] ) ) {
+			return null;
+		}
+
+		return array(
+			'error' => array(
+				'code'    => 'invalid_start_date',
+				'message' => __( 'Sorry, that start date is not valid', 'simply-schedule-appointments' ),
+				'data'    => array(),
+			),
 		);
 	}
 
@@ -1219,6 +1263,11 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		// google_calendar_*, web_meeting_*, etc.
 		if ( ! $this->is_privileged_appointment_request() ) {
 			$params = array_intersect_key( $params, array_flip( $this->get_unprivileged_create_fields() ) );
+
+			$rejected = $this->reject_non_canonical_start_date( $params );
+			if ( $rejected ) {
+				return $rejected;
+			}
 		}
 
 		$params = shortcode_atts(
@@ -1375,7 +1424,10 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				'start_date' => $start_date->format( 'Y-m-d H:i:s' ),
 			)
 		);
-		if ( ! $this->is_privileged_appointment_request() && ! $this->are_picked_staff_available( $appointment_type, $prospective_appointment, $params['staff_ids'] ) ) {
+		// A team member who is already booked is off limits to everyone, whoever is doing the booking. An admin who
+		// means to double-book a member does that from the admin app's Edit Team Members dialog, which warns them
+		// first; a booking page offering the same thing would contradict the availability it had just shown.
+		if ( ! $this->are_picked_staff_available( $appointment_type, $prospective_appointment, $params['staff_ids'] ) ) {
 			return array(
 				'error' => array(
 					'code'    => 'appointment_unavailable',
@@ -1526,6 +1578,11 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		if ( ! $this->is_privileged_appointment_request() ) {
 			$params = array_intersect_key( $params, array_flip( $this->get_unprivileged_update_fields() ) );
 
+			$rejected = $this->reject_non_canonical_start_date( $params );
+			if ( $rejected ) {
+				return $rejected;
+			}
+
 			if ( isset( $params['status'] ) ) {
 				$current = $this->get( $item_id );
 				$from    = isset( $current['status'] ) ? $current['status'] : null;
@@ -1580,6 +1637,9 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 				if ( empty( $start_date ) ) {
 					return 'invalid_start_date';
 				}
+				// Same as insert(): the stored text is the parsed moment, in UTC.
+				$start_date           = $start_date->setTimezone( new DateTimeZone( 'UTC' ) );
+				$params['start_date'] = $start_date->format( 'Y-m-d H:i:s' );
 				// if the time was changed, confirm availability
 				if( isset( $appointment->data['start_date'] ) && $appointment->data['start_date'] !== $params['start_date'] ){
 					
@@ -2278,6 +2338,12 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		} catch ( Exception $e ) {
 			return 'invalid_start_date';
 		}
+
+		// Store the moment that was parsed and checked, in UTC like the column, not the
+		// request text: MySQL keeps only the leading date of '2026-11-04 10:00:00 +1 day',
+		// which PHP reads as the next day, so the row's start and end would disagree.
+		$start_date         = $start_date->setTimezone( new DateTimeZone( 'UTC' ) );
+		$data['start_date'] = $start_date->format( 'Y-m-d H:i:s' );
 
 		$appointment_type = $this->plugin->appointment_type_model->get( $data['appointment_type_id'] );
 		$bookable_period  = Period::after( $start_date, new DateInterval( 'PT' . $appointment_type['duration'] . 'M' ) );

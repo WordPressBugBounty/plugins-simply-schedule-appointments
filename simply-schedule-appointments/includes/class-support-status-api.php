@@ -336,11 +336,12 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 	/**
 	 * Redacts settings before they leave the site in a support ticket: every
 	 * field its schema flags writeonly_secret or encrypt (the set
-	 * SSA_Templates::strip_protected_global_vars treats as protected), plus the
-	 * credentials whose schema carries neither flag. A set value becomes the
-	 * placeholder the settings REST layer uses, so support can still see that it
-	 * is set. A section with no schema on this edition is left over from a higher
-	 * one and can't be classified, so it is dropped.
+	 * SSA_Templates::strip_protected_global_vars treats as protected), the
+	 * credentials whose schema carries neither flag, and the signing token inside
+	 * each webhook entry. A set value becomes the placeholder the settings REST
+	 * layer uses, so support can still see that it is set. A section with no
+	 * schema on this edition is left over from a higher one and can't be
+	 * classified, so it is dropped.
 	 */
 	protected function redact_ticket_settings( $settings ) {
 		if ( ! is_array( $settings ) ) {
@@ -375,22 +376,47 @@ class SSA_Support_Status_Api extends WP_REST_Controller {
 				}
 			}
 		}
+		// Each webhook entry carries the token its receiver uses to verify that a
+		// delivery came from this site. The schema declares the list as one field,
+		// so no flag can reach the token inside an entry; the entries are walked here.
+		if ( ! empty( $settings['webhooks']['webhooks'] ) && is_array( $settings['webhooks']['webhooks'] ) ) {
+			foreach ( $settings['webhooks']['webhooks'] as $index => $webhook ) {
+				if ( is_array( $webhook ) && ! empty( $webhook['token'] ) ) {
+					$settings['webhooks']['webhooks'][ $index ]['token'] = 'redacted-writeonly-secret';
+				}
+			}
+		}
 		return $settings;
 	}
 
 	/**
 	 * export_code arrives as a JSON string. One that can't be decoded can't be
 	 * redacted, so it goes out as the same empty export the fallback sends.
+	 * Staff rows come straight off the model, so the staff schema's do_not_allow
+	 * on google_access_token never applied to them; zoom is the schema's other
+	 * credential column. A set value becomes the placeholder, so support still
+	 * sees which staff calendars are connected.
 	 */
 	protected function redact_ticket_export_code( $export_code ) {
 		$export = is_string( $export_code ) ? json_decode( $export_code, true ) : null;
 		if ( ! is_array( $export ) ) {
 			return '{}';
 		}
-		if ( ! isset( $export['settings'] ) ) {
-			return $export_code;
+		if ( isset( $export['settings'] ) ) {
+			$export['settings'] = $this->redact_ticket_settings( $export['settings'] );
 		}
-		$export['settings'] = $this->redact_ticket_settings( $export['settings'] );
+		if ( ! empty( $export['staff'] ) && is_array( $export['staff'] ) ) {
+			foreach ( $export['staff'] as $index => $staff ) {
+				if ( ! is_array( $staff ) ) {
+					continue;
+				}
+				foreach ( array( 'google_access_token', 'zoom' ) as $field ) {
+					if ( ! empty( $staff[ $field ] ) ) {
+						$export['staff'][ $index ][ $field ] = 'redacted-writeonly-secret';
+					}
+				}
+			}
+		}
 		return wp_json_encode( $export );
 	}
 	public static function ssa_send_support_ticket($params = array(), $debug_logs_hash = '') {

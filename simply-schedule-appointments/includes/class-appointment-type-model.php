@@ -1428,6 +1428,24 @@ class SSA_Appointment_Type_Model extends SSA_Db_Model {
 	}
 
 	/**
+	 * Whether a booking page may print the availability edge cache for whoever is loading it.
+	 *
+	 * Withheld from staff, who book from Appointments > Book an Appointment -- the same page in a dialog. The
+	 * cache is shared and keyed per availability query, so it can hold a picked team member's times from before
+	 * someone else booked that member, and the dialog would offer a slot create_item() then refuses, in the
+	 * middle of an admin's task. A customer keeps the instant times whether or not they are logged in: they are
+	 * refused the same way either way, so a stale entry costs them one click and nothing more.
+	 *
+	 * @return bool
+	 */
+	public function should_print_booking_app_availability_edge_cache() {
+		return (bool) apply_filters(
+			'ssa/booking_app/availability_edge_cache/print',
+			! $this->plugin->appointment_model->is_privileged_appointment_request()
+		);
+	}
+
+	/**
 	 * Recent availability results for the booking app, keyed by SSA_Availability_Query::get_query_hash(),
 	 * leaving out entries computed longer than max age ago or dated in the future.
 	 *

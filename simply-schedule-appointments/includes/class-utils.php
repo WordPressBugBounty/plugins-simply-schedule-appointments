@@ -46,7 +46,34 @@ class SSA_Utils {
 	 * @since  0.0.3
 	 */
 	public function hooks() {
+		add_action( 'requests-requests.before_request', array( $this, 'send_sni_to_ssa_servers' ), 10, 5 );
+	}
 
+	/**
+	 * SSA calls its own servers with sslverify off. WordPress then also passes
+	 * verifyname => false, and its socket transport (used when cURL is missing)
+	 * turns SNI off for that flag. Both SSA servers refuse TLS without SNI, so
+	 * every license check and support ticket failed on those hosts. Dropping the
+	 * flag sends SNI the way cURL already does. With verify => false the chain is
+	 * never checked; the certificate's name is checked only before WordPress 5.8
+	 * on the socket transport, or where an https_ssl_verify filter turned
+	 * verification back on, and both servers' certificates match their names.
+	 * Turning verification on instead fails on WordPress versions whose CA
+	 * bundle lacks the servers' root.
+	 *
+	 * Convention exception — the domain is written out instead of read from
+	 * SSA_License::STORE_URL: that class is stripped from Basic, and the support
+	 * API host (api.) has no constant.
+	 */
+	public function send_sni_to_ssa_servers( &$url, &$headers, &$data, &$type, &$options ) {
+		if ( false !== ( $options['verifyname'] ?? null ) ) {
+			return;
+		}
+		$host = (string) wp_parse_url( $url, PHP_URL_HOST );
+		if ( ! preg_match( '/(^|\.)simplyscheduleappointments\.com$/', $host ) ) {
+			return;
+		}
+		unset( $options['verifyname'] );
 	}
 
 	public function defensive_timezone_fix() {

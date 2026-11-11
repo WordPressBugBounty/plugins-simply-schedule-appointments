@@ -439,6 +439,14 @@ class SSA_Revision_Model extends SSA_Db_Model {
 			$request->set_param( 'append_where_sql', $scope_sql );
 		}
 
+		// Not scoped to one appointment or appointment type: a full listing can exhaust PHP memory on busy sites.
+		if ( empty( $request->get_param( 'appointment_id' ) ) && empty( $request->get_param( 'appointment_type_id' ) ) ) {
+			$number = (int) $request->get_param( 'number' );
+			if ( $number < 1 || $number > 1000 ) {
+				$request->set_param( 'number', 1000 );
+			}
+		}
+
 		return parent::get_items( $request );
 	}
 

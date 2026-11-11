@@ -116,9 +116,18 @@ if ( ! empty( $params_types ) ) {
     return false;
   });
   $ssa_appointment_types = array_values( $ssa_appointment_types );
+} else {
+  // No types named: list the published ones only. Named types (above) keep whatever status they have,
+  // as the REST listing serves them: an edit link names its appointment's type, which may since have been deleted.
+  $ssa_appointment_types = array_values( array_filter( $ssa_appointment_types, function( $appointment_type ) {
+    return 'publish' === $appointment_type['status'];
+  } ) );
 }
 
 $ssa_appointment_types = apply_filters( 'ssa_booking_appointment_types', $ssa_appointment_types );
+
+// Anyone can load this page, so the rows cross the same read boundary as the REST listing.
+$ssa_appointment_types = $ssa->appointment_type_model->prepare_collection_for_api_response( $ssa_appointment_types );
 
 
 // Setup booking URL parameters for global variable
@@ -139,6 +148,8 @@ if( isset( $_GET['booking_title'] ) ) {
 }
 
 
+// A second include in one process, as the tests do, would redeclare it.
+if ( ! function_exists( 'ssa_get_language_attributes' ) ) {
 function ssa_get_language_attributes( $doctype = 'html' ) {
   $attributes = array();
 
@@ -155,6 +166,7 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
   $output = implode( ' ', $attributes );
 
   return $output;
+}
 }
 ?>
 <html <?php echo ssa_get_language_attributes(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built internally from a fixed dir token and an esc_attr()'d lang value; the whole attribute list cannot be re-escaped as one string. ?>>
@@ -455,9 +467,10 @@ function ssa_get_language_attributes( $doctype = 'html' ) {
     var ssa_booking_url_settings = <?php echo json_encode( $ssa_booking_url_settings ) ?>;
     var ssa_token = '<?php echo isset( $_GET['token'] ) ? esc_attr( sanitize_text_field( wp_unslash( $_GET['token'] ) ) ) : '' ?>'
     var ssa_embed_settings = <?php echo json_encode(array("redirect_post_id" => isset($_GET['redirect_post_id'])? sanitize_text_field( wp_unslash( $_GET['redirect_post_id'] ) ): '', "redirect_url" => isset($_GET['redirect_post_id'])? get_permalink(sanitize_text_field( wp_unslash( $_GET['redirect_post_id'] ) )): '')); ?>;
+    <?php $ssa_print_availability_edge_cache = $ssa->appointment_type_model->should_print_booking_app_availability_edge_cache(); ?>
     var ssa_availability_edge_cache_timestamp = <?php echo json_encode(gmdate("Y-m-d H:i:s")) ?>;
-    var ssa_availability_edge_cache_max_age = <?php echo (int) $ssa->appointment_type_model->get_booking_app_availability_edge_cache_page_max_age(); ?>;
-    var ssa_availability_edge_cache = <?php echo json_encode( (object) $ssa->appointment_type_model->get_booking_app_availability_edge_cache() ); ?>;
+    var ssa_availability_edge_cache_max_age = <?php echo $ssa_print_availability_edge_cache ? (int) $ssa->appointment_type_model->get_booking_app_availability_edge_cache_page_max_age() : 0; ?>;
+    var ssa_availability_edge_cache = <?php echo $ssa_print_availability_edge_cache ? json_encode( (object) $ssa->appointment_type_model->get_booking_app_availability_edge_cache() ) : '{}'; ?>;
     var ssa_availability_query_args = <?php echo json_encode( SSA_Availability_Query::get_default_args() ); ?>;
     var ssa_defer_init = <?php echo ! empty( $_GET['defer'] ) ? 'true' : 'false'; ?>;
     var ssa_hide_header = <?php echo ! empty( $_GET['hide_header'] ) ? 'true' : 'false'; ?>;

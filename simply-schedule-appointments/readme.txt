@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.13.0
+Stable tag:        1.6.13.4
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,31 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.13.4 - 2026-11-09 =
+
+- Stop the booking app's checkbox and radio from crashing, and give them a focus ring
+- Admin and booking form text boxes keep the id they are given, so Chrome stops flagging them
+- Require a meeting link when an appointment type uses a custom web meeting
+- Move keyboard focus into the booking refusal screen
+- Booking app: keep the picked team member when a booking is refused
+- Scope the Gravity Forms / Formidable appointment fields to an in-progress booking
+
+= 1.6.13.3 - 2026-11-06 =
+
+- Keep the owner's calendar and meeting details off the public booking page
+- Contact Support no longer sends staff Google Calendar tokens or webhook signing tokens with the settings export
+- Raise the admin app's error text and section subtitles to AA contrast
+- Never book a team member who is already busy from a booking page
+- Stop admin-page requests that load every revision or appointment on busy sites
+- Tell site owners what the Contact Support checkbox sends, and read checkbox notes to screen readers
+- Make the factory reset and uninstall take effect on sites with a persistent object cache
+- Security: a public booking can no longer plant markup or a mismatched start date
+
+= 1.6.13.2 - 2026-11-03 =
+
+- Booking app: post tracking messages with '*' so cross-origin embeds receive them
+- License screen stuck on "Validating..." after 400 rest_missing_callback_param (license key not sent)
+
 = 1.6.13.0 - 2026-10-29 =
 
 - Booking pages show available times instantly again, and visitors can't book a team member who's already booked
@@ -281,20 +306,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 - Check the appointment's own resource when it is rescheduled
 - Harden Patchstack CSRF residuals: purge CSV [3], template token leak [5], unrevocable read token [6]
-
-= 1.6.12.23 - 2026-08-18 =
-
-- Fix CSRF: re-validate wp_rest nonce before whitelisting /ssa/ REST routes
-
-= 1.6.12.19 - 2026-08-11 =
-
-- Google Calendar: skip the redundant token-validation call on every availability check
-
-= 1.6.12.17 - 2026-08-04 =
-
-- Add rate limiting to protect the booking form from spam and bot bookings
-- Fix giant emoji in appointment type titles in the admin app
-- Vulnerability: Team Member role can disclose all users' emails (up to 1.6.12.16)
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

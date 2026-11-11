@@ -700,7 +700,8 @@ class SSA_Support {
 
 			$end_date = $start_date->add( new DateInterval( 'PT' .$duration. 'M' ) );
 			if ( $end_date->format( 'Y-m-d H:i:s' ) != $appointment['end_date'] ) {
-				echo '<pre>'.print_r($appointment, true).'</pre>'; // phpcs:ignore
+				// htmlspecialchars() over esc_html(): esc_html() returns '' on invalid UTF-8 and would blank the dump.
+				echo '<pre>' . htmlspecialchars( print_r( $appointment, true ), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8' ) . '</pre>'; // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_print_r, Generic.PHP.ForbiddenFunctions.Found, WordPress.Security.EscapeOutput.OutputNotEscaped -- Support-page diagnostic for ssa_manage_site_settings holders, escaped by htmlspecialchars().
 				$appointment['end_date'] = $end_date->format( 'Y-m-d H:i:s' );
 
 				$this->plugin->appointment_model->update( $appointment['id'], $appointment );
@@ -1006,10 +1007,14 @@ class SSA_Support {
 			return;
 		}
 
-		// Finds and delete all rows from the wp_options table that contains "ssa_" in the option_name column.
+		// Deletes every option whose name starts with "ssa_". delete_option() also drops each one from the object cache,
+		// which a raw DELETE skips: with Redis or Memcached the old settings kept being served and the reset did nothing.
 		global $wpdb;
 
-		$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'ssa\_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$option_names = $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'ssa\_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		foreach ( $option_names as $option_name ) {
+			delete_option( $option_name );
+		}
 
 		// Truncate all ssa database tables.
 		$this->plugin->appointment_model->truncate();
@@ -1029,6 +1034,10 @@ class SSA_Support {
 		$this->plugin->resource_appointment_model->truncate();
 		$this->plugin->revision_model->truncate();
 		$this->plugin->revision_meta_model->truncate();
+
+		// The cached appointment types and availability are transients the options cleanup above never matches, and
+		// with an object cache they never reach the options table. A new cache version leaves all of them behind.
+		$this->plugin->availability_cache_invalidation->increment_cache_version();
 
 		wp_safe_redirect( $this->plugin->wp_admin->url(), $status = 302 );
 		exit;

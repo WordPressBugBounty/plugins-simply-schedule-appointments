@@ -699,6 +699,7 @@ $translations = array (
       'deleteEventsToggleLabel' => __( 'Delete Google Calendar events when appointments are canceled or rescheduled', 'simply-schedule-appointments' ),
       'refreshIntervalHeadline' => __( 'Refresh Google Calendars', 'simply-schedule-appointments' ),
       'refreshIntervalDesc' => __( 'How often should we check Google Calendar for new events?', 'simply-schedule-appointments' ),
+      'refreshIntervalMin' => __( 'Enter at least 1 minute', 'simply-schedule-appointments' ),
     ),
     'calendar_events' => 
     array (
@@ -2325,7 +2326,7 @@ $translations = array (
     'disclosure' => __( 'Messages sent to the support team through this form will include the debugging information visible on this page.', 'simply-schedule-appointments' ),
     'disclosureTime' => __( 'Messages sent to the support team through this form will include debugging information about this appointment type and general settings', 'simply-schedule-appointments' ),
     'includeSettings' => __( 'Include information about settings and appointment types', 'simply-schedule-appointments' ),
-    'includeDescription' => __( 'Checking this box sends us extra helpful information about your settings and appointment types. It *does not* include any private information or any information about your customers or your appointments.', 'simply-schedule-appointments' ),
+    'includeDescription' => __( 'Checking this box sends us your settings and appointment types, plus up to 500 of your appointments. It also sends the extra details saved with every appointment, such as cancellation and reschedule notes. Customer names, emails, phone numbers and other form answers are scrambled before they are sent. The extra details, web meeting links and meeting passwords are sent as written.', 'simply-schedule-appointments' ),
     'includePlugins' => __( 'Include list of active plugins', 'simply-schedule-appointments' ),
     'sendingMessage' => __( 'Sending your message', 'simply-schedule-appointments' ),
     'successTitle' => __( 'Success!', 'simply-schedule-appointments' ),

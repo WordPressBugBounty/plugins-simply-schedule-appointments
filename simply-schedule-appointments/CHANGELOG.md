@@ -1,5 +1,36 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.13.4 - 2026-11-09
+
+### Fixes
+
+- Stop the booking app's checkbox and radio from crashing, and give them a focus ring
+- Admin and booking form text boxes keep the id they are given, so Chrome stops flagging them
+- Require a meeting link when an appointment type uses a custom web meeting
+- Move keyboard focus into the booking refusal screen
+- Booking app: keep the picked team member when a booking is refused
+- Scope the Gravity Forms / Formidable appointment fields to an in-progress booking
+
+## SSA-VERSION-PREFIX.6.13.3 - 2026-11-06
+
+### Fixes
+
+- Keep the owner's calendar and meeting details off the public booking page
+- Contact Support no longer sends staff Google Calendar tokens or webhook signing tokens with the settings export
+- Raise the admin app's error text and section subtitles to AA contrast
+- Never book a team member who is already busy from a booking page
+- Stop admin-page requests that load every revision or appointment on busy sites
+- Tell site owners what the Contact Support checkbox sends, and read checkbox notes to screen readers
+- Make the factory reset and uninstall take effect on sites with a persistent object cache
+- Security: a public booking can no longer plant markup or a mismatched start date
+
+## SSA-VERSION-PREFIX.6.13.2 - 2026-11-03
+
+### Fixes
+
+- Booking app: post tracking messages with '*' so cross-origin embeds receive them
+- License screen stuck on "Validating..." after 400 rest_missing_callback_param (license key not sent)
+
 ## SSA-VERSION-PREFIX.6.13.0 - 2026-10-29
 
 ### Fixes

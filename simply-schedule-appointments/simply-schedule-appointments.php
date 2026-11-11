@@ -3,7 +3,7 @@
  * Plugin Name: Simply Schedule Appointments
  * Plugin URI:  https://simplyscheduleappointments.com
  * Description: Easy appointment scheduling
- * Version:     1.6.13.0
+ * Version:     1.6.13.4
  * Requires PHP: 7.4
  * Author:      NSquared
  * Author URI:  https://nsquared.io/
@@ -15,7 +15,7 @@
  * @link    https://simplyscheduleappointments.com
  *
  * @package Simply_Schedule_Appointments
- * @version 1.6.13.0
+ * @version 1.6.13.4
  *
  * Built using generator-plugin-wp (https://github.com/WebDevStudios/generator-plugin-wp)
  */
@@ -211,7 +211,7 @@ final class Simply_Schedule_Appointments {
 	 * @var    string
 	 * @since  0.0.0
 	 */
-	const VERSION = '1.6.13.0';
+	const VERSION = '1.6.13.4';
 
 	/**
 	 * URL of plugin directory.
@@ -564,8 +564,13 @@ final class Simply_Schedule_Appointments {
 	
 		if ( ! empty( $settings->developer->remove_data_on_uninstall) ) {
 			// Finds and delete all rows from the wp_options table that contains "ssa_" in the option_name column.
-			$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE 'ssa\_%' OR option_name LIKE 'wp_ssa\_%' OR option_name LIKE '{$table_prefix}ssa\_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		
+			// delete_option() also drops each one from the object cache, which a raw DELETE skips: with Redis or Memcached
+			// a reinstall still read the tables' old version options and never recreated the tables dropped below.
+			$option_names = $wpdb->get_col( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE 'ssa\_%' OR option_name LIKE 'wp_ssa\_%' OR option_name LIKE '{$table_prefix}ssa\_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			foreach ( $option_names as $option_name ) {
+				delete_option( $option_name );
+			}
+
 			// Truncate all ssa database tables.
 			$wpdb->query("DROP TABLE {$table_prefix}ssa_appointments");
 			$wpdb->query("DROP TABLE {$table_prefix}ssa_appointment_meta");
