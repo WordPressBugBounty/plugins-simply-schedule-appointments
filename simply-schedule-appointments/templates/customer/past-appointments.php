@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // $atts are defined in class-shortcodes.php
 // don't try to load this file directly, instead call ssa()->shortcodes->ssa_past_appointments()
 
-$past_appointments = ssa()->appointment_model->query( $atts );
+$past_appointments = ssa()->trusted_email->query_own_bookings( $atts );
 
 $settings    = ssa()->settings->get();
 $date_format = SSA_Utils::localize_default_date_strings( 'F j, Y g:i a' ) . ' (T)';

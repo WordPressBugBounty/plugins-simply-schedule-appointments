@@ -187,7 +187,13 @@ class SSA_Notifications {
 				'id' => $notification['id'],
 			);
 			// ssa_debug_log( $notification, 1, 'Notification queued' );
-			ssa_queue_action( $hook, $action_to_fire, 10, $payload, 'appointment', $appointment_id, 'notifications', $meta );
+			$action_id = ssa_queue_action( $hook, $action_to_fire, 10, $payload, 'appointment', $appointment_id, 'notifications', $meta );
+			if ( empty( $action_id ) ) {
+				global $wpdb;
+				ssa_debug_log( 'Notification ID ' . $notification['id'] . ' could not be queued for appointment ID ' . $appointment_id . '. wpdb last_error: ' . $wpdb->last_error, 10 );
+				$this->insert_revision_on_notification_not_sent( $notification, $payload, esc_html__( 'It could not be added to the sending queue.', 'simply-schedule-appointments' ) );
+				continue;
+			}
 			$action_noun = $payload['action_noun'];
 			$action_verb = $payload['action_verb'];
 			$data_after = $payload['appointment'];
@@ -810,6 +816,22 @@ class SSA_Notifications {
 		return $projected;
 	}
 
+	/**
+	 * Records in the appointment's history that a queued notification was not sent, and why.
+	 */
+	private function insert_revision_on_notification_not_sent( $notification, $payload, $reason ) {
+		$recipients = ! empty( $notification['sent_to'] ) ? $notification['sent_to'] : ( ! empty( $notification['sms_to'] ) ? $notification['sms_to'] : array() );
+
+		$this->plugin->revision_model->insert_revision_on_notification_canceled( (int) $payload['appointment']['id'], array(
+			'data_after'                      => $payload['appointment'],
+			'data_before'                     => isset( $payload['data_before'] ) ? $payload['data_before'] : array(),
+			'recipient_type'                  => is_array( $recipients ) ? ssa_get_recipient_type_for_recipients_array( $recipients ) : '',
+			'notification_type'               => isset( $notification['type'] ) ? $notification['type'] : '',
+			'notification_title'              => isset( $notification['title'] ) ? $notification['title'] : '',
+			'notification_cancelation_reason' => $reason,
+		) );
+	}
+
 	public function fail_async_action( $async_action, $error_code = 500, $error_message = '', $context = array() ) {
 		$response = array(
 			'status_code' => $error_code,
@@ -895,16 +917,22 @@ class SSA_Notifications {
 		return $appointment_object->customer_has_not_opted_in();
 	}
 	 
-	public function should_fire_notification( $single_notification_settings, $payload ) {
+	/**
+	 * $skip_reason is set when a notification that would otherwise go out is held back,
+	 * so the queue runner can record why; checks that hold back no real send leave it empty.
+	 */
+	public function should_fire_notification( $single_notification_settings, $payload, &$skip_reason = '' ) {
 		// ssa_debug_log( __FUNCTION__ .'()' );
 		// ssa_debug_log( $single_notification_settings, 1, '$single_notification_settings' );
 		// ssa_debug_log( $payload, 1, '$payload' );
 
 		if ( ! $this->plugin->settings_installed->is_enabled( 'notifications' ) ) {
+			$skip_reason = esc_html__( 'Notifications are turned off on this site.', 'simply-schedule-appointments' );
 			return false;
 		}
 
 		if ( isset( $single_notification_settings['active'] ) && empty( $single_notification_settings['active'] ) ) {
+			$skip_reason = esc_html__( 'This notification is turned off.', 'simply-schedule-appointments' );
 			return false; // if it isn't set yet, then the settings may have been stored before the active toggle existed. They default on, so if 'active' isn't set, we'll assume it should be on.
 		}
 
@@ -930,6 +958,7 @@ class SSA_Notifications {
 		}
 		
 		if ( $this->customer_has_not_opted_in( $appointment_object, $single_notification_settings ) ) {
+			$skip_reason = esc_html__( 'The customer did not opt in to notifications.', 'simply-schedule-appointments' );
 			return false;
 		}
 
@@ -950,9 +979,11 @@ class SSA_Notifications {
 			// We shouldn't send notifications if the appointment was canceled after this action was queued
 			if (  $payload['action'] !== 'appointment_canceled' ) {
 				if ( ! $appointment_object->is_group_parent() || $appointment_object->is_group_canceled() ) {
-					return false;  
+					$skip_reason = esc_html__( 'The appointment was canceled.', 'simply-schedule-appointments' );
+					return false;
 				} else if( in_array( '{{customer_email}}', $single_notification_settings['sent_to'] ) ) {
 					// this is a cancelled group parent, and this is not the staff email skip it
+					$skip_reason = esc_html__( 'The appointment was canceled.', 'simply-schedule-appointments' );
 					return false;
 				}
 			}
@@ -962,6 +993,7 @@ class SSA_Notifications {
 		if ( $appointment_object->status === 'abandoned' ) {
 			// We shouldn't send notifications if the appointment was abandoned after this action was queued
 			if (  $payload['action'] !== 'appointment_abandoned') {
+				$skip_reason = esc_html__( 'The appointment was abandoned.', 'simply-schedule-appointments' );
 				return false;
 			}
 			// unless this is specifically an "appointment_abandoned" trigger, in which case we continue on...
@@ -970,6 +1002,7 @@ class SSA_Notifications {
 		if ( $single_notification_settings['when'] === 'before' && $single_notification_settings['trigger'] === 'appointment_start_date' ) {
 			// We shouldn't send notifications if the appointment already started and this was supposed to go out *before* the appointment start time
 			if ( ssa_datetime() >= $appointment_object->start_date_datetime ) {
+				$skip_reason = esc_html__( 'The appointment had already started.', 'simply-schedule-appointments' );
 				return false;
 			}
 		}
@@ -996,6 +1029,7 @@ class SSA_Notifications {
 		}
 		
 		// We've reached this in error, default to not sending the notification
+		$skip_reason = esc_html__( 'Notification configuration no longer applies to this appointment.', 'simply-schedule-appointments' );
 		return false;
 	}
 
@@ -1032,18 +1066,22 @@ class SSA_Notifications {
 			if ( empty( $payload['notification']['id'] ) || $payload['notification']['id'] != $notification['id'] ) {
 				continue; // skip any non-matches
 			}
-			if ( ! $this->should_fire_notification( $notification, $payload ) ) {
-				$responses[] = array(
-					'action' => $payload['action'],
-					'skipped' => true,
-					'notification' => $notification,
-				);				
-				continue;
-			}
-
 			try {
+				$skip_reason = '';
+				if ( ! $this->should_fire_notification( $notification, $payload, $skip_reason ) ) {
+					if ( '' !== $skip_reason ) {
+						$this->insert_revision_on_notification_not_sent( $notification, $payload, $skip_reason );
+					}
+					$responses[] = array(
+						'action' => $payload['action'],
+						'skipped' => true,
+						'notification' => $notification,
+					);
+					continue;
+				}
+
 				$response = $this->fire_notification( $notification, $payload );
-			} catch ( Exception $e ) {
+			} catch ( Throwable $e ) {
 				// The appointment can be deleted while its notification renders.
 				// Fail this action instead of ending the rest of the queue run.
 				if ( empty( $this->plugin->appointment_model->db_get_field( 'id', $appointment_id ) ) ) {
@@ -1055,7 +1093,13 @@ class SSA_Notifications {
 					);
 					return;
 				}
-				throw $e;
+
+				// any other error fails only this action too; the message is left out because it can carry credentials
+				$error = get_class( $e ) . ' in ' . basename( $e->getFile() ) . ':' . $e->getLine();
+				ssa_debug_log( 'Notification ID ' . $notification['id'] . ' for appointment ID ' . $appointment_id . ' was not sent: ' . $error, 10 );
+				$this->fail_async_action( $async_action, 500, 'Notification was not sent: ' . $error, array( 'appointment_id' => $appointment_id ) );
+				$this->insert_revision_on_notification_not_sent( $notification, $payload, esc_html__( 'An error stopped it from being sent.', 'simply-schedule-appointments' ) );
+				return;
 			}
 
 			$responses[] = array(

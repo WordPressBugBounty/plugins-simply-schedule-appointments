@@ -93,6 +93,7 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 		add_filter( 'ssa/appointment/before_insert', array( $this, 'sanitize_text_fields' ), 7, 1 );
 		add_filter( 'ssa/appointment/before_update', array( $this, 'sanitize_text_fields' ), 7, 1 );
 		add_filter( 'ssa/appointment/before_update', array( $this, 'prevent_canceling_a_reserved_appointment' ), 1, 2 );
+		add_filter( 'ssa/appointment/before_update', array( $this, 'prevent_abandoning_a_booked_appointment' ), PHP_INT_MAX, 3 );
 
 		add_filter( 'ssa/appointment/before_insert', array( $this, 'default_appointment_status' ), 5, 1 );
 
@@ -258,6 +259,33 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		return $data_after;
 
+	}
+
+	/**
+	 * A booked appointment is never abandoned. A hold cleanup or a failed-payment webhook can
+	 * read it as held just before a payment or a form submission books it.
+	 * Hooked last, so the status is read just before the database write.
+	 *
+	 * @param array $data
+	 * @param array $data_before
+	 * @param int   $appointment_id
+	 * @return array
+	 */
+	public function prevent_abandoning_a_booked_appointment( $data, $data_before, $appointment_id ) {
+		if ( empty( $data['status'] ) || ! self::is_an_abandoned_status( $data['status'] ) ) {
+			return $data;
+		}
+
+		if ( ! self::is_a_booked_status( $this->db_get_field( 'status', $appointment_id ) ) ) {
+			return $data;
+		}
+
+		$data['error'] = array(
+			'code'    => 'invalid_status',
+			'message' => __( 'Cannot update status to abandoned', 'simply-schedule-appointments' ),
+		);
+
+		return $data;
 	}
 
 	/**
@@ -2218,7 +2246,9 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 
 		if ( is_user_logged_in() ) {
 			$appointment = new SSA_Appointment_Object( $params['id'] );
-			if ( $appointment->customer_id == get_current_user_id() ) {
+			// The account saved on a booking owns it, unless it was saved there only
+			// by an email that account never proved (SSA_Trusted_Email).
+			if ( $appointment->customer_id == get_current_user_id() && ! $this->plugin->trusted_email->is_claimed_by_unproven_email( get_current_user_id(), array( 'id' => (int) $params['id'] ) ) ) {
 				return true;
 			}
 		}
@@ -2550,8 +2580,9 @@ class SSA_Appointment_Model extends SSA_Db_Model {
 			return self::READ_ACCESS_FULL;
 		}
 
-		// customer_id 0 must never match an anonymous caller's user id 0.
-		if ( ! empty( $item['customer_id'] ) && (int) $item['customer_id'] === get_current_user_id() ) {
+		// customer_id 0 must never match an anonymous caller's user id 0. A row
+		// saved under the caller only by an email they never proved is not theirs.
+		if ( ! empty( $item['customer_id'] ) && (int) $item['customer_id'] === get_current_user_id() && ! $this->plugin->trusted_email->is_claimed_by_unproven_email( get_current_user_id(), $item ) ) {
 			return self::READ_ACCESS_FULL;
 		}
 

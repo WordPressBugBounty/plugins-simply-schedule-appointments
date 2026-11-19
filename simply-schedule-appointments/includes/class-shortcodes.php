@@ -1034,6 +1034,16 @@ class SSA_Shortcodes {
 			$atts['customer_information'] = wp_get_current_user()->user_email;
 		}
 
+		// The account's own email matches bookings only while SSA_Trusted_Email
+		// trusts it: any user can change their account email without confirming
+		// it. Until then the template asks the customer to verify the address.
+		$customer        = wp_get_current_user();
+		$untrusted_email = '';
+		if ( $customer->exists() && $atts['customer_information'] === $customer->user_email && ! $this->plugin->trusted_email->is_trusted( $customer ) ) {
+			$untrusted_email              = $customer->user_email;
+			$atts['customer_information'] = '';
+		}
+
 		ob_start();
 		include $this->plugin->dir( 'templates/customer/upcoming-appointments.php' );
 		$output = ob_get_clean();

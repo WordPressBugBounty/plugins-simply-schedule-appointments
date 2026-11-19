@@ -248,7 +248,7 @@ function ssa_queue_action( $hook, $action = null, $priority = 10, $payload = arr
 		$action = 'ssa_async_' . $hook;
 	}
 
-	ssa()->async_action_model->queue_action( $hook, $action, $priority, $payload, $object_type, $object_id, $action_group, $meta );
+	return ssa()->async_action_model->queue_action( $hook, $action, $priority, $payload, $object_type, $object_id, $action_group, $meta );
 }
 
 function ssa_complete_action( $action_id, $response = array() ) {

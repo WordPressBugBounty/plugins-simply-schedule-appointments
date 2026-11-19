@@ -4,7 +4,7 @@ Donate link:       https://simplyscheduleappointments.com
 Tags:              booking system, appointments, booking, scheduling, appointment booking
 Requires at least: 5.1
 Tested up to:      7.1
-Stable tag:        1.6.13.6
+Stable tag:        1.6.13.9
 Requires PHP:      7.4
 License:           GPLv2
 License URI:       http://www.gnu.org/licenses/gpl-2.0.html
@@ -241,6 +241,11 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 
 == Changelog ==
 
+= 1.6.13.9 - 2026-11-18 =
+
+- Keep paid bookings as their hold expires, and record why a booking email goes unsent
+- Stop users from reaching other customers' appointments or team member records by changing their account email
+
 = 1.6.13.4 - 2026-11-09 =
 
 - Stop the booking app's checkbox and radio from crashing, and give them a focus ring
@@ -301,11 +306,6 @@ Please report security bugs found in the source code of the Simply Schedule Appo
 = 1.6.12.26 - 2026-09-01 =
 
 - Stop charging Stripe customers for appointments SSA then refuses to record (#250928)
-
-= 1.6.12.24 - 2026-08-25 =
-
-- Check the appointment's own resource when it is rescheduled
-- Harden Patchstack CSRF residuals: purge CSV [3], template token leak [5], unrevocable read token [6]
 
 
 For older changelog entries, please see the [additional CHANGELOG.md file](https://plugins.svn.wordpress.org/simply-schedule-appointments/trunk/CHANGELOG.md) delivered with the plugin.

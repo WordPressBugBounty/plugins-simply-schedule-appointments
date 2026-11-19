@@ -3,10 +3,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-// $atts are defined in class-shortcodes.php
+// $atts, and $untrusted_email when the account's email is not yet trusted, are defined in class-shortcodes.php
 // don't try to load this file directly, instead call ssa()->shortcodes->ssa_upcoming_appointments()
 
-$upcoming_appointments = ssa()->appointment_model->query( $atts );
+$upcoming_appointments = ssa()->trusted_email->query_own_bookings( $atts );
 
 $settings    = ssa()->settings->get();
 $date_format = SSA_Utils::localize_default_date_strings($settings['global']['date_format']);
@@ -14,8 +14,43 @@ $time_format = SSA_Utils::localize_default_date_strings($settings['global']['tim
 ?>
 <div class="ssa-upcoming-appointments-container" role="region" aria-labelledby="appointments-heading">
 	<div class="ssa-upcoming-appointments">
+		<?php if ( ! empty( $untrusted_email ) ) : ?>
+			<?php $verification_sent = ssa()->trusted_email->verification_sent; ?>
+			<div class="ssa-unconfirmed-email-notice">
+				<?php if ( true === $verification_sent ) : ?>
+					<p role="status">
+						<?php
+						/* translators: %s: the account's email address */
+						echo esc_html( sprintf( __( 'We sent a link to %s. Open it to verify your email address.', 'simply-schedule-appointments' ), $untrusted_email ) );
+						?>
+					</p>
+				<?php else : ?>
+					<p>
+						<?php
+						/* translators: %s: the account's email address */
+						echo esc_html( sprintf( __( 'Appointments booked with %s appear here once you verify this email address.', 'simply-schedule-appointments' ), $untrusted_email ) );
+						?>
+					</p>
+					<?php if ( false === $verification_sent ) : ?>
+						<p role="alert"><?php esc_html_e( 'We could not send a new link. Check your inbox for one sent earlier, or try again in 5 minutes.', 'simply-schedule-appointments' ); ?></p>
+					<?php endif; ?>
+					<form method="post">
+						<?php wp_nonce_field( SSA_Trusted_Email::SEND_ACTION, '_wpnonce', false ); ?>
+						<input type="hidden" name="ssa_return_url" value="<?php echo esc_url( get_permalink() ? get_permalink() : home_url( '/' ) ); ?>">
+						<button type="submit" name="<?php echo esc_attr( SSA_Trusted_Email::SEND_ACTION ); ?>" value="1"><?php esc_html_e( 'Verify my email', 'simply-schedule-appointments' ); ?></button>
+					</form>
+				<?php endif; ?>
+			</div>
+		<?php endif; ?>
 		<?php if ( ! is_user_logged_in() ) : ?>
-			<?php echo wp_kses_post( $atts['logged_out_message'] ); ?>
+			<?php $link_user = ssa()->trusted_email->get_link_user(); ?>
+			<?php if ( $link_user ) : ?>
+				<?php // A verification link opened logged out counts once its own account logs in; the form returns here. ?>
+				<p><?php esc_html_e( 'Log in to finish verifying your email address.', 'simply-schedule-appointments' ); ?></p>
+				<?php wp_login_form( array( 'value_username' => $link_user->user_email ) ); ?>
+			<?php else : ?>
+				<?php echo wp_kses_post( $atts['logged_out_message'] ); ?>
+			<?php endif; ?>
 		<?php elseif ( empty( $upcoming_appointments ) && !empty( $atts['block_settings']['no_results_message'] ) ) : ?>
 			<?php echo wp_kses_post( $atts['block_settings']['no_results_message'] ); ?>
 		<?php elseif ( empty( $upcoming_appointments ) ) : ?>

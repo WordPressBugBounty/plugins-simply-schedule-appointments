@@ -1,5 +1,12 @@
 # Changelog
 
+## SSA-VERSION-PREFIX.6.13.9 - 2026-11-18
+
+### Fixes
+
+- Keep paid bookings as their hold expires, and record why a booking email goes unsent
+- Stop users from reaching other customers' appointments or team member records by changing their account email
+
 ## SSA-VERSION-PREFIX.6.13.4 - 2026-11-09
 
 ### Fixes
